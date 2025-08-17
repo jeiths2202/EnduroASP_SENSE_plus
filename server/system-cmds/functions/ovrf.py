@@ -572,9 +572,17 @@ def OVRF(command_line: str) -> bool:
         
         # Use dataset key for dslock if available, otherwise fallback to original name
         if dataset_key:
-            dataset_name = dataset_key.replace(".", "_")  # Convert to valid dataset name
+            # Convert DISK01.TESTLIB.EMPLOYEE.FB to DISK01/TESTLIB/EMPLOYEE.FB
+            parts = dataset_key.split(".")
+            if len(parts) >= 3:
+                volume = parts[0]
+                library = parts[1]
+                dataset = ".".join(parts[2:])
+                dataset_name = f"{volume}/{library}/{dataset}"
+            else:
+                dataset_name = dataset_key.replace(".", "/")
         else:
-            dataset_name = physical_file.replace(".", "_")  # Convert to valid dataset name
+            dataset_name = physical_file.replace(".", "/")
         
         print(f"[OVRF] Acquiring dslock for dataset: {dataset_name}")
         
@@ -603,6 +611,9 @@ def OVRF(command_line: str) -> bool:
             }
             
             override_locks[logical_name] = dataset_name
+            
+            # Save mappings to persistent file for cross-process access
+            _save_mappings_to_file()
         
         print(f"[OVRF] Override mapping created: {logical_name} -> {physical_file}")
         print(f"[OVRF] Current mappings: {len(override_mappings)}")
@@ -625,6 +636,51 @@ def get_override_locks() -> Dict:
     """Get current override locks"""
     with mapping_lock:
         return override_locks.copy()
+
+def _save_mappings_to_file():
+    """Save current mappings to a persistent file for cross-process access"""
+    try:
+        import json
+        import os
+        
+        # Ensure directory exists
+        persistent_dir = "/tmp/dslock_java_runtime"
+        if not os.path.exists(persistent_dir):
+            os.makedirs(persistent_dir, exist_ok=True)
+        
+        # Save to persistent file
+        persistent_file = os.path.join(persistent_dir, "ovrf_mappings.json")
+        
+        mappings_data = {
+            "timestamp": datetime.now().isoformat(),
+            "mappings": override_mappings.copy(),
+            "locks": override_locks.copy(),
+            "pid": os.getpid()
+        }
+        
+        with open(persistent_file, 'w') as f:
+            json.dump(mappings_data, f, indent=2)
+        
+        print(f"[OVRF] Saved mappings to persistent file: {persistent_file}")
+        
+    except Exception as e:
+        print(f"[OVRF] Warning: Failed to save mappings to file: {e}")
+
+def load_mappings_from_file() -> Dict:
+    """Load mappings from persistent file"""
+    try:
+        import json
+        persistent_file = "/tmp/dslock_java_runtime/ovrf_mappings.json"
+        
+        if os.path.exists(persistent_file):
+            with open(persistent_file, 'r') as f:
+                data = json.load(f)
+                return data.get('mappings', {})
+        
+    except Exception as e:
+        print(f"[OVRF] Warning: Failed to load mappings from file: {e}")
+    
+    return {}
 
 # Test function
 if __name__ == "__main__":

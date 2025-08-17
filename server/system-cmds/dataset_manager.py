@@ -281,14 +281,14 @@ class DatasetManager:
                 # Build paths
                 dataset_key = f"{volume}.{library}.{file_part}"
                 physical_path = f"/home/aspuser/app/volume/{volume}/{library}/{file_part}"
-                dataset_name = f"{volume}_{library}_{file_part.replace('.', '_')}"
+                dataset_name = f"{volume}/{library}/{file_part}"
                 
                 return dataset_key, physical_path, dataset_name
         
         # Fallback to simple name
         dataset_key = physical_file
         physical_path = physical_file
-        dataset_name = physical_file.replace('.', '_').replace('/', '_')
+        dataset_name = physical_file.replace('.', '/')
         
         return dataset_key, physical_path, dataset_name
 

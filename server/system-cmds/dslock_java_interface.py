@@ -95,23 +95,127 @@ def export_override_mappings() -> str:
     ensure_runtime_directory()
     
     try:
+        # Try to get mappings from current process context first
+        mappings = {}
         if OVERRIDE_MODULES_AVAILABLE:
             mappings = get_override_mappings()
-        else:
+        
+        # If no mappings found, try to read from persistent file created by OVRF
+        if not mappings:
+            try:
+                persistent_file = "/tmp/dslock_java_runtime/ovrf_mappings.json"
+                if os.path.exists(persistent_file):
+                    with open(persistent_file, 'r') as f:
+                        data = json.load(f)
+                        mappings = data.get('mappings', {})
+                        print(f"[DSLOCK_JAVA_DEBUG] Retrieved mappings from persistent file: {mappings}")
+                else:
+                    print(f"[DSLOCK_JAVA_DEBUG] Persistent file does not exist: {persistent_file}")
+            except Exception as e:
+                print(f"[DSLOCK_JAVA_DEBUG] Failed to read persistent file: {e}")
+        
+        # If no mappings found, try to access them directly from the module's global state
+        if not mappings:
+            try:
+                # Import fresh to get current state
+                import importlib
+                import sys
+                if 'functions.ovrf' in sys.modules:
+                    importlib.reload(sys.modules['functions.ovrf'])
+                from functions.ovrf import override_mappings as current_mappings, mapping_lock as current_lock
+                with current_lock:
+                    mappings = current_mappings.copy()
+                    print(f"[DSLOCK_JAVA_DEBUG] Retrieved mappings from reloaded module: {mappings}")
+            except Exception as e:
+                print(f"[DSLOCK_JAVA_DEBUG] Failed to reload module: {e}")
+        
+        # Fallback to global state if available
+        if not mappings and OVERRIDE_MODULES_AVAILABLE:
             with mapping_lock:
                 mappings = override_mappings.copy()
         
         # Prepare data for Java consumption
+        # Convert dataset_name from underscore to slash format for consistency
+        print(f"[DSLOCK_JAVA_DEBUG] Raw mappings received: {mappings}")
+        converted_mappings = {}
+        for logical_name, mapping_info in mappings.items():
+            converted_info = mapping_info.copy()
+            
+            # Convert dataset_name to slash format if it exists
+            if "dataset_name" in converted_info:
+                dataset_name = converted_info["dataset_name"]
+                print(f"[DSLOCK_JAVA_DEBUG] Original dataset_name for {logical_name}: {dataset_name}")
+                
+                # Convert underscore format to slash format
+                if "_" in dataset_name and "/" not in dataset_name:
+                    # Split by underscore and rebuild with slashes
+                    parts = dataset_name.split("_")
+                    if len(parts) >= 3:
+                        volume = parts[0]
+                        library = parts[1]
+                        dataset = "_".join(parts[2:])  # Rejoin remaining parts
+                        converted_info["dataset_name"] = f"{volume}/{library}/{dataset}"
+                        print(f"[DSLOCK_JAVA_DEBUG] Converted dataset_name for {logical_name}: {converted_info['dataset_name']}")
+                    else:
+                        print(f"[DSLOCK_JAVA_DEBUG] Dataset name has underscores but not enough parts: {dataset_name}")
+                else:
+                    print(f"[DSLOCK_JAVA_DEBUG] Dataset name already has slashes or no underscores: {dataset_name}")
+            
+            converted_mappings[logical_name] = converted_info
+        
         java_mappings = {
             "timestamp": datetime.now().isoformat(),
-            "count": len(mappings),
-            "mappings": mappings,
+            "count": len(converted_mappings),
+            "mappings": converted_mappings,
             "active_locks": {}
         }
         
-        # Add lock information
-        with mapping_lock:
-            java_mappings["active_locks"] = override_locks.copy()
+        # Add lock information with converted dataset names
+        converted_locks = {}
+        
+        # Try to get locks from persistent file first
+        try:
+            persistent_file = "/tmp/dslock_java_runtime/ovrf_mappings.json"
+            if os.path.exists(persistent_file):
+                with open(persistent_file, 'r') as f:
+                    data = json.load(f)
+                    persistent_locks = data.get('locks', {})
+                    print(f"[DSLOCK_JAVA_DEBUG] Retrieved locks from persistent file: {persistent_locks}")
+                    
+                    for logical_name, dataset_name in persistent_locks.items():
+                        # Convert underscore format to slash format
+                        if "_" in dataset_name and "/" not in dataset_name:
+                            parts = dataset_name.split("_")
+                            if len(parts) >= 3:
+                                volume = parts[0]
+                                library = parts[1]
+                                dataset = "_".join(parts[2:])
+                                converted_locks[logical_name] = f"{volume}/{library}/{dataset}"
+                            else:
+                                converted_locks[logical_name] = dataset_name
+                        else:
+                            converted_locks[logical_name] = dataset_name
+        except Exception as e:
+            print(f"[DSLOCK_JAVA_DEBUG] Failed to read locks from persistent file: {e}")
+        
+        # Fallback to module state if no locks found
+        if not converted_locks:
+            with mapping_lock:
+                for logical_name, dataset_name in override_locks.items():
+                    # Convert underscore format to slash format
+                    if "_" in dataset_name and "/" not in dataset_name:
+                        parts = dataset_name.split("_")
+                        if len(parts) >= 3:
+                            volume = parts[0]
+                            library = parts[1]
+                            dataset = "_".join(parts[2:])
+                            converted_locks[logical_name] = f"{volume}/{library}/{dataset}"
+                        else:
+                            converted_locks[logical_name] = dataset_name
+                    else:
+                        converted_locks[logical_name] = dataset_name
+        
+        java_mappings["active_locks"] = converted_locks
         
         # Write to JSON file
         with open(OVERRIDE_MAPPING_FILE, 'w') as f:
