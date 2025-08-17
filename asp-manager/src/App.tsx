@@ -4,7 +4,6 @@ import {
   UserGroupIcon,
   DocumentTextIcon,
   CpuChipIcon,
-  ChatBubbleLeftRightIcon,
   PlayIcon,
   CommandLineIcon,
   ClipboardDocumentListIcon,
@@ -13,7 +12,6 @@ import Sidebar from './components/Sidebar';
 import TabSystem from './components/TabSystem';
 import DashboardPage from './pages/DashboardPage';
 import SmedMapPage from './pages/SmedMapPage';
-import ChatPage from './pages/ChatPage';
 import LogManagementPage from './pages/LogManagementPage';
 import SystemManagerPage from './pages/SystemManagerPage';
 import MarkdownRenderer from './components/MarkdownRenderer';
@@ -97,7 +95,6 @@ function App() {
     { id: 'programs', label: 'プログラム管理', icon: <CpuChipIcon /> },
     { id: 'catalog', label: 'カタログ管理', icon: <ClipboardDocumentListIcon /> },
     { id: 'log-management', label: 'ログ管理', icon: <ClipboardDocumentListIcon /> },
-    { id: 'chat', label: 'チャット', icon: <ChatBubbleLeftRightIcon /> },
   ];
 
   const handleMenuSelect = useCallback((item: MenuItem) => {
@@ -169,9 +166,6 @@ function App() {
             </div>
           </div>
         );
-        break;
-      case 'chat':
-        content = <ChatPage isDarkMode={theme.mode === 'dark'} />;
         break;
       case 'log-management':
         content = <LogManagementPage isDarkMode={theme.mode === 'dark'} />;
