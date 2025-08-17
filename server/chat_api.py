@@ -8,6 +8,7 @@ import os
 import json
 import base64
 import requests
+import time
 from pathlib import Path
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -26,6 +27,15 @@ try:
 except ImportError as e:
     BITNET_AVAILABLE = False
     logger.warning(f"BitNet service not available: {e}")
+
+# Import RAG service
+try:
+    from rag_service import get_rag_service
+    RAG_AVAILABLE = True
+    logger.info("RAG service imported successfully")
+except ImportError as e:
+    RAG_AVAILABLE = False
+    logger.warning(f"RAG service not available: {e}")
 
 app = Flask(__name__)
 CORS(app, origins=['http://localhost:3005'], supports_credentials=True, allow_headers=['Content-Type'])  # Allow React dev server
@@ -188,7 +198,40 @@ class ChatService:
             }
     
     def search_rag_documents(self, query):
-        """Search RAG documents for relevant context"""
+        """Search RAG documents using vector similarity"""
+        try:
+            if not RAG_AVAILABLE:
+                logger.warning("RAG service not available, falling back to simple text search")
+                return self._simple_text_search(query)
+            
+            # Use RAG service for vector search
+            rag_service = get_rag_service()
+            search_results = rag_service.search_documents(
+                query=query,
+                n_results=5,
+                min_score=0.1
+            )
+            
+            # Convert RAG results to expected format
+            results = []
+            for result in search_results:
+                results.append({
+                    'file': result['metadata'].get('source', 'unknown').split('/')[-1],
+                    'path': result['metadata'].get('source', 'unknown'),
+                    'snippet': result['content'][:500] + '...' if len(result['content']) > 500 else result['content'],
+                    'similarity': result['similarity'],
+                    'rank': result['rank']
+                })
+            
+            return results
+            
+        except Exception as e:
+            logger.error(f"RAG vector search error: {e}")
+            # Fallback to simple text search
+            return self._simple_text_search(query)
+    
+    def _simple_text_search(self, query):
+        """Fallback simple text search in RAG directory"""
         try:
             results = []
             
@@ -201,7 +244,8 @@ class ChatService:
                             results.append({
                                 'file': file_path.name,
                                 'path': str(file_path),
-                                'snippet': content[:500] + '...' if len(content) > 500 else content
+                                'snippet': content[:500] + '...' if len(content) > 500 else content,
+                                'similarity': 0.5  # Default similarity for text search
                             })
                 except Exception as e:
                     logger.warning(f"Error reading file {file_path}: {e}")
@@ -215,7 +259,8 @@ class ChatService:
                             results.append({
                                 'file': file_path.name,
                                 'path': str(file_path),
-                                'snippet': content[:500] + '...' if len(content) > 500 else content
+                                'snippet': content[:500] + '...' if len(content) > 500 else content,
+                                'similarity': 0.5  # Default similarity for text search
                             })
                 except Exception as e:
                     logger.warning(f"Error reading file {file_path}: {e}")
@@ -223,7 +268,7 @@ class ChatService:
             return results[:5]  # Return top 5 results
             
         except Exception as e:
-            logger.error(f"RAG search error: {e}")
+            logger.error(f"Simple text search error: {e}")
             return []
 
 # Initialize service
@@ -359,15 +404,21 @@ def chat():
         if use_rag and message:
             rag_results = chat_service.search_rag_documents(message)
             if rag_results:
-                rag_context = "\n\n参考資料:\n"
-                for result in rag_results:
-                    rag_context += f"- {result['file']}: {result['snippet']}\n"
+                # Build more structured RAG context with better formatting
+                rag_context = "\n\n=== 関連する参考資料 ===\n"
+                for i, result in enumerate(rag_results[:3], 1):  # Limit to top 3 for context window
+                    similarity_score = f" (関連度: {result.get('similarity', 0):.1%})" if result.get('similarity') else ""
+                    rag_context += f"\n[資料{i}] {result['file']}{similarity_score}\n"
+                    rag_context += f"内容: {result['snippet'][:300]}{'...' if len(result['snippet']) > 300 else ''}\n"
+                
+                rag_context += "\n=== 回答指示 ===\n"
+                rag_context += "上記の参考資料を基に、正確で詳細な回答を提供してください。参考資料にない情報は推測せず、「参考資料には記載がありません」と明記してください。\n"
         
-        # Build enhanced prompt
+        # Build enhanced prompt with better structure
         enhanced_prompt = message
         
         if rag_context:
-            enhanced_prompt = f"{rag_context}\n\nユーザーの質問: {message}"
+            enhanced_prompt = f"{rag_context}\n\n=== ユーザーの質問 ===\n{message}\n\n=== 回答 ==="
         
         if processed_files:
             files_info = "\n\n添付ファイル:\n"
@@ -413,7 +464,7 @@ def chat():
 
 @app.route('/api/rag/upload', methods=['POST'])
 def upload_rag_document():
-    """Upload document to RAG directory"""
+    """Upload document to RAG directory and auto-index"""
     try:
         data = request.get_json()
         
@@ -425,9 +476,57 @@ def upload_rag_document():
             data['filename']
         )
         
+        # Auto-index the uploaded file if RAG is available
+        auto_index = data.get('auto_index', True)
+        indexing_result = None
+        
+        if auto_index and RAG_AVAILABLE and processed.get('success'):
+            try:
+                rag_service = get_rag_service()
+                
+                # Get file content based on type
+                file_content = ""
+                if processed.get('type') == 'text' and processed.get('content'):
+                    file_content = processed['content']
+                elif processed.get('type') == 'markdown' and processed.get('content'):
+                    file_content = processed['content']
+                
+                if file_content:
+                    # Add document to RAG service
+                    chunks_added = rag_service.add_document(
+                        content=file_content,
+                        source=processed.get('path', data['filename']),
+                        metadata={
+                            'filename': data['filename'],
+                            'type': processed.get('type', 'unknown'),
+                            'uploaded_at': time.time(),
+                            'auto_indexed': True
+                        }
+                    )
+                    
+                    indexing_result = {
+                        'indexed': True,
+                        'chunks_added': chunks_added,
+                        'message': f'{chunks_added}個のチャンクが追加されました'
+                    }
+                else:
+                    indexing_result = {
+                        'indexed': False,
+                        'message': 'ファイル形式がRAGインデックスに対応していません'
+                    }
+                    
+            except Exception as e:
+                logger.error(f"Auto-indexing failed: {e}")
+                indexing_result = {
+                    'indexed': False,
+                    'error': str(e),
+                    'message': 'インデックス処理中にエラーが発生しました'
+                }
+        
         return jsonify({
             'success': True,
-            'file_info': processed
+            'file_info': processed,
+            'indexing': indexing_result
         })
         
     except Exception as e:
@@ -458,6 +557,130 @@ def list_rag_documents():
     except Exception as e:
         logger.error(f"RAG list error: {e}")
         return jsonify({'error': f'List error: {str(e)}'}), 500
+
+@app.route('/api/rag/index', methods=['POST'])
+def index_rag_documents():
+    """Index documents in RAG directory into vector database"""
+    if not RAG_AVAILABLE:
+        return jsonify({'error': 'RAG service not available'}), 503
+    
+    try:
+        data = request.get_json() or {}
+        directory_path = data.get('directory', RAG_DIR)
+        file_types = data.get('file_types', ['.txt', '.md', '.pdf', '.json'])
+        
+        rag_service = get_rag_service()
+        
+        # Index documents from directory
+        results = rag_service.load_documents_from_directory(
+            directory_path=directory_path,
+            file_types=file_types
+        )
+        
+        return jsonify({
+            'success': True,
+            'results': results,
+            'message': f'Indexed {results["total_chunks"]} chunks from {len(results["processed_files"])} files'
+        })
+        
+    except Exception as e:
+        logger.error(f"RAG indexing error: {e}")
+        return jsonify({'error': f'Indexing error: {str(e)}'}), 500
+
+@app.route('/api/rag/search', methods=['POST'])
+def search_rag_documents():
+    """Search for relevant documents using RAG"""
+    if not RAG_AVAILABLE:
+        return jsonify({'error': 'RAG service not available'}), 503
+    
+    try:
+        data = request.get_json()
+        
+        if not data or 'query' not in data:
+            return jsonify({'error': 'query is required'}), 400
+        
+        query = data['query']
+        n_results = data.get('n_results', 5)
+        min_score = data.get('min_score', 0.0)
+        
+        rag_service = get_rag_service()
+        
+        # Search for relevant documents
+        results = rag_service.search_documents(
+            query=query,
+            n_results=n_results,
+            min_score=min_score
+        )
+        
+        return jsonify({
+            'success': True,
+            'query': query,
+            'results': results,
+            'count': len(results)
+        })
+        
+    except Exception as e:
+        logger.error(f"RAG search error: {e}")
+        return jsonify({'error': f'Search error: {str(e)}'}), 500
+
+@app.route('/api/rag/status', methods=['GET'])
+def rag_status():
+    """Get RAG service status and information"""
+    if not RAG_AVAILABLE:
+        return jsonify({
+            'available': False,
+            'error': 'RAG service not available'
+        }), 503
+    
+    try:
+        rag_service = get_rag_service()
+        
+        # Get health check
+        health = rag_service.health_check()
+        
+        # Get collection info
+        info = rag_service.get_collection_info()
+        
+        return jsonify({
+            'available': True,
+            'health': health,
+            'collection': info,
+            'rag_directory': RAG_DIR
+        })
+        
+    except Exception as e:
+        logger.error(f"RAG status error: {e}")
+        return jsonify({
+            'available': False,
+            'error': f'Status error: {str(e)}'
+        }), 500
+
+@app.route('/api/rag/clear', methods=['POST'])
+def clear_rag_collection():
+    """Clear all documents from RAG collection"""
+    if not RAG_AVAILABLE:
+        return jsonify({'error': 'RAG service not available'}), 503
+    
+    try:
+        rag_service = get_rag_service()
+        
+        # Clear the collection
+        success = rag_service.clear_collection()
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'RAG collection cleared successfully'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Failed to clear collection'
+            }), 500
+        
+    except Exception as e:
+        logger.error(f"RAG clear error: {e}")
+        return jsonify({'error': f'Clear error: {str(e)}'}), 500
 
 if __name__ == '__main__':
     port = int(os.getenv('CHAT_API_PORT', 3006))

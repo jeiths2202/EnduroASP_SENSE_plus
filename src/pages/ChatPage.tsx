@@ -20,6 +20,15 @@ interface Message {
   content: string;
   timestamp: Date;
   files?: FileData[];
+  ragResults?: RagResult[];
+}
+
+interface RagResult {
+  file: string;
+  path: string;
+  snippet: string;
+  similarity?: number;
+  rank?: number;
 }
 
 interface FileData {
@@ -65,6 +74,10 @@ const ChatPage: React.FC<ChatPageProps> = ({ isDarkMode }) => {
   const [artifactData, setArtifactData] = useState<ArtifactData | null>(null);
   const [showArtifactWindow, setShowArtifactWindow] = useState(false);
   const [isArtifactFullscreen, setIsArtifactFullscreen] = useState(false);
+  
+  // RAG state
+  const [useRAG, setUseRAG] = useState(false);
+  const [ragStatus, setRagStatus] = useState<'checking' | 'available' | 'unavailable'>('checking');
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -100,6 +113,21 @@ const ChatPage: React.FC<ChatPageProps> = ({ isDarkMode }) => {
             }
           } catch (modelError) {
             console.error('Failed to load models:', modelError);
+          }
+          
+          // Check RAG service availability
+          try {
+            const ragResponse = await fetch('http://localhost:3006/api/rag/status');
+            if (ragResponse.ok) {
+              const ragData = await ragResponse.json();
+              setRagStatus(ragData.available ? 'available' : 'unavailable');
+              console.log('RAG Service status:', ragData.available ? 'available' : 'unavailable');
+            } else {
+              setRagStatus('unavailable');
+            }
+          } catch (ragError) {
+            console.error('Failed to check RAG status:', ragError);
+            setRagStatus('unavailable');
           }
         } else {
           setApiStatus('disconnected');
@@ -187,7 +215,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ isDarkMode }) => {
       } = {
         message: messageText,
         files: [],
-        use_rag: true,
+        use_rag: useRAG && ragStatus === 'available',
         model: selectedModel
       };
 
@@ -258,15 +286,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ isDarkMode }) => {
 
       let responseText = data.response || 'Sorry, I could not generate a response.';
       
-      // Add RAG context information if available
-      if (data.rag_results && data.rag_results.length > 0) {
-        responseText += '\n\n📚 参考資料から情報を取得しました:';
-        data.rag_results.forEach((result: any) => {
-          responseText += `\n- ${result.file}`;
-        });
-      }
-
-      // Add file processing information if available
+      // Add file processing information if available (keep this in main content)
       if (data.processed_files && data.processed_files.length > 0) {
         responseText += '\n\n📎 処理したファイル:';
         data.processed_files.forEach((file: any) => {
@@ -278,7 +298,8 @@ const ChatPage: React.FC<ChatPageProps> = ({ isDarkMode }) => {
         id: (Date.now() + 1).toString(),
         type: 'assistant',
         content: responseText,
-        timestamp: new Date()
+        timestamp: new Date(),
+        ragResults: data.rag_results || []
       };
 
       setMessages(prev => [...prev, assistantMessage]);
@@ -450,6 +471,35 @@ const ChatPage: React.FC<ChatPageProps> = ({ isDarkMode }) => {
               )}
             </div>
             
+            {/* RAG Toggle */}
+            {ragStatus === 'available' && (
+              <div className="flex items-center space-x-2">
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={useRAG}
+                    onChange={(e) => setUseRAG(e.target.checked)}
+                    className="sr-only"
+                  />
+                  <div className={`relative inline-block w-10 h-6 rounded-full transition-colors ${
+                    useRAG 
+                      ? 'bg-blue-600 dark:bg-blue-500' 
+                      : 'bg-gray-300 dark:bg-gray-600'
+                  }`}>
+                    <div className={`absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                      useRAG ? 'translate-x-4' : 'translate-x-0'
+                    }`} />
+                  </div>
+                  <span className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                    RAG
+                  </span>
+                </label>
+                <div className="text-xs text-gray-500 dark:text-gray-400">
+                  {useRAG ? '文書検索 ON' : '文書検索 OFF'}
+                </div>
+              </div>
+            )}
+            
             <div className="flex items-center space-x-2">
             <button
               onClick={() => fileInputRef.current?.click()}
@@ -542,6 +592,36 @@ const ChatPage: React.FC<ChatPageProps> = ({ isDarkMode }) => {
                   )}
                   
                   <p className="whitespace-pre-wrap">{message.content}</p>
+                  
+                  {/* RAG Results */}
+                  {message.ragResults && message.ragResults.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+                      <div className="flex items-center mb-2">
+                        <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                          📚 参考資料 ({message.ragResults.length}件)
+                        </span>
+                      </div>
+                      <div className="space-y-2">
+                        {message.ragResults.map((result, index) => (
+                          <div key={index} className="bg-gray-50 dark:bg-gray-700 rounded p-2">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                                {result.file}
+                              </span>
+                              {result.similarity && (
+                                <span className="text-xs text-gray-500 dark:text-gray-400">
+                                  {Math.round(result.similarity * 100)}% 一致
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
+                              {result.snippet}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   
                   <div className={`text-xs mt-2 ${
                     message.type === 'user' ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'
