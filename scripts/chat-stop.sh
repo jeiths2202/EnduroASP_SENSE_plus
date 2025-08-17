@@ -16,6 +16,12 @@ OLLAMA_PORT=3014
 CHAT_API_PORT=3006
 PROJECT_ROOT="/home/aspuser/app/ofasp-refactor"
 PID_DIR="$PROJECT_ROOT/pids"
+BITNET_DIR="/home/aspuser/app/models/bitnet/BitNet"
+
+# UTF-8 encoding environment variables
+export LC_ALL=C.UTF-8
+export LANG=C.UTF-8
+export PYTHONIOENCODING=utf-8
 
 # Force kill processes by pattern
 force_kill_by_pattern() {
@@ -89,12 +95,15 @@ echo -e "\n${YELLOW}Shutting down chat services...${NC}"
 # Stop by PID files first
 stop_by_pid "$PID_DIR/ollama.pid" "Ollama Server"
 stop_by_pid "$PID_DIR/chat-api.pid" "Chat API Server"
+stop_by_pid "$PID_DIR/bitnet.pid" "BitNet Service"
 
 # Stop by process patterns
 echo -e "\n${YELLOW}Shutting down processes by pattern...${NC}"
 force_kill_by_pattern "ollama serve" "Ollama Servers"
 force_kill_by_pattern "ollama runner" "Ollama Runners"
 force_kill_by_pattern "chat_api.py" "Chat API Servers"
+force_kill_by_pattern "hf download" "BitNet Downloads"
+force_kill_by_pattern "llama-cli" "BitNet Inference"
 
 # Stop by ports
 echo -e "\n${YELLOW}Force killing processes by port...${NC}"
@@ -106,6 +115,7 @@ echo -e "\n${YELLOW}Cleaning up configuration files...${NC}"
 rm -f "$PROJECT_ROOT/.chat_services"
 rm -f "$PID_DIR/ollama.pid"
 rm -f "$PID_DIR/chat-api.pid"
+rm -f "$PID_DIR/bitnet.pid"
 
 # Wait for process termination
 echo -e "\n${YELLOW}Waiting for process termination...${NC}"

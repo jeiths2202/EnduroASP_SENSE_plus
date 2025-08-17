@@ -18,6 +18,12 @@ PROJECT_ROOT="/home/aspuser/app/ofasp-refactor"
 LOG_DIR="$PROJECT_ROOT/logs"
 PID_DIR="$PROJECT_ROOT/pids"
 RAG_DIR="$PROJECT_ROOT/public/RAG"
+BITNET_DIR="/home/aspuser/app/models/bitnet/BitNet"
+
+# UTF-8 encoding environment variables
+export LC_ALL=C.UTF-8
+export LANG=C.UTF-8
+export PYTHONIOENCODING=utf-8
 
 # Create directories
 mkdir -p "$LOG_DIR"
@@ -35,8 +41,12 @@ cleanup_chat_processes() {
     # Stop Chat API
     pkill -f "chat_api.py" 2>/dev/null || true
     
+    # Stop BitNet processes
+    pkill -f "hf download" 2>/dev/null || true
+    pkill -f "llama-cli" 2>/dev/null || true
+    
     # Stop by PID files
-    for pid_file in "$PID_DIR/ollama.pid" "$PID_DIR/chat-api.pid"; do
+    for pid_file in "$PID_DIR/ollama.pid" "$PID_DIR/chat-api.pid" "$PID_DIR/bitnet.pid"; do
         if [ -f "$pid_file" ]; then
             local pid=$(cat "$pid_file" 2>/dev/null)
             if [ ! -z "$pid" ] && ps -p $pid > /dev/null 2>&1; then
@@ -97,6 +107,29 @@ start_ollama() {
     return 1
 }
 
+# Check BitNet availability
+check_bitnet() {
+    echo -e "\n${YELLOW}[BITNET] Checking BitNet availability...${NC}"
+    
+    if [ ! -d "$BITNET_DIR" ]; then
+        echo -e "${YELLOW}[WARN] BitNet directory not found: $BITNET_DIR${NC}"
+        return 1
+    fi
+    
+    if [ ! -f "$BITNET_DIR/models/BitNet-b1.58-2B-4T/ggml-model-i2_s.gguf" ]; then
+        echo -e "${YELLOW}[WARN] BitNet model not found${NC}"
+        return 1
+    fi
+    
+    if [ ! -f "$BITNET_DIR/build/bin/llama-cli" ]; then
+        echo -e "${YELLOW}[WARN] BitNet build not found${NC}"
+        return 1
+    fi
+    
+    echo -e "${GREEN}[OK] BitNet B1.58 2B model available${NC}"
+    return 0
+}
+
 # Start Chat API
 start_chat_api() {
     echo -e "\n${GREEN}[API] Starting Chat API server on port $CHAT_API_PORT...${NC}"
@@ -106,7 +139,10 @@ start_chat_api() {
     # Initialize log
     > "$LOG_DIR/chat-api.log"
     
-    # Set environment variables and start Chat API
+    # Set environment variables and start Chat API with UTF-8 encoding
+    LC_ALL=C.UTF-8 \
+    LANG=C.UTF-8 \
+    PYTHONIOENCODING=utf-8 \
     CHAT_API_PORT=$CHAT_API_PORT \
     OLLAMA_URL=http://localhost:$OLLAMA_PORT \
     RAG_DIR="$RAG_DIR" \
@@ -141,23 +177,44 @@ start_chat_api() {
 check_models() {
     echo -e "\n${YELLOW}[MODELS] Checking available models...${NC}"
     
-    # Get available models
-    local models=$(curl -s http://localhost:$OLLAMA_PORT/api/tags | python3 -c "
+    # Check Chat API models (includes both Ollama and BitNet)
+    local api_models=$(curl -s http://localhost:$CHAT_API_PORT/api/models | python3 -c "
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    models = data.get('models', [])
+    for model in models:
+        status = 'Available' if model.get('available', False) else 'Unavailable'
+        model_type = model.get('type', 'unknown').upper()
+        print(f\"  - {model['friendly_name']} [{model_type}] - {status}\")
+except Exception as e:
+    print(f\"  Error: {e}\")
+" 2>/dev/null)
+    
+    if [ ! -z "$api_models" ]; then
+        echo -e "${GREEN}Available models via Chat API:${NC}"
+        echo "$api_models"
+    else
+        echo -e "${YELLOW}No models found via Chat API.${NC}"
+    fi
+    
+    # Also check Ollama directly
+    local ollama_models=$(curl -s http://localhost:$OLLAMA_PORT/api/tags | python3 -c "
 import sys, json
 try:
     data = json.load(sys.stdin)
     models = [m['name'] for m in data.get('models', [])]
     for model in models:
-        print(f'  - {model}')
+        print(f'  - {model} [OLLAMA]')
 except:
     pass
 " 2>/dev/null)
     
-    if [ ! -z "$models" ]; then
-        echo -e "${GREEN}Available models:${NC}"
-        echo "$models"
+    if [ ! -z "$ollama_models" ]; then
+        echo -e "\n${GREEN}Available Ollama models:${NC}"
+        echo "$ollama_models"
     else
-        echo -e "${YELLOW}No models found. You may need to install models:${NC}"
+        echo -e "\n${YELLOW}No Ollama models found. You may need to install models:${NC}"
         echo "  ollama pull gemma:2b"
         echo "  ollama pull gpt-oss:20b"
         echo "  ollama pull qwen2.5-coder:1.5b"
@@ -167,6 +224,10 @@ except:
 # Main execution
 main() {
     cleanup_chat_processes
+    
+    # Check BitNet availability
+    check_bitnet
+    local bitnet_available=$?
     
     if start_ollama && start_chat_api; then
         check_models
@@ -178,6 +239,15 @@ main() {
         echo "  - Chat Interface: http://localhost:3005 → チャット"
         echo "  - Chat API: http://localhost:$CHAT_API_PORT"
         echo "  - Ollama API: http://localhost:$OLLAMA_PORT"
+        
+        echo ""
+        echo "[MODELS] Available AI Models:"
+        echo "  - Ollama Models (via port $OLLAMA_PORT)"
+        if [ $bitnet_available -eq 0 ]; then
+            echo "  - BitNet B1.58 2B (2-bit quantized, efficient inference)"
+        else
+            echo "  - BitNet B1.58 2B (Not available - model not installed)"
+        fi
         
         echo ""
         echo "[LOGS] Log files:"
@@ -195,6 +265,8 @@ OLLAMA_PID=$(cat $PID_DIR/ollama.pid)
 CHAT_API_PID=$(cat $PID_DIR/chat-api.pid)
 OLLAMA_PORT=$OLLAMA_PORT
 CHAT_API_PORT=$CHAT_API_PORT
+BITNET_AVAILABLE=$bitnet_available
+BITNET_DIR="$BITNET_DIR"
 STARTED_AT="$(date)"
 EOF
         
