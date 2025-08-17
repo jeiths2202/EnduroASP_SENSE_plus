@@ -11,6 +11,8 @@ import {
   ChevronDownIcon
 } from '@heroicons/react/24/outline';
 import { useI18n } from '../hooks/useI18n';
+import SplitLayout from '../components/SplitLayout';
+import ArtifactWindow from '../components/ArtifactWindow';
 
 interface Message {
   id: string;
@@ -37,6 +39,13 @@ interface ChatPageProps {
   isDarkMode: boolean;
 }
 
+interface ArtifactData {
+  content: string;
+  contentType: 'code' | 'html' | 'markdown' | 'text';
+  language: string;
+  title?: string;
+}
+
 const ChatPage: React.FC<ChatPageProps> = ({ isDarkMode }) => {
   const { t } = useI18n();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -51,6 +60,11 @@ const ChatPage: React.FC<ChatPageProps> = ({ isDarkMode }) => {
   const [selectedModel, setSelectedModel] = useState<string>('Qwen2.5 Coder 1.5B');
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
   const [availableModels, setAvailableModels] = useState<ModelInfo[]>([]);
+  
+  // Artifact state
+  const [artifactData, setArtifactData] = useState<ArtifactData | null>(null);
+  const [showArtifactWindow, setShowArtifactWindow] = useState(false);
+  const [isArtifactFullscreen, setIsArtifactFullscreen] = useState(false);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -268,6 +282,15 @@ const ChatPage: React.FC<ChatPageProps> = ({ isDarkMode }) => {
       };
 
       setMessages(prev => [...prev, assistantMessage]);
+      
+      // Extract artifacts if Qwen2.5 Coder is selected
+      if (shouldShowArtifactWindow) {
+        const artifacts = extractArtifacts(responseText);
+        if (artifacts) {
+          setArtifactData(artifacts);
+          setShowArtifactWindow(true);
+        }
+      }
     } catch (error) {
       console.error('Error calling chat API:', error);
       const errorMessage: Message = {
@@ -292,9 +315,55 @@ const ChatPage: React.FC<ChatPageProps> = ({ isDarkMode }) => {
   const clearChat = () => {
     setMessages([]);
     setAttachedFiles([]);
+    setArtifactData(null);
+    setShowArtifactWindow(false);
   };
 
-  return (
+  // Check if current model should show artifact window
+  const shouldShowArtifactWindow = selectedModel === 'Qwen2.5 Coder 1.5B';
+
+  // Extract code blocks or artifacts from response
+  const extractArtifacts = (content: string): ArtifactData | null => {
+    // Look for code blocks with various patterns
+    const patterns = [
+      /```(\w+)?\n([\s\S]*?)```/g,  // Standard markdown code blocks
+      /~~~(\w+)?\n([\s\S]*?)~~~/g,  // Alternative code blocks
+      /<code[^>]*>([\s\S]*?)<\/code>/g, // HTML code tags
+    ];
+    
+    for (const pattern of patterns) {
+      const match = pattern.exec(content);
+      if (match) {
+        const language = match[1] || 'javascript';
+        const code = (match[2] || match[1]).trim();
+        
+        if (code.length > 10) { // Only show meaningful code blocks
+          // Determine content type based on language
+          let contentType: 'code' | 'html' | 'markdown' | 'text' = 'code';
+          const lang = language.toLowerCase();
+          
+          if (lang === 'html' || lang === 'htm') contentType = 'html';
+          else if (lang === 'markdown' || lang === 'md') contentType = 'markdown';
+          else if (lang === 'text' || lang === 'txt') contentType = 'text';
+          
+          return {
+            content: code,
+            contentType,
+            language: lang,
+            title: `Generated ${language.toUpperCase()} Code`
+          };
+        }
+      }
+    }
+    
+    return null;
+  };
+
+  const handleToggleArtifactFullscreen = () => {
+    setIsArtifactFullscreen(!isArtifactFullscreen);
+  };
+
+  const renderChatContent = () => (
     <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-900">
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
@@ -351,6 +420,11 @@ const ChatPage: React.FC<ChatPageProps> = ({ isDarkMode }) => {
                           onClick={() => {
                             setSelectedModel(model.friendly_name);
                             setIsModelDropdownOpen(false);
+                            // Hide artifact window if switching away from Qwen2.5 Coder
+                            if (model.friendly_name !== 'Qwen2.5 Coder 1.5B') {
+                              setShowArtifactWindow(false);
+                              setArtifactData(null);
+                            }
                           }}
                           className={`w-full flex items-start px-4 py-3 text-sm text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
                             selectedModel === model.friendly_name 
@@ -587,6 +661,45 @@ const ChatPage: React.FC<ChatPageProps> = ({ isDarkMode }) => {
       </div>
     </div>
   );
+
+  // Main render with conditional split layout
+  if (shouldShowArtifactWindow && showArtifactWindow && !isArtifactFullscreen) {
+    return (
+      <SplitLayout
+        direction="horizontal"
+        defaultSplit={60}
+        minSize={30}
+        isDarkMode={isDarkMode}
+        className="h-full"
+      >
+        {renderChatContent()}
+        <ArtifactWindow
+          isDarkMode={isDarkMode}
+          content={artifactData?.content || ''}
+          contentType={artifactData?.contentType || 'code'}
+          language={artifactData?.language || 'javascript'}
+          onToggleFullscreen={handleToggleArtifactFullscreen}
+          isFullscreen={isArtifactFullscreen}
+        />
+      </SplitLayout>
+    );
+  }
+
+  // Fullscreen artifact or regular chat
+  if (isArtifactFullscreen && artifactData) {
+    return (
+      <ArtifactWindow
+        isDarkMode={isDarkMode}
+        content={artifactData.content}
+        contentType={artifactData.contentType}
+        language={artifactData.language}
+        onToggleFullscreen={handleToggleArtifactFullscreen}
+        isFullscreen={isArtifactFullscreen}
+      />
+    );
+  }
+
+  return renderChatContent();
 };
 
 export default ChatPage;
