@@ -18,6 +18,15 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Import BitNet service
+try:
+    from bitnet_service import bitnet_service
+    BITNET_AVAILABLE = True
+    logger.info("BitNet service imported successfully")
+except ImportError as e:
+    BITNET_AVAILABLE = False
+    logger.warning(f"BitNet service not available: {e}")
+
 app = Flask(__name__)
 CORS(app, origins=['http://localhost:3005'], supports_credentials=True, allow_headers=['Content-Type'])  # Allow React dev server
 
@@ -84,6 +93,42 @@ class ChatService:
             return {
                 'success': False,
                 'error': f'Unexpected error: {str(e)}'
+            }
+    
+    def call_bitnet(self, prompt, options=None):
+        """Call BitNet B1.58 model"""
+        try:
+            if not BITNET_AVAILABLE:
+                return {
+                    'success': False,
+                    'error': 'BitNet service not available'
+                }
+            
+            if options is None:
+                options = {
+                    'temperature': 0.7,
+                    'threads': 4,
+                    'timeout': 30,
+                    'conversational': True
+                }
+            
+            result = bitnet_service.generate_response(prompt, options)
+            
+            return {
+                'success': result.get('success', True),
+                'response': result.get('response', ''),
+                'model_info': result.get('model', 'BitNet B1.58 2B'),
+                'inference_time': result.get('inference_time', 0),
+                'tokens_per_second': result.get('tokens_per_second', 0),
+                'mock': result.get('mock', False),
+                'error': result.get('error')
+            }
+            
+        except Exception as e:
+            logger.error(f"BitNet call error: {e}")
+            return {
+                'success': False,
+                'error': f'BitNet error: {str(e)}'
             }
     
     def process_file(self, file_data, filename):
@@ -203,33 +248,52 @@ def ollama_health():
 
 @app.route('/api/models', methods=['GET'])
 def get_available_models():
-    """Get list of available models from Ollama"""
+    """Get list of available models from Ollama and BitNet"""
     try:
-        response = requests.get(f'{OLLAMA_URL}/api/tags', timeout=10)
-        if response.status_code == 200:
-            data = response.json()
-            models = []
-            
-            # Map Ollama model names to friendly names
-            friendly_names = {
-                'gemma:2b': 'Gemma 2B',
-                'gpt-oss:20b': 'GPT-OSS 20B',
-                'qwen2.5-coder:1.5b': 'Qwen2.5 Coder 1.5B'
-            }
-            
-            for model in data.get('models', []):
-                model_name = model.get('name', '')
-                friendly_name = friendly_names.get(model_name, model_name)
-                models.append({
-                    'name': model_name,
-                    'friendly_name': friendly_name,
-                    'size': model.get('size', 0),
-                    'modified_at': model.get('modified_at', '')
-                })
-            
-            return jsonify({'models': models})
-        else:
-            return jsonify({'error': 'Failed to fetch models from Ollama'}), 503
+        models = []
+        
+        # Add BitNet model first
+        if BITNET_AVAILABLE:
+            bitnet_info = bitnet_service.get_model_info()
+            models.append({
+                'name': bitnet_info['name'],
+                'friendly_name': bitnet_info['friendly_name'],
+                'size': int(bitnet_info['size'] * 1024 * 1024 * 1024),  # Convert GB to bytes
+                'modified_at': '',
+                'type': 'bitnet',
+                'description': bitnet_info['description'],
+                'available': bitnet_info['available']
+            })
+        
+        # Get Ollama models
+        try:
+            response = requests.get(f'{OLLAMA_URL}/api/tags', timeout=10)
+            if response.status_code == 200:
+                data = response.json()
+                
+                # Map Ollama model names to friendly names
+                friendly_names = {
+                    'gemma:2b': 'Gemma 2B',
+                    'gpt-oss:20b': 'GPT-OSS 20B',
+                    'qwen2.5-coder:1.5b': 'Qwen2.5 Coder 1.5B'
+                }
+                
+                for model in data.get('models', []):
+                    model_name = model.get('name', '')
+                    friendly_name = friendly_names.get(model_name, model_name)
+                    models.append({
+                        'name': model_name,
+                        'friendly_name': friendly_name,
+                        'size': model.get('size', 0),
+                        'modified_at': model.get('modified_at', ''),
+                        'type': 'ollama',
+                        'available': True
+                    })
+        except Exception as ollama_error:
+            logger.warning(f"Failed to fetch Ollama models: {ollama_error}")
+        
+        return jsonify({'models': models})
+        
     except Exception as e:
         logger.error(f"Models endpoint error: {e}")
         return jsonify({'error': f'Models error: {str(e)}'}), 500
@@ -258,15 +322,16 @@ def chat():
         use_rag = data.get('use_rag', True)
         model = data.get('model', 'gemma:2b')
         
-        # Map frontend model names to Ollama model names
+        # Map frontend model names to backend models
         model_mapping = {
             'Gemma 2B': 'gemma:2b',
             'GPT-OSS 20B': 'gpt-oss:20b',
-            'Qwen2.5 Coder 1.5B': 'qwen2.5-coder:1.5b'
+            'Qwen2.5 Coder 1.5B': 'qwen2.5-coder:1.5b',
+            'BitNet B1.58 2B': 'bitnet-b1.58:2b'
         }
-        ollama_model = model_mapping.get(model, model)
+        backend_model = model_mapping.get(model, model)
         
-        logger.info(f"Message: '{message}', Files count: {len(files)}, Use RAG: {use_rag}, Model: {model} -> {ollama_model}")
+        logger.info(f"Message: '{message}', Files count: {len(files)}, Use RAG: {use_rag}, Model: {model} -> {backend_model}")
         
         if not message and not files:
             logger.error("Neither message nor files provided")
@@ -312,12 +377,23 @@ def chat():
                     files_info += f"  内容: {file_info['content'][:200]}...\n"
             enhanced_prompt += files_info
         
-        # Call Ollama API
-        result = chat_service.call_ollama(
-            prompt=enhanced_prompt,
-            model=ollama_model,
-            images=images if images else None
-        )
+        # Route to appropriate model service
+        if backend_model == 'bitnet-b1.58:2b':
+            # Use BitNet service
+            options = {
+                'temperature': 0.7,
+                'threads': 4,
+                'timeout': 60,
+                'conversational': True
+            }
+            result = chat_service.call_bitnet(enhanced_prompt, options)
+        else:
+            # Use Ollama service
+            result = chat_service.call_ollama(
+                prompt=enhanced_prompt,
+                model=backend_model,
+                images=images if images else None
+            )
         
         if result['success']:
             return jsonify({
