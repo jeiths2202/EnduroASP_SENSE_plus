@@ -14,6 +14,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import mimetypes
 import logging
+import unicodedata
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -37,6 +38,24 @@ except ImportError as e:
     RAG_AVAILABLE = False
     logger.warning(f"RAG service not available: {e}")
 
+# Import Smart Search Service
+try:
+    from smart_search_service import get_smart_search_service
+    SMART_SEARCH_AVAILABLE = True
+    logger.info("Smart Search service imported successfully")
+except ImportError as e:
+    SMART_SEARCH_AVAILABLE = False
+    logger.warning(f"Smart Search service not available: {e}")
+
+# Import SearXNG Smart Search Service
+try:
+    from smart_search_service_searxng import get_smart_search_service as get_searxng_service
+    SEARXNG_AVAILABLE = True
+    logger.info("SearXNG Smart Search service imported successfully")
+except ImportError as e:
+    SEARXNG_AVAILABLE = False
+    logger.warning(f"SearXNG Smart Search service not available: {e}")
+
 app = Flask(__name__)
 CORS(app, origins=['http://localhost:3005'], supports_credentials=True, allow_headers=['Content-Type'])  # Allow React dev server
 
@@ -48,6 +67,51 @@ UPLOAD_DIR = os.path.join(RAG_DIR, 'uploads')
 # Create directories if they don't exist
 os.makedirs(RAG_DIR, exist_ok=True)
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+def validate_utf8_text(text: str) -> dict:
+    """Validate and normalize UTF-8 text, especially for Korean characters"""
+    try:
+        if not text:
+            return {"valid": True, "normalized": text, "issues": []}
+        
+        issues = []
+        
+        # Check for Korean characters and ensure proper encoding
+        korean_chars = [c for c in text if '\uAC00' <= c <= '\uD7AF']
+        if korean_chars:
+            logger.info(f"Found {len(korean_chars)} Korean characters in text")
+        
+        # Normalize unicode to NFC form (canonical composition)
+        normalized_text = unicodedata.normalize('NFC', text)
+        
+        # Check for any replacement characters that indicate encoding issues
+        if '\ufffd' in normalized_text:
+            issues.append("Found Unicode replacement characters - possible encoding corruption")
+        
+        # Validate that the text can be properly encoded to UTF-8 and back
+        try:
+            utf8_bytes = normalized_text.encode('utf-8')
+            decoded_back = utf8_bytes.decode('utf-8')
+            if decoded_back != normalized_text:
+                issues.append("UTF-8 round-trip encoding failed")
+        except UnicodeError as e:
+            issues.append(f"UTF-8 encoding validation failed: {e}")
+        
+        return {
+            "valid": len(issues) == 0,
+            "normalized": normalized_text,
+            "issues": issues,
+            "korean_char_count": len(korean_chars)
+        }
+        
+    except Exception as e:
+        logger.error(f"UTF-8 validation error: {e}")
+        return {
+            "valid": False,
+            "normalized": text,
+            "issues": [f"Validation exception: {e}"],
+            "korean_char_count": 0
+        }
 
 class ChatService:
     def __init__(self):
@@ -204,12 +268,13 @@ class ChatService:
                 logger.warning("RAG service not available, falling back to simple text search")
                 return self._simple_text_search(query)
             
-            # Use RAG service for vector search
+            # Use RAG service for vector search with enhanced parameters
             rag_service = get_rag_service()
             search_results = rag_service.search_documents(
                 query=query,
                 n_results=5,
-                min_score=0.1
+                min_score=0.1,
+                sort_by='similarity'
             )
             
             # Convert RAG results to expected format
@@ -351,9 +416,20 @@ def chat():
         logger.info(f"Request method: {request.method}")
         logger.info(f"Request headers: {dict(request.headers)}")
         logger.info(f"Request content type: {request.content_type}")
-        logger.info(f"Raw request data: {request.get_data()}")
         
-        data = request.get_json()
+        # Ensure proper UTF-8 decoding for Korean text
+        raw_data = request.get_data()
+        try:
+            # Log raw data length instead of full content to avoid encoding issues in logs
+            logger.info(f"Raw request data length: {len(raw_data)} bytes")
+            if raw_data:
+                decoded_str = raw_data.decode('utf-8')
+                logger.info(f"Successfully decoded UTF-8 data: {decoded_str[:100]}..." if len(decoded_str) > 100 else f"Decoded data: {decoded_str}")
+        except UnicodeDecodeError as e:
+            logger.warning(f"UTF-8 decode error: {e}, trying with error handling")
+        
+        # Use force=True and ensure UTF-8 handling
+        data = request.get_json(force=True, silent=False)
         
         if not data:
             logger.error("No data provided in request")
@@ -365,14 +441,30 @@ def chat():
         message = data.get('message', '').strip()
         files = data.get('files', [])
         use_rag = data.get('use_rag', True)
+        use_smart_search = data.get('use_smart_search', False)  # New smart search option
         model = data.get('model', 'gemma:2b')
+        tavily_api_key = data.get('tavily_api_key')  # Optional Tavily API key
+        
+        # Validate and normalize UTF-8 encoding for the message
+        if message:
+            utf8_validation = validate_utf8_text(message)
+            if not utf8_validation['valid']:
+                logger.warning(f"UTF-8 validation issues: {utf8_validation['issues']}")
+            else:
+                logger.info(f"UTF-8 validation passed, Korean chars: {utf8_validation['korean_char_count']}")
+            
+            # Use normalized text to ensure proper encoding
+            message = utf8_validation['normalized']
         
         # Map frontend model names to backend models
         model_mapping = {
             'Gemma 2B': 'gemma:2b',
+            'Gemma3 270M': 'gemma3:270m',
+            'gemma3:270m': 'gemma3:270m',
             'GPT-OSS 20B': 'gpt-oss:20b',
             'Qwen2.5 Coder 1.5B': 'qwen2.5-coder:1.5b',
-            'BitNet B1.58 2B': 'bitnet-b1.58:2b'
+            'BitNet B1.58 2B': 'bitnet-b1.58:2b',
+            'bitnet_b1_58_2b': 'bitnet-b1.58:2b'
         }
         backend_model = model_mapping.get(model, model)
         
@@ -398,10 +490,57 @@ def chat():
                 if processed['type'] == 'image':
                     images.append(processed['base64'])
         
-        # Build context from RAG documents
+        # Build context from RAG documents or Smart Search
         rag_context = ""
         rag_results = []
-        if use_rag and message:
+        search_info = {}
+        
+        if use_smart_search and message and SMART_SEARCH_AVAILABLE:
+            # Use Smart Search (LangChain + Tavily)
+            logger.info("Using Smart Search for context")
+            try:
+                smart_search_service = get_smart_search_service(tavily_api_key)
+                smart_result = smart_search_service.smart_search(message, max_results=5)
+                
+                search_info = {
+                    'type': 'smart_search',
+                    'route_used': smart_result['route_used'],
+                    'search_time': smart_result['search_time'],
+                    'total_results': smart_result['total_results']
+                }
+                
+                if smart_result['results']:
+                    rag_context = f"\n\n=== Related Information (via {smart_result['route_used']}) ===\n"
+                    for i, result in enumerate(smart_result['results'][:3], 1):
+                        source_type = result.source_type
+                        score_info = f" (Score: {result.score:.3f}, Source: {source_type})"
+                        rag_context += f"\n[Info {i}] {result.source}{score_info}\n"
+                        rag_context += f"Content: {result.content[:300]}{'...' if len(result.content) > 300 else ''}\n"
+                    
+                    rag_context += "\n=== Response Instructions ===\n"
+                    rag_context += "Based on the above information, provide an accurate and detailed response. If information is not available in the sources, clearly state 'Not mentioned in available sources'.\n"
+                    
+                    # Convert to standard rag_results format for compatibility
+                    rag_results = []
+                    for result in smart_result['results']:
+                        rag_results.append({
+                            'content': result.content,
+                            'source': result.source,
+                            'similarity': result.score,
+                            'source_type': result.source_type,
+                            'metadata': result.metadata
+                        })
+                        
+            except Exception as e:
+                logger.error(f"Smart search error: {e}")
+                # Fallback to regular RAG
+                use_rag = True
+                use_smart_search = False
+                
+        if use_rag and message and not use_smart_search:
+            # Use traditional RAG
+            logger.info("Using traditional RAG for context")
+            search_info = {'type': 'traditional_rag'}
             rag_results = chat_service.search_rag_documents(message)
             if rag_results:
                 # Build more structured RAG context with better formatting
@@ -430,14 +569,24 @@ def chat():
         
         # Route to appropriate model service
         if backend_model == 'bitnet-b1.58:2b':
-            # Use BitNet service
+            # Use BitNet service with increased timeout for complex inference
             options = {
                 'temperature': 0.7,
                 'threads': 4,
-                'timeout': 60,
+                'timeout': 120,  # Increased from 60 to 120 seconds
                 'conversational': True
             }
+            logger.info(f"Calling BitNet with enhanced prompt length: {len(enhanced_prompt)} characters")
             result = chat_service.call_bitnet(enhanced_prompt, options)
+            
+            # Enhanced timeout error handling
+            if not result['success'] and 'timeout' in result.get('error', '').lower():
+                logger.error(f"BitNet inference timeout after {options['timeout']} seconds")
+                return jsonify({
+                    'error': f'BitNet 모델 추론이 시간 초과되었습니다 ({options["timeout"]}초). 더 짧은 질문을 시도하거나 잠시 후 다시 시도해주세요.',
+                    'error_code': 'BITNET_TIMEOUT',
+                    'timeout_duration': options['timeout']
+                }), 408
         else:
             # Use Ollama service
             result = chat_service.call_ollama(
@@ -447,14 +596,33 @@ def chat():
             )
         
         if result['success']:
-            return jsonify({
+            response_data = {
                 'response': result['response'],
                 'processed_files': processed_files,
-                'rag_results': rag_results if use_rag else [],
-                'context': result.get('context')
-            })
+                'rag_results': rag_results if (use_rag or use_smart_search) else [],
+                'context': result.get('context'),
+                'model_info': result.get('model_info'),
+                'inference_time': result.get('inference_time'),
+                'tokens_per_second': result.get('tokens_per_second')
+            }
+            
+            # Add Smart Search specific information
+            if use_smart_search and search_info:
+                response_data['search_info'] = search_info
+                
+            return jsonify(response_data)
         else:
-            return jsonify({'error': result['error']}), 500
+            error_msg = result['error']
+            # Check for specific timeout errors
+            if 'timeout' in error_msg.lower():
+                return jsonify({
+                    'error': error_msg,
+                    'error_code': 'INFERENCE_TIMEOUT',
+                    'timeout_duration': result.get('timeout_duration'),
+                    'suggestion': 'Please try a shorter prompt or wait and try again.'
+                }), 408
+            else:
+                return jsonify({'error': error_msg, 'error_code': 'INFERENCE_ERROR'}), 500
             
     except Exception as e:
         import traceback
@@ -589,7 +757,7 @@ def index_rag_documents():
 
 @app.route('/api/rag/search', methods=['POST'])
 def search_rag_documents():
-    """Search for relevant documents using RAG"""
+    """Search for relevant documents using RAG with advanced filtering"""
     if not RAG_AVAILABLE:
         return jsonify({'error': 'RAG service not available'}), 503
     
@@ -602,21 +770,33 @@ def search_rag_documents():
         query = data['query']
         n_results = data.get('n_results', 5)
         min_score = data.get('min_score', 0.0)
+        file_types = data.get('file_types')  # List of file extensions
+        date_range = data.get('date_range')  # {'start': timestamp, 'end': timestamp}
+        sort_by = data.get('sort_by', 'similarity')  # 'similarity', 'date', 'source', 'size'
         
         rag_service = get_rag_service()
         
-        # Search for relevant documents
+        # Search for relevant documents with filters
         results = rag_service.search_documents(
             query=query,
             n_results=n_results,
-            min_score=min_score
+            min_score=min_score,
+            file_types=file_types,
+            date_range=date_range,
+            sort_by=sort_by
         )
         
         return jsonify({
             'success': True,
             'query': query,
             'results': results,
-            'count': len(results)
+            'count': len(results),
+            'filters': {
+                'file_types': file_types,
+                'date_range': date_range,
+                'sort_by': sort_by,
+                'min_score': min_score
+            }
         })
         
     except Exception as e:
@@ -655,6 +835,44 @@ def rag_status():
             'error': f'Status error: {str(e)}'
         }), 500
 
+@app.route('/api/rag/preview', methods=['POST'])
+def preview_rag_document():
+    """Get document preview with highlighting"""
+    if not RAG_AVAILABLE:
+        return jsonify({'error': 'RAG service not available'}), 503
+    
+    try:
+        data = request.get_json()
+        
+        if not data or 'source_path' not in data:
+            return jsonify({'error': 'source_path is required'}), 400
+        
+        source_path = data['source_path']
+        highlight_terms = data.get('highlight_terms', [])
+        
+        rag_service = get_rag_service()
+        
+        # Get document preview
+        preview = rag_service.get_document_preview(
+            source_path=source_path,
+            highlight_terms=highlight_terms
+        )
+        
+        if 'error' in preview:
+            return jsonify({
+                'success': False,
+                'error': preview['error']
+            }), 404
+        
+        return jsonify({
+            'success': True,
+            'preview': preview
+        })
+        
+    except Exception as e:
+        logger.error(f"RAG preview error: {e}")
+        return jsonify({'error': f'Preview error: {str(e)}'}), 500
+
 @app.route('/api/rag/clear', methods=['POST'])
 def clear_rag_collection():
     """Clear all documents from RAG collection"""
@@ -681,6 +899,510 @@ def clear_rag_collection():
     except Exception as e:
         logger.error(f"RAG clear error: {e}")
         return jsonify({'error': f'Clear error: {str(e)}'}), 500
+
+@app.route('/api/rag/history', methods=['GET'])
+def get_search_history():
+    """Get search history"""
+    if not RAG_AVAILABLE:
+        return jsonify({'error': 'RAG service not available'}), 503
+    
+    try:
+        limit = request.args.get('limit', 20, type=int)
+        rag_service = get_rag_service()
+        
+        history = rag_service.get_search_history(limit=limit)
+        
+        return jsonify({
+            'success': True,
+            'history': history,
+            'count': len(history)
+        })
+        
+    except Exception as e:
+        logger.error(f"RAG history error: {e}")
+        return jsonify({'error': f'History error: {str(e)}'}), 500
+
+@app.route('/api/rag/history', methods=['DELETE'])
+def clear_search_history():
+    """Clear search history"""
+    if not RAG_AVAILABLE:
+        return jsonify({'error': 'RAG service not available'}), 503
+    
+    try:
+        rag_service = get_rag_service()
+        success = rag_service.clear_search_history()
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'Search history cleared successfully'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Failed to clear search history'
+            }), 500
+        
+    except Exception as e:
+        logger.error(f"RAG clear history error: {e}")
+        return jsonify({'error': f'Clear history error: {str(e)}'}), 500
+
+@app.route('/api/rag/favorites', methods=['GET'])
+def get_favorites():
+    """Get favorites"""
+    if not RAG_AVAILABLE:
+        return jsonify({'error': 'RAG service not available'}), 503
+    
+    try:
+        item_type = request.args.get('type')  # Optional filter by type
+        rag_service = get_rag_service()
+        
+        favorites = rag_service.get_favorites(item_type=item_type)
+        
+        return jsonify({
+            'success': True,
+            'favorites': favorites,
+            'count': len(favorites)
+        })
+        
+    except Exception as e:
+        logger.error(f"RAG favorites error: {e}")
+        return jsonify({'error': f'Favorites error: {str(e)}'}), 500
+
+@app.route('/api/rag/favorites', methods=['POST'])
+def add_to_favorites():
+    """Add item to favorites"""
+    if not RAG_AVAILABLE:
+        return jsonify({'error': 'RAG service not available'}), 503
+    
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'error': 'Item data is required'}), 400
+        
+        rag_service = get_rag_service()
+        success = rag_service.add_to_favorites(data)
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'Item added to favorites'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Item already in favorites'
+            })
+        
+    except Exception as e:
+        logger.error(f"RAG add favorites error: {e}")
+        return jsonify({'error': f'Add favorites error: {str(e)}'}), 500
+
+@app.route('/api/rag/favorites/<item_id>', methods=['DELETE'])
+def remove_from_favorites(item_id):
+    """Remove item from favorites"""
+    if not RAG_AVAILABLE:
+        return jsonify({'error': 'RAG service not available'}), 503
+    
+    try:
+        rag_service = get_rag_service()
+        success = rag_service.remove_from_favorites(item_id)
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'Item removed from favorites'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Item not found in favorites'
+            }), 404
+        
+    except Exception as e:
+        logger.error(f"RAG remove favorites error: {e}")
+        return jsonify({'error': f'Remove favorites error: {str(e)}'}), 500
+
+@app.route('/api/rag/monitoring', methods=['GET'])
+def get_monitoring_status():
+    """Get file monitoring status"""
+    if not RAG_AVAILABLE:
+        return jsonify({'error': 'RAG service not available'}), 503
+    
+    try:
+        rag_service = get_rag_service()
+        status = rag_service.get_monitoring_status()
+        
+        return jsonify({
+            'success': True,
+            'monitoring': status
+        })
+        
+    except Exception as e:
+        logger.error(f"RAG monitoring status error: {e}")
+        return jsonify({'error': f'Monitoring status error: {str(e)}'}), 500
+
+@app.route('/api/rag/monitoring/start', methods=['POST'])
+def start_file_monitoring():
+    """Start file monitoring"""
+    if not RAG_AVAILABLE:
+        return jsonify({'error': 'RAG service not available'}), 503
+    
+    try:
+        data = request.get_json() or {}
+        directories = data.get('directories', [])
+        
+        rag_service = get_rag_service()
+        
+        # Add directories if provided
+        if directories:
+            for directory in directories:
+                rag_service.add_watch_directory(directory)
+        
+        # Start monitoring
+        rag_service.start_file_monitoring()
+        
+        return jsonify({
+            'success': True,
+            'message': 'File monitoring started',
+            'status': rag_service.get_monitoring_status()
+        })
+        
+    except Exception as e:
+        logger.error(f"RAG start monitoring error: {e}")
+        return jsonify({'error': f'Start monitoring error: {str(e)}'}), 500
+
+@app.route('/api/rag/monitoring/stop', methods=['POST'])
+def stop_file_monitoring():
+    """Stop file monitoring"""
+    if not RAG_AVAILABLE:
+        return jsonify({'error': 'RAG service not available'}), 503
+    
+    try:
+        rag_service = get_rag_service()
+        rag_service.stop_file_monitoring()
+        
+        return jsonify({
+            'success': True,
+            'message': 'File monitoring stopped',
+            'status': rag_service.get_monitoring_status()
+        })
+        
+    except Exception as e:
+        logger.error(f"RAG stop monitoring error: {e}")
+        return jsonify({'error': f'Stop monitoring error: {str(e)}'}), 500
+
+@app.route('/api/rag/monitoring/directories', methods=['POST'])
+def add_watch_directory():
+    """Add directory to file monitoring"""
+    if not RAG_AVAILABLE:
+        return jsonify({'error': 'RAG service not available'}), 503
+    
+    try:
+        data = request.get_json()
+        
+        if not data or 'directory' not in data:
+            return jsonify({'error': 'directory path is required'}), 400
+        
+        directory = data['directory']
+        rag_service = get_rag_service()
+        
+        success = rag_service.add_watch_directory(directory)
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': f'Directory added to monitoring: {directory}',
+                'status': rag_service.get_monitoring_status()
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Failed to add directory (may not exist or already monitored)'
+            }), 400
+        
+    except Exception as e:
+        logger.error(f"RAG add watch directory error: {e}")
+        return jsonify({'error': f'Add watch directory error: {str(e)}'}), 500
+
+@app.route('/api/rag/monitoring/directories/<path:directory>', methods=['DELETE'])
+def remove_watch_directory(directory):
+    """Remove directory from file monitoring"""
+    if not RAG_AVAILABLE:
+        return jsonify({'error': 'RAG service not available'}), 503
+    
+    try:
+        rag_service = get_rag_service()
+        success = rag_service.remove_watch_directory(directory)
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': f'Directory removed from monitoring: {directory}',
+                'status': rag_service.get_monitoring_status()
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Directory not found in watch list'
+            }), 404
+        
+    except Exception as e:
+        logger.error(f"RAG remove watch directory error: {e}")
+        return jsonify({'error': f'Remove watch directory error: {str(e)}'}), 500
+
+@app.route('/api/rag/performance', methods=['GET'])
+def get_performance_stats():
+    """Get RAG performance statistics"""
+    if not RAG_AVAILABLE:
+        return jsonify({'error': 'RAG service not available'}), 503
+    
+    try:
+        rag_service = get_rag_service()
+        stats = rag_service.get_performance_stats()
+        
+        return jsonify({
+            'success': True,
+            'performance': stats
+        })
+        
+    except Exception as e:
+        logger.error(f"RAG performance stats error: {e}")
+        return jsonify({'error': f'Performance stats error: {str(e)}'}), 500
+
+@app.route('/api/rag/cache/clear', methods=['POST'])
+def clear_rag_cache():
+    """Clear RAG caches"""
+    if not RAG_AVAILABLE:
+        return jsonify({'error': 'RAG service not available'}), 503
+    
+    try:
+        rag_service = get_rag_service()
+        success = rag_service.clear_cache()
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'RAG caches cleared successfully'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Failed to clear caches'
+            }), 500
+        
+    except Exception as e:
+        logger.error(f"RAG clear cache error: {e}")
+        return jsonify({'error': f'Clear cache error: {str(e)}'}), 500
+
+# Smart Search API Endpoints
+@app.route('/api/smart-search', methods=['POST'])
+def smart_search():
+    """Intelligent search using LangChain + Tavily integration"""
+    if not SMART_SEARCH_AVAILABLE:
+        return jsonify({'error': 'Smart Search service not available'}), 503
+    
+    try:
+        data = request.get_json()
+        if not data or 'query' not in data:
+            return jsonify({'error': 'Query required'}), 400
+        
+        query = data['query']
+        max_results = data.get('max_results', 10)
+        tavily_api_key = data.get('tavily_api_key')  # Optional API key override
+        
+        logger.info(f"Smart search request: {query}")
+        
+        # Get smart search service
+        smart_search_service = get_smart_search_service(tavily_api_key)
+        
+        # Perform smart search
+        result = smart_search_service.smart_search(query, max_results)
+        
+        # Format response for API
+        formatted_results = []
+        for search_result in result['results']:
+            formatted_results.append({
+                'content': search_result.content,
+                'source': search_result.source,
+                'score': search_result.score,
+                'source_type': search_result.source_type,
+                'metadata': search_result.metadata
+            })
+        
+        return jsonify({
+            'success': True,
+            'query': result['query'],
+            'route_used': result['route_used'],
+            'results': formatted_results,
+            'total_results': result['total_results'],
+            'search_time': result['search_time'],
+            'timestamp': result['timestamp']
+        })
+        
+    except Exception as e:
+        logger.error(f"Smart search error: {e}")
+        return jsonify({
+            'success': False,
+            'error': f'Smart search error: {str(e)}'
+        }), 500
+
+@app.route('/api/smart-search/status', methods=['GET'])
+def smart_search_status():
+    """Get Smart Search service status and capabilities"""
+    if not SMART_SEARCH_AVAILABLE:
+        return jsonify({'error': 'Smart Search service not available'}), 503
+    
+    try:
+        smart_search_service = get_smart_search_service()
+        status = smart_search_service.get_service_status()
+        
+        return jsonify({
+            'success': True,
+            'status': status
+        })
+        
+    except Exception as e:
+        logger.error(f"Smart search status error: {e}")
+        return jsonify({
+            'success': False,
+            'error': f'Status error: {str(e)}'
+        }), 500
+
+@app.route('/api/smart-search/route', methods=['POST'])
+def smart_search_route():
+    """Test query routing without performing actual search"""
+    if not SMART_SEARCH_AVAILABLE:
+        return jsonify({'error': 'Smart Search service not available'}), 503
+    
+    try:
+        data = request.get_json()
+        if not data or 'query' not in data:
+            return jsonify({'error': 'Query required'}), 400
+        
+        query = data['query']
+        
+        smart_search_service = get_smart_search_service()
+        route = smart_search_service.route_query(query)
+        
+        # Get classifier analysis
+        classifier = smart_search_service.classifier
+        is_time_sensitive = classifier.is_time_sensitive(query)
+        local_score = classifier.has_local_relevance(query)
+        requires_current = classifier.requires_current_info(query)
+        
+        return jsonify({
+            'success': True,
+            'query': query,
+            'recommended_route': route,
+            'analysis': {
+                'is_time_sensitive': is_time_sensitive,
+                'local_relevance_score': local_score,
+                'requires_current_info': requires_current
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Smart search route error: {e}")
+        return jsonify({
+            'success': False,
+            'error': f'Route error: {str(e)}'
+        }), 500
+
+# SearXNG Smart Search API endpoints
+@app.route('/api/searxng-search', methods=['POST'])
+def searxng_smart_search():
+    """SearXNG-powered Smart Search with intelligent routing"""
+    if not SEARXNG_AVAILABLE:
+        return jsonify({'error': 'SearXNG Smart Search service not available'}), 503
+    
+    try:
+        data = request.get_json()
+        if not data or 'query' not in data:
+            return jsonify({'error': 'Query required'}), 400
+        
+        query = data['query']
+        max_results = data.get('max_results', 10)
+        searxng_url = data.get('searxng_url')  # Optional custom SearXNG URL
+        
+        # Get or create SearXNG service
+        if searxng_url:
+            searxng_service = get_searxng_service(searxng_url=searxng_url)
+        else:
+            searxng_service = get_searxng_service()
+        
+        # Perform smart search
+        start_time = time.time()
+        result = searxng_service.smart_search(query, max_results=max_results)
+        search_time = time.time() - start_time
+        
+        # Add timing info if not already present
+        if 'search_time' not in result:
+            result['search_time'] = search_time
+        
+        logger.info(f"SearXNG smart search completed: {query} -> {result['route_used']} ({result['total_results']} results)")
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        logger.error(f"SearXNG smart search error: {e}")
+        return jsonify({
+            'success': False,
+            'error': f'Search error: {str(e)}'
+        }), 500
+
+@app.route('/api/searxng-search/status', methods=['GET'])
+def searxng_search_status():
+    """Get SearXNG Smart Search service status"""
+    if not SEARXNG_AVAILABLE:
+        return jsonify({'error': 'SearXNG Smart Search service not available'}), 503
+    
+    try:
+        searxng_service = get_searxng_service()
+        status = searxng_service.get_status()
+        
+        return jsonify({
+            'success': True,
+            'status': status,
+            'service_type': 'searxng',
+            'timestamp': time.time()
+        })
+        
+    except Exception as e:
+        logger.error(f"SearXNG status error: {e}")
+        return jsonify({
+            'success': False,
+            'error': f'Status error: {str(e)}'
+        }), 500
+
+@app.route('/api/searxng-search/route', methods=['POST'])
+def searxng_search_route():
+    """Test SearXNG query routing without performing actual search"""
+    if not SEARXNG_AVAILABLE:
+        return jsonify({'error': 'SearXNG Smart Search service not available'}), 503
+    
+    try:
+        data = request.get_json()
+        if not data or 'query' not in data:
+            return jsonify({'error': 'Query required'}), 400
+        
+        query = data['query']
+        
+        searxng_service = get_searxng_service()
+        analysis = searxng_service.analyze_query(query)
+        
+        return jsonify({
+            'success': True,
+            **analysis
+        })
+        
+    except Exception as e:
+        logger.error(f"SearXNG route error: {e}")
+        return jsonify({
+            'success': False,
+            'error': f'Route error: {str(e)}'
+        }), 500
 
 if __name__ == '__main__':
     port = int(os.getenv('CHAT_API_PORT', 3006))
