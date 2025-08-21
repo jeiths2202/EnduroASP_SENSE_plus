@@ -195,6 +195,36 @@ echo -e "${YELLOW}[SKIP] System API Server - aspmgr_web.py not found, skipping.$
 SYSTEM_API_PID=""
 # fi
 
+# 7. Zabbix Monitoring System startup
+echo -e "\n${YELLOW}[MONITOR] Starting Zabbix monitoring system...${NC}"
+
+# Check if we're running as root for Zabbix services
+if [ "$EUID" -eq 0 ]; then
+    # Start PostgreSQL if not running
+    service postgresql start 2>/dev/null || echo -e "${YELLOW}[SKIP] PostgreSQL already running or start failed${NC}"
+    
+    # Start Zabbix services
+    service zabbix-server start 2>/dev/null && echo -e "${GREEN}[OK] Zabbix Server started${NC}" || echo -e "${RED}[NG] Zabbix Server start failed${NC}"
+    service zabbix-agent start 2>/dev/null && echo -e "${GREEN}[OK] Zabbix Agent started${NC}" || echo -e "${RED}[NG] Zabbix Agent start failed${NC}"
+    service nginx start 2>/dev/null && echo -e "${GREEN}[OK] Nginx started${NC}" || echo -e "${RED}[NG] Nginx start failed${NC}"
+    service php8.2-fpm start 2>/dev/null && echo -e "${GREEN}[OK] PHP-FPM started${NC}" || echo -e "${RED}[NG] PHP-FPM start failed${NC}"
+    
+    # Test Zabbix web interface
+    sleep 5
+    if curl -s http://localhost:3015 >/dev/null 2>&1; then
+        echo -e "${GREEN}[OK] Zabbix Web Interface - http://localhost:3015${NC}"
+    else
+        echo -e "${RED}[NG] Zabbix Web Interface not accessible${NC}"
+    fi
+else
+    echo -e "${YELLOW}[SKIP] Zabbix monitoring system - root privileges required${NC}"
+    echo -e "${YELLOW}       Run 'su - root' and execute individual service commands:${NC}"
+    echo -e "${YELLOW}       - service zabbix-server start${NC}"
+    echo -e "${YELLOW}       - service zabbix-agent start${NC}"
+    echo -e "${YELLOW}       - service nginx start${NC}"
+    echo -e "${YELLOW}       - service php8.2-fpm start${NC}"
+fi
+
 # Wait for service startup
 echo -e "\n${YELLOW}[WAIT] Waiting for service startup...${NC}"
 sleep 10
@@ -246,6 +276,7 @@ echo "   - OpenASP Refactor: http://localhost:3005"
 echo "   - ASP Manager: http://localhost:3007"
 echo "   - ASP Manager Backend: http://localhost:3008"
 echo "   - API Server: http://localhost:8000"
+echo "   - Zabbix Monitoring: http://localhost:3015 (Admin/zabbix)"
 echo ""
 echo "[LIST] Log files:"
 echo "   - Python Service: $APP_ROOT/logs/python-service.log"
@@ -255,6 +286,9 @@ echo "   - Manager: $APP_ROOT/logs/asp-manager.log"
 echo "   - Manager Backend: $APP_ROOT/logs/asp-manager-backend.log"
 echo "   - System API: $APP_ROOT/logs/system-api.log"
 echo "   - API Server: $APP_ROOT/logs/api-server.log"
+echo "   - Zabbix Server: /var/log/zabbix/zabbix_server.log"
+echo "   - Zabbix Agent: /var/log/zabbix/zabbix_agentd.log"
+echo "   - Nginx: /var/log/nginx/access.log, /var/log/nginx/error.log"
 echo ""
 echo "[STOP] Complete shutdown command:"
 echo "   $APP_ROOT/master-stop.sh"

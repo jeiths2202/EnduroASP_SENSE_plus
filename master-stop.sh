@@ -136,6 +136,29 @@ force_kill_by_port "3007" "ASP Manager"
 force_kill_by_port "3008" "ASP Manager Backend"
 force_kill_by_port "8000" "API Server"
 
+# Zabbix Monitoring System shutdown
+echo -e "\n${YELLOW}Shutting down Zabbix monitoring system...${NC}"
+
+# Check if we're running as root for Zabbix services
+if [ "$EUID" -eq 0 ]; then
+    service zabbix-server stop 2>/dev/null && echo -e "${GREEN}[OK] Zabbix Server stopped${NC}" || echo -e "${YELLOW}[SKIP] Zabbix Server stop failed or not running${NC}"
+    service zabbix-agent stop 2>/dev/null && echo -e "${GREEN}[OK] Zabbix Agent stopped${NC}" || echo -e "${YELLOW}[SKIP] Zabbix Agent stop failed or not running${NC}"
+    service nginx stop 2>/dev/null && echo -e "${GREEN}[OK] Nginx stopped${NC}" || echo -e "${YELLOW}[SKIP] Nginx stop failed or not running${NC}"
+    service php8.2-fpm stop 2>/dev/null && echo -e "${GREEN}[OK] PHP-FPM stopped${NC}" || echo -e "${YELLOW}[SKIP] PHP-FPM stop failed or not running${NC}"
+else
+    echo -e "${YELLOW}[SKIP] Zabbix monitoring system - root privileges required${NC}"
+    echo -e "${YELLOW}       Run 'su - root' and execute individual service commands:${NC}"
+    echo -e "${YELLOW}       - service zabbix-server stop${NC}"
+    echo -e "${YELLOW}       - service zabbix-agent stop${NC}"
+    echo -e "${YELLOW}       - service nginx stop${NC}"
+    echo -e "${YELLOW}       - service php8.2-fpm stop${NC}"
+fi
+
+# Force kill Zabbix related processes and ports
+force_kill_by_port "3015" "Zabbix Web Interface"
+force_kill_by_port "10051" "Zabbix Server"
+force_kill_by_port "10050" "Zabbix Agent"
+
 # Cleanup configuration files and old jobs
 echo -e "\n${YELLOW}Cleaning up configuration files and database...${NC}"
 cd /home/aspuser/app/server/system-cmds
@@ -152,7 +175,7 @@ sleep 3
 echo -e "\n${YELLOW}Final port status check...${NC}"
 all_clear=true
 
-for port in 3000 3003 3004 3005 3007 3008 8000; do
+for port in 3000 3003 3004 3005 3007 3008 8000 3015 10050 10051; do
     if lsof -i :$port > /dev/null 2>&1; then
         echo -e "${RED}[WARN] Port $port still in use${NC}"
         all_clear=false

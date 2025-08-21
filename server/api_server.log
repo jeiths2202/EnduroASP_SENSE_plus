@@ -907,3 +907,1999 @@ Terminal ID: webui (from environment)
 === Execution Completed (Return Code: 143) ===
 
 === End MAIN001 Execution ===
+
+=== MAIN001 Java Execution (2025-08-16 13:06:32) ===
+=== MAIN001 Java Execution Log (2025-08-16 13:05:38) ===
+Command: java -Dfile.encoding=UTF-8 -cp /home/aspuser/app/volume/DISK01/JAVA MAIN001
+Working directory: /home/aspuser/app/volume/DISK01/JAVA
+Input JSON: {"program": "MAIN001", "library": "JAVA", "volume": "DISK01", "user": "system"}
+=== Program Output ===
+*** MAIN001 - Employee Management Menu (Enhanced with Session Management) ***
+DSP File Handling with WebSocket Hub Integration
+SJIS encoding support for Korean text
+장기 개선 방안 적용: 모드 분리, 세션 관리, COBOL 시맨틱스
+
+[환경감지] 실행 환경 분석 중...
+[환경감지] 전달된 인수: []
+[환경감지] 옵션 파라미터 없음
+[환경감지] → WebUI Interactive 모드로 판단
+Terminal ID: webui (from environment)
+[세션관리] 세션 초기화 완료
+[세션관리] - 세션 ID: session_1755349538551_0.962628465192755
+[세션관리] - 터미널 ID: webui
+[MAIN001] 실행 모드: WebUI Interactive 모드 - 지속적 세션
+[MAIN001Interactive] WebUI Interactive 모드 - 지속적 세션 관리
+[MAIN001] OPEN I-O DISPFILE - Initializing DSP connection
+[MAIN001] SYMBOLIC DESTINATION 'DSP' - WebSocket Hub communication active
+[MAIN001] SELECTED FUNCTION IS EMP-FUNC - Ready for user input
+[MAIN001] MAIN-LOOP - Starting main processing loop
+[MAIN001] MAIN-LOOP iteration: 1
+[MAIN001] WRITE DISPFILE FROM DISP-RECORD - Sending display to webUI
+2025-08-16 13:05:39 [INFO] [HUB_CLIENT] Connecting to WebSocket Hub: http://localhost:8000
+2025-08-16 13:05:39 [DEBUG] Starting new HTTP connection (1): localhost:8000
+2025-08-16 13:05:39 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&t=1755349539.3229184 HTTP/1.1" 200 None
+2025-08-16 13:05:39 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 13:05:39 [DEBUG] Starting new HTTP connection (2): localhost:8000
+2025-08-16 13:05:39 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=4jvWgfNYmIu4xpowAAAO HTTP/1.1" 200 None
+2025-08-16 13:05:39 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=4jvWgfNYmIu4xpowAAAO&t=1755349539.3444898 HTTP/1.1" 200 None
+2025-08-16 13:05:39 [INFO] [HUB_CLIENT] Connected to WebSocket Hub: http://localhost:8000
+2025-08-16 13:05:39 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 13:05:39 [INFO] [HUB_CLIENT] Connection established, registering with hub...
+2025-08-16 13:05:39 [INFO] [HUB_CLIENT] Registration data sent to hub: hub_client_138935666922816
+2025-08-16 13:05:39 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 13:05:39 [INFO] [HUB_CLIENT] Sending SMED data to hub:
+2025-08-16 13:05:39 [INFO] [HUB_CLIENT] - Terminal: webui
+2025-08-16 13:05:39 [INFO] [HUB_CLIENT] - Map: MAIN001
+2025-08-16 13:05:39 [INFO] [HUB_CLIENT] - Fields: 7 fields
+2025-08-16 13:05:39 [INFO] [HUB_CLIENT] - Program: MAIN001
+2025-08-16 13:05:39 [INFO] [HUB_CLIENT] SMED data sent to WebSocket Hub successfully
+2025-08-16 13:05:39 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=4jvWgfNYmIu4xpowAAAO HTTP/1.1" 200 None
+2025-08-16 13:05:39 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=4jvWgfNYmIu4xpowAAAO&t=1755349539.3629403 HTTP/1.1" 200 None
+2025-08-16 13:05:39 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 13:05:39 [INFO] [HUB_CLIENT] Registration confirmed: {'success': True, 'client_id': 'hub_client_138935666922816', 'session_id': 'jUmAzqFv5kTAAFf_AAAP', 'message': 'Hub Client registered successfully', 'timestamp': '2025-08-16T13:05:39.376470'}
+2025-08-16 13:05:39 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 13:05:39 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=4jvWgfNYmIu4xpowAAAO HTTP/1.1" 200 None
+2025-08-16 13:05:39 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=4jvWgfNYmIu4xpowAAAO&t=1755349539.3825476 HTTP/1.1" 200 None
+2025-08-16 13:05:39 [INFO] [HUB_CLIENT] Hub confirmation received: {'success': True, 'terminal_id': 'webui', 'map_file': 'MAIN001', 'fields_populated': 7, 'hub_session': 'jUmAzqFv5kTAAFf_AAAP', 'timestamp': '2025-08-16T13:05:39.392207', 'message': 'SMED data delivered via WebSocket Hub'}
+2025-08-16 13:05:39 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 13:05:40 [INFO] [HUB_CLIENT] Disconnected from WebSocket Hub
+2025-08-16 13:05:40 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 13:05:40 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=4jvWgfNYmIu4xpowAAAO HTTP/1.1" 200 None
+2025-08-16 13:05:40 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=4jvWgfNYmIu4xpowAAAO&t=1755349539.3962386 HTTP/1.1" 200 None
+2025-08-16 13:05:40 [INFO] [HUB_CLIENT] Disconnected from WebSocket Hub
+[HUB_REGISTERED] Success: True
+[HUB_REGISTERED] Client ID: hub_client_138935666922816
+[HUB_REGISTERED] Message: Hub Client registered successfully
+[HUB_CONFIRM] Success: True
+[HUB_CONFIRM] Terminal: webui
+[HUB_CONFIRM] Map: MAIN001
+[HUB_CONFIRM] Fields: 7
+[SUCCESS] SMED data sent to WebSocket Hub
+[MAIN001] Display data sent to WebSocket Hub successfully
+[MAIN001] Menu displayed on terminal: webui
+[MAIN001] READ DISPFILE INTO DISP-RECORD - Waiting for user input
+[세션관리] 입력 버퍼 클리어 완료
+[세션관리] - 제거된 입력 수: 0
+[MAIN001] Interactive 모드: 이전 입력 버퍼 클리어 완료
+[MAIN001] 입력 버퍼가 클리어된 상태, 새로운 입력 대기
+[MAIN001] WebSocket timeout loaded from config: 86400 seconds
+[MAIN001] Waiting for WebSocket Hub input... (timeout: 86400 seconds)
+[MAIN001] Input file: /tmp/asp_input_webui.txt
+[MAIN001] Still waiting... (5/86400 seconds)
+[MAIN001] Still waiting... (10/86400 seconds)
+[MAIN001] WebSocket input received: 1
+[MAIN001] EMP-FUNC set to: '1'
+[MAIN001] EVALUATE EMP-FUNC - Processing user selection: '1'
+[MAIN001] WHEN '1' - Calling SUB001
+[MAIN001] CALL "SUB001" - Subprogram execution
+[MAIN001] CALL "SUB001" - Employee Information Display using ClassLoader
+[MAIN001] Current classpath: /home/aspuser/app/volume/DISK01/JAVA
+[MAIN001] Current working directory: /home/aspuser/app/volume/DISK01/JAVA
+[MAIN001] SUB001 class file exists at /home/aspuser/app/volume/DISK01/JAVA/com/openasp/sub/SUB001.class: true
+[MAIN001] SUB001 loaded using Class.forName()
+[MAIN001] SUB001 class loaded successfully from: file:/home/aspuser/app/volume/DISK01/JAVA/
+[MAIN001] SUB001 instance created
+[MAIN001] Calling SUB001.execute() method...
+============================================================
+*** SUB001 Enhanced - 사원 정보 조회 (개선된 버전) ***
+개선 사항:
+- 안전한 Function Key 처리 (F3 키 개선)
+- 프로그램 상태 완전 초기화
+- COBOL EXIT 시맨틱스 완전 구현
+============================================================
+[STATE_CHANGE] null -> Initializing
+[SUB001] Program context initialization completed
+[SUB001] - Terminal ID: webui
+[SUB001] - Initial state: Initializing
+[STATE_CHANGE] Initializing -> Running
+[SUB001] 메인 처리 시작
+[SUB001] INITIALIZE-PROGRAM - Opening files and initializing map
+[SUB001] OPEN INPUT EMP-FILE - /home/aspuser/app/volume/DISK01/TESTLIB/EMP.INFO
+[SUB001] EMP-FILE opened successfully, FILE-STATUS = 00
+[SUB001] OPEN I-O DISPFILE - Initializing WebSocket Hub connection
+[SUB001] SYMBOLIC DESTINATION 'DSP' - SUB001 map display
+[SUB001] WebSocket Hub communication active for terminal: webui
+[SUB001] Loading SMED template from /home/aspuser/app/volume/DISK01/SMED/SUB001
+[SUB001] Template:   ITEM TEXT_1 TYPE=T POS=(1,30) PROMPT="社員情報照会" COLOR=#00ff00
+[SUB001] Template:   ITEM TEXT_2 TYPE=T POS=(4,5) PROMPT="社員番号" COLOR=#00ff00
+[SUB001] Template:   ITEM TEXT_3 TYPE=T POS=(4,15) PROMPT="社員名" COLOR=#00ff00
+[SUB001] Template:   ITEM TEXT_4 TYPE=T POS=(4,40) PROMPT="e-mail" COLOR=#00ff00
+[SUB001] Template:   ITEM DATA_1 TYPE=T POS=(6,5) PROMPT="" COLOR=#00ff00
+[SUB001] Template:   ITEM DATA_2 TYPE=T POS=(6,15) PROMPT="" COLOR=#00ff00
+[SUB001] Template:   ITEM DATA_3 TYPE=T POS=(6,40) PROMPT="" COLOR=#00ff00
+[SUB001] Template:   ITEM DATA_4 TYPE=T POS=(7,5) PROMPT="" COLOR=#00ff00
+[SUB001] Template:   ITEM DATA_5 TYPE=T POS=(7,15) PROMPT="" COLOR=#00ff00
+[SUB001] Template:   ITEM DATA_6 TYPE=T POS=(7,40) PROMPT="" COLOR=#00ff00
+[SUB001] Template:   ITEM DATA_7 TYPE=T POS=(8,5) PROMPT="" COLOR=#00ff00
+[SUB001] Template:   ITEM DATA_8 TYPE=T POS=(8,15) PROMPT="" COLOR=#00ff00
+[SUB001] Template:   ITEM DATA_9 TYPE=T POS=(8,40) PROMPT="" COLOR=#00ff00
+[SUB001] Template:   ITEM DATA_10 TYPE=T POS=(9,5) PROMPT="" COLOR=#00ff00
+[SUB001] Template:   ITEM DATA_11 TYPE=T POS=(9,15) PROMPT="" COLOR=#00ff00
+[SUB001] Template:   ITEM DATA_12 TYPE=T POS=(9,40) PROMPT="" COLOR=#00ff00
+[SUB001] Template:   ITEM DATA_13 TYPE=T POS=(10,5) PROMPT="" COLOR=#00ff00
+[SUB001] Template:   ITEM DATA_14 TYPE=T POS=(10,15) PROMPT="" COLOR=#00ff00
+[SUB001] Template:   ITEM DATA_15 TYPE=T POS=(10,40) PROMPT="" COLOR=#00ff00
+[SUB001] Template:   ITEM TEXT_5 TYPE=T POS=(23,5) PROMPT="F1（初期画面）　F3 (終了)  F7 （次画面） F8 (前画面)" COLOR=#00ff00
+[SUB001] SMED template loaded: 20 items
+[SUB001] SMED map template initialized:
+[SUB001] Template items loaded: 20
+[SUB001] TEXT_1: 社員情報照会
+[SUB001] TEXT_2: 社員番号
+[SUB001] TEXT_3: 社員名
+[SUB001] TEXT_4: e-mail
+[SUB001] TEXT_5: F1（初期画面）　F3 (終了)  F7 （次画面） F8 (前画面)
+[SUB001] MAIN-DISPLAY-LOOP - Starting interactive display
+[SUB001] Reading EMP.INFO file - 80-byte fixed records
+[SUB001] File size: 800 bytes
+[SUB001] Expected records: 10
+[SUB001] Record 1: ID=00001 Name=田中太郎 Email=tanaka@company.co.jp
+[SUB001] Record 2: ID=00002 Name=佐藤花子 Email=sato@company.co.jp
+[SUB001] Record 3: ID=00003 Name=鈴木一郎 Email=suzuki@company.co.jp
+[SUB001] Record 4: ID=00004 Name=高橋美咲 Email=takahashi@company.co
+[SUB001] Record 5: ID=00005 Name=渡辺健太 Email=watanabe@company.co.
+[SUB001] Record 6: ID=00006 Name=伊藤由美 Email=ito@company.co.jp
+[SUB001] Record 7: ID=00007 Name=山田正雄 Email=yamada@company.co.jp
+[SUB001] Record 8: ID=00008 Name=中村良子 Email=nakamura@company.co.
+[SUB001] Record 9: ID=00009 Name=小林直樹 Email=kobayashi@company.co
+[SUB001] Record 10: ID=00010 Name=加藤真理 Email=kato@company.co.jp
+[SUB001] Total employee records loaded: 10
+[SUB001] Record statistics set - Total 10 records, 2 pages
+[SUB001] Interactive loop iteration: 1
+[SUB001] DISPLAY-CURRENT-PAGE - Page 1 of 2
+[SUB001] Creating dynamic SMED map for page 1
+[SUB001] Page employees: 5
+[SUB001] Static:   ITEM TEXT_1 TYPE=T POS=(1,30) PROMPT="社員情報照会" COLOR=#00ff00
+[SUB001] Static:   ITEM TEXT_2 TYPE=T POS=(4,5) PROMPT="社員番号" COLOR=#00ff00
+[SUB001] Static:   ITEM TEXT_3 TYPE=T POS=(4,15) PROMPT="社員名" COLOR=#00ff00
+[SUB001] Static:   ITEM TEXT_4 TYPE=T POS=(4,40) PROMPT="e-mail" COLOR=#00ff00
+[SUB001] Dynamic:   ITEM DATA_1 TYPE=T POS=(6,5) PROMPT="00001" COLOR=#00ff00
+[SUB001] Dynamic:   ITEM DATA_2 TYPE=T POS=(6,15) PROMPT="田中太郎" COLOR=#00ff00
+[SUB001] Dynamic:   ITEM DATA_3 TYPE=T POS=(6,40) PROMPT="tanaka@company.co.jp" COLOR=#00ff00
+[SUB001] Dynamic:   ITEM DATA_4 TYPE=T POS=(7,5) PROMPT="00002" COLOR=#00ff00
+[SUB001] Dynamic:   ITEM DATA_5 TYPE=T POS=(7,15) PROMPT="佐藤花子" COLOR=#00ff00
+[SUB001] Dynamic:   ITEM DATA_6 TYPE=T POS=(7,40) PROMPT="sato@company.co.jp" COLOR=#00ff00
+[SUB001] Dynamic:   ITEM DATA_7 TYPE=T POS=(8,5) PROMPT="00003" COLOR=#00ff00
+[SUB001] Dynamic:   ITEM DATA_8 TYPE=T POS=(8,15) PROMPT="鈴木一郎" COLOR=#00ff00
+[SUB001] Dynamic:   ITEM DATA_9 TYPE=T POS=(8,40) PROMPT="suzuki@company.co.jp" COLOR=#00ff00
+[SUB001] Dynamic:   ITEM DATA_10 TYPE=T POS=(9,5) PROMPT="00004" COLOR=#00ff00
+[SUB001] Dynamic:   ITEM DATA_11 TYPE=T POS=(9,15) PROMPT="高橋美咲" COLOR=#00ff00
+[SUB001] Dynamic:   ITEM DATA_12 TYPE=T POS=(9,40) PROMPT="takahashi@company.co" COLOR=#00ff00
+[SUB001] Dynamic:   ITEM DATA_13 TYPE=T POS=(10,5) PROMPT="00005" COLOR=#00ff00
+[SUB001] Dynamic:   ITEM DATA_14 TYPE=T POS=(10,15) PROMPT="渡辺健太" COLOR=#00ff00
+[SUB001] Dynamic:   ITEM DATA_15 TYPE=T POS=(10,40) PROMPT="watanabe@company.co." COLOR=#00ff00
+[SUB001] Static:   ITEM TEXT_5 TYPE=T POS=(23,5) PROMPT="F1（初期画面）　F3 (終了)  F7 （次画面） F8 (前画面)" COLOR=#00ff00
+[SUB001] Dynamic SMED map created: 20 items
+[SUB001] WRITE DISPFILE FROM DISP-RECORD - Sending SUB001 dynamic SMED map to WebSocket Hub
+[SUB001] DEBUG - JSON data being sent:
+{
+  "map_name": "SUB001",
+  "program_name": "SUB001",
+  "source_type": "dynamic_dataset",
+  "encoding": "SJIS",
+  "rows": 24,
+  "background_color": "BLACK",
+  "page_info": {
+    "records_per_page": "5",
+    "current": "1",
+    "total": "2",
+    "total_records": "10"
+  },
+  "action": "display_map",
+  "map_file": "SUB001",
+  "fields": {
+    "DATA_9": "suzuki@company.co.jp",
+    "DATA_5": "佐藤花子",
+    "DATA_11": "高橋美咲",
+    "DATA_6": "sato@company.co.jp",
+    "DATA_10": "00004",
+    "DATA_7": "00003",
+    "DATA_13": "00005",
+    "DATA_8": "鈴木一郎",
+    "DATA_12": "takahashi@company.co",
+    "DATA_15": "watanabe@company.co.",
+    "DATA_14": "渡辺健太",
+    "TEXT_2": "社員番号",
+    "TEXT_3": "社員名",
+    "TEXT_4": "e-mail",
+    "TEXT_5": "F1（初期画面）　F3 (終了)  F7 （次画面） F8 (前画面)",
+    "TEXT_1": "社員情報照会",
+    "DATA_1": "00001",
+    "DATA_2": "田中太郎",
+    "DATA_3": "tanaka@company.co.jp",
+    "DATA_4": "00002"
+  },
+  "cols": 80,
+  "foreground_color": "GREEN",
+  "terminal_id": "webui"
+}
+2025-08-16 13:05:53 [INFO] [HUB_CLIENT] Connecting to WebSocket Hub: http://localhost:8000
+2025-08-16 13:05:53 [DEBUG] Starting new HTTP connection (1): localhost:8000
+2025-08-16 13:05:53 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&t=1755349553.0511715 HTTP/1.1" 200 None
+2025-08-16 13:05:53 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 13:05:53 [DEBUG] Starting new HTTP connection (2): localhost:8000
+2025-08-16 13:05:53 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=DMBPxz6MP6SNBLhfAAAQ HTTP/1.1" 200 None
+2025-08-16 13:05:53 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=DMBPxz6MP6SNBLhfAAAQ&t=1755349553.0688176 HTTP/1.1" 200 None
+2025-08-16 13:05:53 [INFO] [HUB_CLIENT] Connected to WebSocket Hub: http://localhost:8000
+2025-08-16 13:05:53 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 13:05:53 [INFO] [HUB_CLIENT] Connection established, registering with hub...
+2025-08-16 13:05:53 [INFO] [HUB_CLIENT] Registration data sent to hub: hub_client_126093781030208
+2025-08-16 13:05:53 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 13:05:53 [INFO] [HUB_CLIENT] Sending SMED data to hub:
+2025-08-16 13:05:53 [INFO] [HUB_CLIENT] - Terminal: webui
+2025-08-16 13:05:53 [INFO] [HUB_CLIENT] - Map: SUB001
+2025-08-16 13:05:53 [INFO] [HUB_CLIENT] - Fields: 20 fields
+2025-08-16 13:05:53 [INFO] [HUB_CLIENT] - Program: SUB001
+2025-08-16 13:05:53 [INFO] [HUB_CLIENT] SMED data sent to WebSocket Hub successfully
+2025-08-16 13:05:53 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=DMBPxz6MP6SNBLhfAAAQ HTTP/1.1" 200 None
+2025-08-16 13:05:53 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=DMBPxz6MP6SNBLhfAAAQ&t=1755349553.082732 HTTP/1.1" 200 None
+2025-08-16 13:05:53 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 13:05:53 [INFO] [HUB_CLIENT] Registration confirmed: {'success': True, 'client_id': 'hub_client_126093781030208', 'session_id': 'CFx114nlchvf6mD4AAAR', 'message': 'Hub Client registered successfully', 'timestamp': '2025-08-16T13:05:53.095808'}
+2025-08-16 13:05:53 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 13:05:53 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=DMBPxz6MP6SNBLhfAAAQ HTTP/1.1" 200 None
+2025-08-16 13:05:53 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=DMBPxz6MP6SNBLhfAAAQ&t=1755349553.1031897 HTTP/1.1" 200 None
+2025-08-16 13:05:53 [INFO] [HUB_CLIENT] Hub confirmation received: {'success': True, 'terminal_id': 'webui', 'map_file': 'SUB001', 'fields_populated': 20, 'hub_session': 'CFx114nlchvf6mD4AAAR', 'timestamp': '2025-08-16T13:05:53.113474', 'message': 'SMED data delivered via WebSocket Hub'}
+2025-08-16 13:05:53 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 13:05:54 [INFO] [HUB_CLIENT] Disconnected from WebSocket Hub
+2025-08-16 13:05:54 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 13:05:54 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=DMBPxz6MP6SNBLhfAAAQ HTTP/1.1" 200 None
+2025-08-16 13:05:54 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=DMBPxz6MP6SNBLhfAAAQ&t=1755349553.1227567 HTTP/1.1" 200 None
+2025-08-16 13:05:54 [INFO] [HUB_CLIENT] Disconnected from WebSocket Hub
+[HUB_REGISTERED] Success: True
+[HUB_REGISTERED] Client ID: hub_client_126093781030208
+[HUB_REGISTERED] Message: Hub Client registered successfully
+[HUB_CONFIRM] Success: True
+[HUB_CONFIRM] Terminal: webui
+[HUB_CONFIRM] Map: SUB001
+[HUB_CONFIRM] Fields: 20
+[SUCCESS] SMED data sent to WebSocket Hub
+[SUB001] SUB001 dynamic SMED map sent to WebSocket Hub successfully
+[SUB001] Employee data displayed on terminal: webui
+[SUB001] Dynamic SMED map displayed for page 1/2
+[SUB001] PROCESS-USER-INPUT - Page 1/2 - Waiting for function key (F1/F3/F7/F8)
+[SUB001] Waiting for WebSocket input... (timeout: 86400 seconds)
+[SUB001] WebSocket input received: F3
+[SUB001] User input received: F3
+[KEY_HANDLER] Processing Function Key: f3
+[STATE_CHANGE] Running -> Processing Input
+[F3키] 프로그램 종료 처리 - COBOL EXIT 시맨틱스
+[STATE_CHANGE] Processing Input -> Exiting
+[SUB001] Program exit requested
+[F3키] SUB001 종료, MAIN001로 제어권 반환
+[F3키] 완료 메시지 전송하지 않음 - MAIN001이 메뉴 처리
+[SUB001] Loop state - shouldContinue: false, currentPage: 1/2
+[SUB001] Interactive loop terminated, iterations: 1
+[SUB001] 메인 처리 완료
+[SUB001] 프로그램 종료 처리 시작
+[SUB001] TERMINATE-PROGRAM - Closing files
+[SUB001] CLOSE EMP-FILE - Employee file closed
+[SUB001] CLOSE DISPFILE - WebSocket Hub connection closed
+[SUB001] All files closed successfully
+[STATE_CHANGE] Exiting -> Completed
+[SUB001] Program context cleanup completed
+[SUB001] 프로그램 종료 처리 완료
+[SUB001] MAIN001로 제어권 반환
+[MAIN001] SUB001.execute() completed successfully
+[MAIN001] Control returned to MAIN001 from SUB001
+[MAIN001] SUB001 call completed, returning to main menu
+[MAIN001] Subprogram SUB001 completed, returning to main menu
+[MAIN001] SUB001 completed, returning to main menu
+[MAIN001] Loop state - wsEndFlag: 'N', empFunc: ''
+[MAIN001] MAIN-LOOP iteration: 2
+[MAIN001] WRITE DISPFILE FROM DISP-RECORD - Sending display to webUI
+2025-08-16 13:06:29 [INFO] [HUB_CLIENT] Connecting to WebSocket Hub: http://localhost:8000
+2025-08-16 13:06:29 [DEBUG] Starting new HTTP connection (1): localhost:8000
+2025-08-16 13:06:29 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&t=1755349589.209515 HTTP/1.1" 200 None
+2025-08-16 13:06:29 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 13:06:29 [DEBUG] Starting new HTTP connection (2): localhost:8000
+2025-08-16 13:06:29 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=YU8AYDpOp7sflM2TAAAS HTTP/1.1" 200 None
+2025-08-16 13:06:29 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=YU8AYDpOp7sflM2TAAAS&t=1755349589.2228646 HTTP/1.1" 200 None
+2025-08-16 13:06:29 [INFO] [HUB_CLIENT] Connected to WebSocket Hub: http://localhost:8000
+2025-08-16 13:06:29 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 13:06:29 [INFO] [HUB_CLIENT] Connection established, registering with hub...
+2025-08-16 13:06:29 [INFO] [HUB_CLIENT] Registration data sent to hub: hub_client_133716031526208
+2025-08-16 13:06:29 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 13:06:29 [INFO] [HUB_CLIENT] Sending SMED data to hub:
+2025-08-16 13:06:29 [INFO] [HUB_CLIENT] - Terminal: webui
+2025-08-16 13:06:29 [INFO] [HUB_CLIENT] - Map: MAIN001
+2025-08-16 13:06:29 [INFO] [HUB_CLIENT] - Fields: 7 fields
+2025-08-16 13:06:29 [INFO] [HUB_CLIENT] - Program: MAIN001
+2025-08-16 13:06:29 [INFO] [HUB_CLIENT] SMED data sent to WebSocket Hub successfully
+2025-08-16 13:06:29 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=YU8AYDpOp7sflM2TAAAS HTTP/1.1" 200 None
+2025-08-16 13:06:29 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=YU8AYDpOp7sflM2TAAAS&t=1755349589.231269 HTTP/1.1" 200 None
+2025-08-16 13:06:29 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 13:06:29 [INFO] [HUB_CLIENT] Registration confirmed: {'success': True, 'client_id': 'hub_client_133716031526208', 'session_id': 'y4SkZtpK6l4ln5FZAAAT', 'message': 'Hub Client registered successfully', 'timestamp': '2025-08-16T13:06:29.240053'}
+2025-08-16 13:06:29 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 13:06:29 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=YU8AYDpOp7sflM2TAAAS HTTP/1.1" 200 None
+2025-08-16 13:06:29 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=YU8AYDpOp7sflM2TAAAS&t=1755349589.2454748 HTTP/1.1" 200 None
+2025-08-16 13:06:29 [INFO] [HUB_CLIENT] Hub confirmation received: {'success': True, 'terminal_id': 'webui', 'map_file': 'MAIN001', 'fields_populated': 7, 'hub_session': 'y4SkZtpK6l4ln5FZAAAT', 'timestamp': '2025-08-16T13:06:29.253594', 'message': 'SMED data delivered via WebSocket Hub'}
+2025-08-16 13:06:29 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 13:06:30 [INFO] [HUB_CLIENT] Disconnected from WebSocket Hub
+2025-08-16 13:06:30 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 13:06:30 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=YU8AYDpOp7sflM2TAAAS HTTP/1.1" 200 None
+2025-08-16 13:06:30 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=YU8AYDpOp7sflM2TAAAS&t=1755349589.25714 HTTP/1.1" 200 None
+2025-08-16 13:06:30 [INFO] [HUB_CLIENT] Disconnected from WebSocket Hub
+[HUB_REGISTERED] Success: True
+[HUB_REGISTERED] Client ID: hub_client_133716031526208
+[HUB_REGISTERED] Message: Hub Client registered successfully
+[HUB_CONFIRM] Success: True
+[HUB_CONFIRM] Terminal: webui
+[HUB_CONFIRM] Map: MAIN001
+[HUB_CONFIRM] Fields: 7
+[SUCCESS] SMED data sent to WebSocket Hub
+[MAIN001] Display data sent to WebSocket Hub successfully
+[MAIN001] Menu displayed on terminal: webui
+[MAIN001] READ DISPFILE INTO DISP-RECORD - Waiting for user input
+[세션관리] 입력 버퍼 클리어 완료
+[세션관리] - 제거된 입력 수: 0
+[MAIN001] Interactive 모드: 이전 입력 버퍼 클리어 완료
+[MAIN001] 입력 버퍼가 클리어된 상태, 새로운 입력 대기
+[MAIN001] WebSocket timeout loaded from config: 86400 seconds
+[MAIN001] Waiting for WebSocket Hub input... (timeout: 86400 seconds)
+[MAIN001] Input file: /tmp/asp_input_webui.txt
+[MAIN001] WebSocket input received: F3
+[MAIN001] EMP-FUNC set to: 'F'
+[MAIN001] EVALUATE EMP-FUNC - Processing user selection: 'F'
+[MAIN001] WHEN OTHER - Invalid selection: 'F'
+[MAIN001] Valid options: 1-4 (menu options), 0 (exit)
+[MAIN001] Loop state - wsEndFlag: 'N', empFunc: ''
+[MAIN001] MAIN-LOOP iteration: 3
+[MAIN001] WRITE DISPFILE FROM DISP-RECORD - Sending display to webUI
+2025-08-16 13:06:31 [INFO] [HUB_CLIENT] Connecting to WebSocket Hub: http://localhost:8000
+2025-08-16 13:06:31 [DEBUG] Starting new HTTP connection (1): localhost:8000
+2025-08-16 13:06:31 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&t=1755349591.6855414 HTTP/1.1" 200 None
+2025-08-16 13:06:31 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 13:06:31 [DEBUG] Starting new HTTP connection (2): localhost:8000
+2025-08-16 13:06:31 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=OH7856qHkOFjizr5AAAU HTTP/1.1" 200 None
+2025-08-16 13:06:31 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=OH7856qHkOFjizr5AAAU&t=1755349591.700888 HTTP/1.1" 200 None
+2025-08-16 13:06:31 [INFO] [HUB_CLIENT] Connected to WebSocket Hub: http://localhost:8000
+2025-08-16 13:06:31 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 13:06:31 [INFO] [HUB_CLIENT] Connection established, registering with hub...
+2025-08-16 13:06:31 [INFO] [HUB_CLIENT] Registration data sent to hub: hub_client_123161105716544
+2025-08-16 13:06:31 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 13:06:31 [INFO] [HUB_CLIENT] Sending SMED data to hub:
+2025-08-16 13:06:31 [INFO] [HUB_CLIENT] - Terminal: webui
+2025-08-16 13:06:31 [INFO] [HUB_CLIENT] - Map: MAIN001
+2025-08-16 13:06:31 [INFO] [HUB_CLIENT] - Fields: 7 fields
+2025-08-16 13:06:31 [INFO] [HUB_CLIENT] - Program: MAIN001
+2025-08-16 13:06:31 [INFO] [HUB_CLIENT] SMED data sent to WebSocket Hub successfully
+2025-08-16 13:06:31 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=OH7856qHkOFjizr5AAAU&t=1755349591.709752 HTTP/1.1" 200 None
+2025-08-16 13:06:31 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=OH7856qHkOFjizr5AAAU HTTP/1.1" 200 None
+2025-08-16 13:06:31 [INFO] [HUB_CLIENT] Registration confirmed: {'success': True, 'client_id': 'hub_client_123161105716544', 'session_id': 'dgL962Z2bGhHBoPpAAAV', 'message': 'Hub Client registered successfully', 'timestamp': '2025-08-16T13:06:31.720616'}
+2025-08-16 13:06:31 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 13:06:31 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 13:06:31 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=OH7856qHkOFjizr5AAAU HTTP/1.1" 200 None
+2025-08-16 13:06:31 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=OH7856qHkOFjizr5AAAU&t=1755349591.725845 HTTP/1.1" 200 None
+2025-08-16 13:06:31 [INFO] [HUB_CLIENT] Hub confirmation received: {'success': True, 'terminal_id': 'webui', 'map_file': 'MAIN001', 'fields_populated': 7, 'hub_session': 'dgL962Z2bGhHBoPpAAAV', 'timestamp': '2025-08-16T13:06:31.734631', 'message': 'SMED data delivered via WebSocket Hub'}
+2025-08-16 13:06:31 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 13:06:32 [INFO] [HUB_CLIENT] Disconnected from WebSocket Hub
+2025-08-16 13:06:32 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 13:06:32 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=OH7856qHkOFjizr5AAAU HTTP/1.1" 200 None
+2025-08-16 13:06:32 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=OH7856qHkOFjizr5AAAU&t=1755349591.7387075 HTTP/1.1" 200 None
+2025-08-16 13:06:32 [INFO] [HUB_CLIENT] Disconnected from WebSocket Hub
+[HUB_REGISTERED] Success: True
+[HUB_REGISTERED] Client ID: hub_client_123161105716544
+[HUB_REGISTERED] Message: Hub Client registered successfully
+[HUB_CONFIRM] Success: True
+[HUB_CONFIRM] Terminal: webui
+[HUB_CONFIRM] Map: MAIN001
+[HUB_CONFIRM] Fields: 7
+[SUCCESS] SMED data sent to WebSocket Hub
+
+=== Execution Completed (Return Code: 143) ===
+
+=== End MAIN001 Execution ===
+
+=== MAIN001 Java Execution (2025-08-16 14:12:40) ===
+=== MAIN001 Java Execution Log (2025-08-16 14:11:40) ===
+Command: java -Dfile.encoding=UTF-8 -cp /home/aspuser/app/volume/DISK01/JAVA MAIN001
+Working directory: /home/aspuser/app/volume/DISK01/JAVA
+Input JSON: {"program": "MAIN001", "library": "JAVA", "volume": "DISK01", "user": "system"}
+=== Program Output ===
+*** MAIN001 - Employee Management Menu (Enhanced with Session Management) ***
+DSP File Handling with WebSocket Hub Integration
+SJIS encoding support for Korean text
+장기 개선 방안 적용: 모드 분리, 세션 관리, COBOL 시맨틱스
+
+[환경감지] 실행 환경 분석 중...
+[환경감지] 전달된 인수: []
+[환경감지] 옵션 파라미터 없음
+[환경감지] → WebUI Interactive 모드로 판단
+Terminal ID: webui (from environment)
+[세션관리] 세션 초기화 완료
+[세션관리] - 세션 ID: session_1755353500910_0.27172736360539107
+[세션관리] - 터미널 ID: webui
+[MAIN001] 실행 모드: WebUI Interactive 모드 - 지속적 세션
+[MAIN001Interactive] WebUI Interactive 모드 - 지속적 세션 관리
+[MAIN001] OPEN I-O DISPFILE - Initializing DSP connection
+[MAIN001] SYMBOLIC DESTINATION 'DSP' - WebSocket Hub communication active
+[MAIN001] SELECTED FUNCTION IS EMP-FUNC - Ready for user input
+[MAIN001] MAIN-LOOP - Starting main processing loop
+[MAIN001] MAIN-LOOP iteration: 1
+[MAIN001] WRITE DISPFILE FROM DISP-RECORD - Sending display to webUI
+2025-08-16 14:11:41 [INFO] [HUB_CLIENT] Connecting to WebSocket Hub: http://localhost:8000
+2025-08-16 14:11:41 [DEBUG] Starting new HTTP connection (1): localhost:8000
+2025-08-16 14:11:41 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&t=1755353501.1869183 HTTP/1.1" 200 None
+2025-08-16 14:11:41 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 14:11:41 [DEBUG] Starting new HTTP connection (2): localhost:8000
+2025-08-16 14:11:41 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=0FXXD7kXN29JD_SqAAA5 HTTP/1.1" 200 None
+2025-08-16 14:11:41 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=0FXXD7kXN29JD_SqAAA5&t=1755353501.1976118 HTTP/1.1" 200 None
+2025-08-16 14:11:41 [INFO] [HUB_CLIENT] Connected to WebSocket Hub: http://localhost:8000
+2025-08-16 14:11:41 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 14:11:41 [INFO] [HUB_CLIENT] Connection established, registering with hub...
+2025-08-16 14:11:41 [INFO] [HUB_CLIENT] Registration data sent to hub: hub_client_135318769767744
+2025-08-16 14:11:41 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 14:11:41 [INFO] [HUB_CLIENT] Sending SMED data to hub:
+2025-08-16 14:11:41 [INFO] [HUB_CLIENT] - Terminal: webui
+2025-08-16 14:11:41 [INFO] [HUB_CLIENT] - Map: MAIN001
+2025-08-16 14:11:41 [INFO] [HUB_CLIENT] - Fields: 7 fields
+2025-08-16 14:11:41 [INFO] [HUB_CLIENT] - Program: MAIN001
+2025-08-16 14:11:41 [INFO] [HUB_CLIENT] SMED data sent to WebSocket Hub successfully
+2025-08-16 14:11:41 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=0FXXD7kXN29JD_SqAAA5 HTTP/1.1" 200 None
+2025-08-16 14:11:41 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=0FXXD7kXN29JD_SqAAA5&t=1755353501.206884 HTTP/1.1" 200 None
+2025-08-16 14:11:41 [INFO] [HUB_CLIENT] Registration confirmed: {'success': True, 'client_id': 'hub_client_135318769767744', 'session_id': 'RJ_IIBsrQTEeJDFfAAA6', 'message': 'Hub Client registered successfully', 'timestamp': '2025-08-16T14:11:41.212592'}
+2025-08-16 14:11:41 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 14:11:41 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 14:11:41 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=0FXXD7kXN29JD_SqAAA5 HTTP/1.1" 200 None
+2025-08-16 14:11:41 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=0FXXD7kXN29JD_SqAAA5&t=1755353501.216262 HTTP/1.1" 200 None
+2025-08-16 14:11:41 [INFO] [HUB_CLIENT] Hub confirmation received: {'success': True, 'terminal_id': 'webui', 'map_file': 'MAIN001', 'fields_populated': 7, 'hub_session': 'RJ_IIBsrQTEeJDFfAAA6', 'timestamp': '2025-08-16T14:11:41.224656', 'message': 'SMED data delivered via WebSocket Hub'}
+2025-08-16 14:11:41 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 14:11:42 [INFO] [HUB_CLIENT] Disconnected from WebSocket Hub
+2025-08-16 14:11:42 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 14:11:42 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=0FXXD7kXN29JD_SqAAA5 HTTP/1.1" 200 None
+2025-08-16 14:11:42 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=0FXXD7kXN29JD_SqAAA5&t=1755353501.2270386 HTTP/1.1" 200 None
+2025-08-16 14:11:42 [INFO] [HUB_CLIENT] Disconnected from WebSocket Hub
+[HUB_REGISTERED] Success: True
+[HUB_REGISTERED] Client ID: hub_client_135318769767744
+[HUB_REGISTERED] Message: Hub Client registered successfully
+[HUB_CONFIRM] Success: True
+[HUB_CONFIRM] Terminal: webui
+[HUB_CONFIRM] Map: MAIN001
+[HUB_CONFIRM] Fields: 7
+[SUCCESS] SMED data sent to WebSocket Hub
+[MAIN001] Display data sent to WebSocket Hub successfully
+[MAIN001] Menu displayed on terminal: webui
+[MAIN001] READ DISPFILE INTO DISP-RECORD - Waiting for user input
+[세션관리] 입력 버퍼 클리어 완료
+[세션관리] - 제거된 입력 수: 0
+[MAIN001] Interactive 모드: 이전 입력 버퍼 클리어 완료
+[MAIN001] 입력 버퍼가 클리어된 상태, 새로운 입력 대기
+[MAIN001] WebSocket timeout loaded from config: 86400 seconds
+[MAIN001] Waiting for WebSocket Hub input... (timeout: 86400 seconds)
+[MAIN001] Input file: /tmp/asp_input_webui.txt
+[MAIN001] Still waiting... (5/86400 seconds)
+[MAIN001] WebSocket input received: 1
+[MAIN001] EMP-FUNC set to: '1'
+[MAIN001] EVALUATE EMP-FUNC - Processing user selection: '1'
+[MAIN001] WHEN '1' - Calling SUB001
+[MAIN001] CALL "SUB001" - Subprogram execution
+[MAIN001] CALL "SUB001" - Employee Information Display using ClassLoader
+[MAIN001] Current classpath: /home/aspuser/app/volume/DISK01/JAVA
+[MAIN001] Current working directory: /home/aspuser/app/volume/DISK01/JAVA
+[MAIN001] SUB001 class file exists at /home/aspuser/app/volume/DISK01/JAVA/com/openasp/sub/SUB001.class: true
+[MAIN001] SUB001 loaded using Class.forName()
+[MAIN001] SUB001 class loaded successfully from: file:/home/aspuser/app/volume/DISK01/JAVA/
+[MAIN001] SUB001 instance created
+[MAIN001] Calling SUB001.execute() method...
+============================================================
+*** SUB001 Enhanced - 사원 정보 조회 (개선된 버전) ***
+개선 사항:
+- 안전한 Function Key 처리 (F3 키 개선)
+- 프로그램 상태 완전 초기화
+- COBOL EXIT 시맨틱스 완전 구현
+============================================================
+[STATE_CHANGE] null -> Initializing
+[SUB001] Program context initialization completed
+[SUB001] - Terminal ID: webui
+[SUB001] - Initial state: Initializing
+[STATE_CHANGE] Initializing -> Running
+[SUB001] 메인 처리 시작
+[SUB001] INITIALIZE-PROGRAM - Opening files and initializing map
+[SUB001] OPEN INPUT EMP-FILE - /home/aspuser/app/volume/DISK01/TESTLIB/EMP.INFO
+[SUB001] EMP-FILE opened successfully, FILE-STATUS = 00
+[SUB001] OPEN I-O DISPFILE - Initializing WebSocket Hub connection
+[SUB001] SYMBOLIC DESTINATION 'DSP' - SUB001 map display
+[SUB001] WebSocket Hub communication active for terminal: webui
+[SUB001] Loading SMED template from /home/aspuser/app/volume/DISK01/SMED/SUB001
+[SUB001] Template:   ITEM TEXT_1 TYPE=T POS=(1,30) PROMPT="社員情報照会" COLOR=#00ff00
+[SUB001] Template:   ITEM TEXT_2 TYPE=T POS=(4,5) PROMPT="社員番号" COLOR=#00ff00
+[SUB001] Template:   ITEM TEXT_3 TYPE=T POS=(4,15) PROMPT="社員名" COLOR=#00ff00
+[SUB001] Template:   ITEM TEXT_4 TYPE=T POS=(4,40) PROMPT="e-mail" COLOR=#00ff00
+[SUB001] Template:   ITEM DATA_1 TYPE=T POS=(6,5) PROMPT="" COLOR=#00ff00
+[SUB001] Template:   ITEM DATA_2 TYPE=T POS=(6,15) PROMPT="" COLOR=#00ff00
+[SUB001] Template:   ITEM DATA_3 TYPE=T POS=(6,40) PROMPT="" COLOR=#00ff00
+[SUB001] Template:   ITEM DATA_4 TYPE=T POS=(7,5) PROMPT="" COLOR=#00ff00
+[SUB001] Template:   ITEM DATA_5 TYPE=T POS=(7,15) PROMPT="" COLOR=#00ff00
+[SUB001] Template:   ITEM DATA_6 TYPE=T POS=(7,40) PROMPT="" COLOR=#00ff00
+[SUB001] Template:   ITEM DATA_7 TYPE=T POS=(8,5) PROMPT="" COLOR=#00ff00
+[SUB001] Template:   ITEM DATA_8 TYPE=T POS=(8,15) PROMPT="" COLOR=#00ff00
+[SUB001] Template:   ITEM DATA_9 TYPE=T POS=(8,40) PROMPT="" COLOR=#00ff00
+[SUB001] Template:   ITEM DATA_10 TYPE=T POS=(9,5) PROMPT="" COLOR=#00ff00
+[SUB001] Template:   ITEM DATA_11 TYPE=T POS=(9,15) PROMPT="" COLOR=#00ff00
+[SUB001] Template:   ITEM DATA_12 TYPE=T POS=(9,40) PROMPT="" COLOR=#00ff00
+[SUB001] Template:   ITEM DATA_13 TYPE=T POS=(10,5) PROMPT="" COLOR=#00ff00
+[SUB001] Template:   ITEM DATA_14 TYPE=T POS=(10,15) PROMPT="" COLOR=#00ff00
+[SUB001] Template:   ITEM DATA_15 TYPE=T POS=(10,40) PROMPT="" COLOR=#00ff00
+[SUB001] Template:   ITEM TEXT_5 TYPE=T POS=(23,5) PROMPT="F1（初期画面）　F3 (終了)  F7 （次画面） F8 (前画面)" COLOR=#00ff00
+[SUB001] SMED template loaded: 20 items
+[SUB001] SMED map template initialized:
+[SUB001] Template items loaded: 20
+[SUB001] TEXT_1: 社員情報照会
+[SUB001] TEXT_2: 社員番号
+[SUB001] TEXT_3: 社員名
+[SUB001] TEXT_4: e-mail
+[SUB001] TEXT_5: F1（初期画面）　F3 (終了)  F7 （次画面） F8 (前画面)
+[SUB001] MAIN-DISPLAY-LOOP - Starting interactive display
+[SUB001] Reading EMP.INFO file - 80-byte fixed records
+[SUB001] File size: 800 bytes
+[SUB001] Expected records: 10
+[SUB001] Record 1: ID=00001 Name=田中太郎 Email=tanaka@company.co.jp
+[SUB001] Record 2: ID=00002 Name=佐藤花子 Email=sato@company.co.jp
+[SUB001] Record 3: ID=00003 Name=鈴木一郎 Email=suzuki@company.co.jp
+[SUB001] Record 4: ID=00004 Name=高橋美咲 Email=takahashi@company.co
+[SUB001] Record 5: ID=00005 Name=渡辺健太 Email=watanabe@company.co.
+[SUB001] Record 6: ID=00006 Name=伊藤由美 Email=ito@company.co.jp
+[SUB001] Record 7: ID=00007 Name=山田正雄 Email=yamada@company.co.jp
+[SUB001] Record 8: ID=00008 Name=中村良子 Email=nakamura@company.co.
+[SUB001] Record 9: ID=00009 Name=小林直樹 Email=kobayashi@company.co
+[SUB001] Record 10: ID=00010 Name=加藤真理 Email=kato@company.co.jp
+[SUB001] Total employee records loaded: 10
+[SUB001] Record statistics set - Total 10 records, 2 pages
+[SUB001] Interactive loop iteration: 1
+[SUB001] DISPLAY-CURRENT-PAGE - Page 1 of 2
+[SUB001] Creating dynamic SMED map for page 1
+[SUB001] Page employees: 5
+[SUB001] Static:   ITEM TEXT_1 TYPE=T POS=(1,30) PROMPT="社員情報照会" COLOR=#00ff00
+[SUB001] Static:   ITEM TEXT_2 TYPE=T POS=(4,5) PROMPT="社員番号" COLOR=#00ff00
+[SUB001] Static:   ITEM TEXT_3 TYPE=T POS=(4,15) PROMPT="社員名" COLOR=#00ff00
+[SUB001] Static:   ITEM TEXT_4 TYPE=T POS=(4,40) PROMPT="e-mail" COLOR=#00ff00
+[SUB001] Dynamic:   ITEM DATA_1 TYPE=T POS=(6,5) PROMPT="00001" COLOR=#00ff00
+[SUB001] Dynamic:   ITEM DATA_2 TYPE=T POS=(6,15) PROMPT="田中太郎" COLOR=#00ff00
+[SUB001] Dynamic:   ITEM DATA_3 TYPE=T POS=(6,40) PROMPT="tanaka@company.co.jp" COLOR=#00ff00
+[SUB001] Dynamic:   ITEM DATA_4 TYPE=T POS=(7,5) PROMPT="00002" COLOR=#00ff00
+[SUB001] Dynamic:   ITEM DATA_5 TYPE=T POS=(7,15) PROMPT="佐藤花子" COLOR=#00ff00
+[SUB001] Dynamic:   ITEM DATA_6 TYPE=T POS=(7,40) PROMPT="sato@company.co.jp" COLOR=#00ff00
+[SUB001] Dynamic:   ITEM DATA_7 TYPE=T POS=(8,5) PROMPT="00003" COLOR=#00ff00
+[SUB001] Dynamic:   ITEM DATA_8 TYPE=T POS=(8,15) PROMPT="鈴木一郎" COLOR=#00ff00
+[SUB001] Dynamic:   ITEM DATA_9 TYPE=T POS=(8,40) PROMPT="suzuki@company.co.jp" COLOR=#00ff00
+[SUB001] Dynamic:   ITEM DATA_10 TYPE=T POS=(9,5) PROMPT="00004" COLOR=#00ff00
+[SUB001] Dynamic:   ITEM DATA_11 TYPE=T POS=(9,15) PROMPT="高橋美咲" COLOR=#00ff00
+[SUB001] Dynamic:   ITEM DATA_12 TYPE=T POS=(9,40) PROMPT="takahashi@company.co" COLOR=#00ff00
+[SUB001] Dynamic:   ITEM DATA_13 TYPE=T POS=(10,5) PROMPT="00005" COLOR=#00ff00
+[SUB001] Dynamic:   ITEM DATA_14 TYPE=T POS=(10,15) PROMPT="渡辺健太" COLOR=#00ff00
+[SUB001] Dynamic:   ITEM DATA_15 TYPE=T POS=(10,40) PROMPT="watanabe@company.co." COLOR=#00ff00
+[SUB001] Static:   ITEM TEXT_5 TYPE=T POS=(23,5) PROMPT="F1（初期画面）　F3 (終了)  F7 （次画面） F8 (前画面)" COLOR=#00ff00
+[SUB001] Dynamic SMED map created: 20 items
+[SUB001] WRITE DISPFILE FROM DISP-RECORD - Sending SUB001 dynamic SMED map to WebSocket Hub
+[SUB001] DEBUG - JSON data being sent:
+{
+  "map_name": "SUB001",
+  "program_name": "SUB001",
+  "source_type": "dynamic_dataset",
+  "encoding": "SJIS",
+  "rows": 24,
+  "background_color": "BLACK",
+  "page_info": {
+    "records_per_page": "5",
+    "current": "1",
+    "total": "2",
+    "total_records": "10"
+  },
+  "action": "display_map",
+  "map_file": "SUB001",
+  "fields": {
+    "DATA_9": "suzuki@company.co.jp",
+    "DATA_5": "佐藤花子",
+    "DATA_11": "高橋美咲",
+    "DATA_6": "sato@company.co.jp",
+    "DATA_10": "00004",
+    "DATA_7": "00003",
+    "DATA_13": "00005",
+    "DATA_8": "鈴木一郎",
+    "DATA_12": "takahashi@company.co",
+    "DATA_15": "watanabe@company.co.",
+    "DATA_14": "渡辺健太",
+    "TEXT_2": "社員番号",
+    "TEXT_3": "社員名",
+    "TEXT_4": "e-mail",
+    "TEXT_5": "F1（初期画面）　F3 (終了)  F7 （次画面） F8 (前画面)",
+    "TEXT_1": "社員情報照会",
+    "DATA_1": "00001",
+    "DATA_2": "田中太郎",
+    "DATA_3": "tanaka@company.co.jp",
+    "DATA_4": "00002"
+  },
+  "cols": 80,
+  "foreground_color": "GREEN",
+  "terminal_id": "webui"
+}
+2025-08-16 14:11:51 [INFO] [HUB_CLIENT] Connecting to WebSocket Hub: http://localhost:8000
+2025-08-16 14:11:51 [DEBUG] Starting new HTTP connection (1): localhost:8000
+2025-08-16 14:11:51 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&t=1755353511.5823867 HTTP/1.1" 200 None
+2025-08-16 14:11:51 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 14:11:51 [DEBUG] Starting new HTTP connection (2): localhost:8000
+2025-08-16 14:11:51 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=DF2FNblEJyUKk5yvAAA7 HTTP/1.1" 200 None
+2025-08-16 14:11:51 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=DF2FNblEJyUKk5yvAAA7&t=1755353511.5905197 HTTP/1.1" 200 None
+2025-08-16 14:11:51 [INFO] [HUB_CLIENT] Connected to WebSocket Hub: http://localhost:8000
+2025-08-16 14:11:51 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 14:11:51 [INFO] [HUB_CLIENT] Connection established, registering with hub...
+2025-08-16 14:11:51 [INFO] [HUB_CLIENT] Registration data sent to hub: hub_client_124623404307776
+2025-08-16 14:11:51 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 14:11:51 [INFO] [HUB_CLIENT] Sending SMED data to hub:
+2025-08-16 14:11:51 [INFO] [HUB_CLIENT] - Terminal: webui
+2025-08-16 14:11:51 [INFO] [HUB_CLIENT] - Map: SUB001
+2025-08-16 14:11:51 [INFO] [HUB_CLIENT] - Fields: 20 fields
+2025-08-16 14:11:51 [INFO] [HUB_CLIENT] - Program: SUB001
+2025-08-16 14:11:51 [INFO] [HUB_CLIENT] SMED data sent to WebSocket Hub successfully
+2025-08-16 14:11:51 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=DF2FNblEJyUKk5yvAAA7 HTTP/1.1" 200 None
+2025-08-16 14:11:51 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=DF2FNblEJyUKk5yvAAA7&t=1755353511.5977423 HTTP/1.1" 200 None
+2025-08-16 14:11:51 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 14:11:51 [INFO] [HUB_CLIENT] Registration confirmed: {'success': True, 'client_id': 'hub_client_124623404307776', 'session_id': 'IR9R6NYBx1to1fX8AAA8', 'message': 'Hub Client registered successfully', 'timestamp': '2025-08-16T14:11:51.603435'}
+2025-08-16 14:11:51 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 14:11:51 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=DF2FNblEJyUKk5yvAAA7&t=1755353511.6066303 HTTP/1.1" 200 None
+2025-08-16 14:11:51 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=DF2FNblEJyUKk5yvAAA7 HTTP/1.1" 200 None
+2025-08-16 14:11:51 [INFO] [HUB_CLIENT] Hub confirmation received: {'success': True, 'terminal_id': 'webui', 'map_file': 'SUB001', 'fields_populated': 20, 'hub_session': 'IR9R6NYBx1to1fX8AAA8', 'timestamp': '2025-08-16T14:11:51.610271', 'message': 'SMED data delivered via WebSocket Hub'}
+2025-08-16 14:11:51 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 14:11:52 [INFO] [HUB_CLIENT] Disconnected from WebSocket Hub
+2025-08-16 14:11:52 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 14:11:52 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=DF2FNblEJyUKk5yvAAA7 HTTP/1.1" 200 None
+2025-08-16 14:11:52 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=DF2FNblEJyUKk5yvAAA7&t=1755353511.6143763 HTTP/1.1" 200 None
+2025-08-16 14:11:52 [INFO] [HUB_CLIENT] Disconnected from WebSocket Hub
+[HUB_REGISTERED] Success: True
+[HUB_REGISTERED] Client ID: hub_client_124623404307776
+[HUB_REGISTERED] Message: Hub Client registered successfully
+[HUB_CONFIRM] Success: True
+[HUB_CONFIRM] Terminal: webui
+[HUB_CONFIRM] Map: SUB001
+[HUB_CONFIRM] Fields: 20
+[SUCCESS] SMED data sent to WebSocket Hub
+[SUB001] SUB001 dynamic SMED map sent to WebSocket Hub successfully
+[SUB001] Employee data displayed on terminal: webui
+[SUB001] Dynamic SMED map displayed for page 1/2
+[SUB001] PROCESS-USER-INPUT - Page 1/2 - Waiting for function key (F1/F3/F7/F8)
+[SUB001] Waiting for WebSocket input... (timeout: 86400 seconds)
+[SUB001] WebSocket input received: F3
+[SUB001] User input received: F3
+[KEY_HANDLER] Processing Function Key: f3
+[STATE_CHANGE] Running -> Processing Input
+[F3키] 프로그램 종료 처리 - COBOL EXIT 시맨틱스
+[STATE_CHANGE] Processing Input -> Exiting
+[SUB001] Program exit requested
+[F3키] SUB001 종료, MAIN001로 제어권 반환
+[F3키] 완료 메시지 전송하지 않음 - MAIN001이 메뉴 처리
+[SUB001] Loop state - shouldContinue: false, currentPage: 1/2
+[SUB001] Interactive loop terminated, iterations: 1
+[SUB001] 메인 처리 완료
+[SUB001] 프로그램 종료 처리 시작
+[SUB001] TERMINATE-PROGRAM - Closing files
+[SUB001] CLOSE EMP-FILE - Employee file closed
+[SUB001] CLOSE DISPFILE - WebSocket Hub connection closed
+[SUB001] All files closed successfully
+[STATE_CHANGE] Exiting -> Completed
+[SUB001] Program context cleanup completed
+[SUB001] 프로그램 종료 처리 완료
+[SUB001] MAIN001로 제어권 반환
+[MAIN001] SUB001.execute() completed successfully
+[MAIN001] Control returned to MAIN001 from SUB001
+[MAIN001] SUB001 call completed, returning to main menu
+[MAIN001] Subprogram SUB001 completed, returning to main menu
+[MAIN001] SUB001 completed, returning to main menu
+[MAIN001] Loop state - wsEndFlag: 'N', empFunc: ''
+[MAIN001] MAIN-LOOP iteration: 2
+[MAIN001] WRITE DISPFILE FROM DISP-RECORD - Sending display to webUI
+2025-08-16 14:12:10 [INFO] [HUB_CLIENT] Connecting to WebSocket Hub: http://localhost:8000
+2025-08-16 14:12:10 [DEBUG] Starting new HTTP connection (1): localhost:8000
+2025-08-16 14:12:10 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&t=1755353530.9914608 HTTP/1.1" 200 None
+2025-08-16 14:12:10 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 14:12:10 [DEBUG] Starting new HTTP connection (2): localhost:8000
+2025-08-16 14:12:11 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=bu7jBk2dLRNWMI0cAAA9 HTTP/1.1" 200 None
+2025-08-16 14:12:11 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=bu7jBk2dLRNWMI0cAAA9&t=1755353530.9988403 HTTP/1.1" 200 None
+2025-08-16 14:12:11 [INFO] [HUB_CLIENT] Connected to WebSocket Hub: http://localhost:8000
+2025-08-16 14:12:11 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 14:12:11 [INFO] [HUB_CLIENT] Connection established, registering with hub...
+2025-08-16 14:12:11 [INFO] [HUB_CLIENT] Registration data sent to hub: hub_client_127711044916544
+2025-08-16 14:12:11 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 14:12:11 [INFO] [HUB_CLIENT] Sending SMED data to hub:
+2025-08-16 14:12:11 [INFO] [HUB_CLIENT] - Terminal: webui
+2025-08-16 14:12:11 [INFO] [HUB_CLIENT] - Map: MAIN001
+2025-08-16 14:12:11 [INFO] [HUB_CLIENT] - Fields: 7 fields
+2025-08-16 14:12:11 [INFO] [HUB_CLIENT] - Program: MAIN001
+2025-08-16 14:12:11 [INFO] [HUB_CLIENT] SMED data sent to WebSocket Hub successfully
+2025-08-16 14:12:11 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=bu7jBk2dLRNWMI0cAAA9 HTTP/1.1" 200 None
+2025-08-16 14:12:11 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=bu7jBk2dLRNWMI0cAAA9&t=1755353531.0068235 HTTP/1.1" 200 None
+2025-08-16 14:12:11 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 14:12:11 [INFO] [HUB_CLIENT] Registration confirmed: {'success': True, 'client_id': 'hub_client_127711044916544', 'session_id': 'Z_p87MCsR9jj5urFAAA-', 'message': 'Hub Client registered successfully', 'timestamp': '2025-08-16T14:12:11.012475'}
+2025-08-16 14:12:11 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 14:12:11 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=bu7jBk2dLRNWMI0cAAA9 HTTP/1.1" 200 None
+2025-08-16 14:12:11 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=bu7jBk2dLRNWMI0cAAA9&t=1755353531.016001 HTTP/1.1" 200 None
+2025-08-16 14:12:11 [INFO] [HUB_CLIENT] Hub confirmation received: {'success': True, 'terminal_id': 'webui', 'map_file': 'MAIN001', 'fields_populated': 7, 'hub_session': 'Z_p87MCsR9jj5urFAAA-', 'timestamp': '2025-08-16T14:12:11.023331', 'message': 'SMED data delivered via WebSocket Hub'}
+2025-08-16 14:12:11 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 14:12:12 [INFO] [HUB_CLIENT] Disconnected from WebSocket Hub
+2025-08-16 14:12:12 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 14:12:12 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=bu7jBk2dLRNWMI0cAAA9 HTTP/1.1" 200 None
+2025-08-16 14:12:12 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=bu7jBk2dLRNWMI0cAAA9&t=1755353531.0264192 HTTP/1.1" 200 None
+2025-08-16 14:12:12 [INFO] [HUB_CLIENT] Disconnected from WebSocket Hub
+[HUB_REGISTERED] Success: True
+[HUB_REGISTERED] Client ID: hub_client_127711044916544
+[HUB_REGISTERED] Message: Hub Client registered successfully
+[HUB_CONFIRM] Success: True
+[HUB_CONFIRM] Terminal: webui
+[HUB_CONFIRM] Map: MAIN001
+[HUB_CONFIRM] Fields: 7
+[SUCCESS] SMED data sent to WebSocket Hub
+[MAIN001] Display data sent to WebSocket Hub successfully
+[MAIN001] Menu displayed on terminal: webui
+[MAIN001] READ DISPFILE INTO DISP-RECORD - Waiting for user input
+[세션관리] 입력 버퍼 클리어 완료
+[세션관리] - 제거된 입력 수: 0
+[MAIN001] Interactive 모드: 이전 입력 버퍼 클리어 완료
+[MAIN001] 입력 버퍼가 클리어된 상태, 새로운 입력 대기
+[MAIN001] WebSocket timeout loaded from config: 86400 seconds
+[MAIN001] Waiting for WebSocket Hub input... (timeout: 86400 seconds)
+[MAIN001] Input file: /tmp/asp_input_webui.txt
+[MAIN001] Still waiting... (5/86400 seconds)
+[MAIN001] Still waiting... (10/86400 seconds)
+[MAIN001] WebSocket input received: F12
+[MAIN001] EMP-FUNC set to: 'F'
+[MAIN001] EVALUATE EMP-FUNC - Processing user selection: 'F'
+[MAIN001] WHEN OTHER - Invalid selection: 'F'
+[MAIN001] Valid options: 1-4 (menu options), 0 (exit)
+[MAIN001] Loop state - wsEndFlag: 'N', empFunc: ''
+[MAIN001] MAIN-LOOP iteration: 3
+[MAIN001] WRITE DISPFILE FROM DISP-RECORD - Sending display to webUI
+2025-08-16 14:12:24 [INFO] [HUB_CLIENT] Connecting to WebSocket Hub: http://localhost:8000
+2025-08-16 14:12:24 [DEBUG] Starting new HTTP connection (1): localhost:8000
+2025-08-16 14:12:24 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&t=1755353544.2918174 HTTP/1.1" 200 None
+2025-08-16 14:12:24 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 14:12:24 [DEBUG] Starting new HTTP connection (2): localhost:8000
+2025-08-16 14:12:24 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=QG6GUrCvKooI4fCHAAA_ HTTP/1.1" 200 None
+2025-08-16 14:12:24 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=QG6GUrCvKooI4fCHAAA_&t=1755353544.3007452 HTTP/1.1" 200 None
+2025-08-16 14:12:24 [INFO] [HUB_CLIENT] Connected to WebSocket Hub: http://localhost:8000
+2025-08-16 14:12:24 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 14:12:24 [INFO] [HUB_CLIENT] Connection established, registering with hub...
+2025-08-16 14:12:24 [INFO] [HUB_CLIENT] Registration data sent to hub: hub_client_137460086003008
+2025-08-16 14:12:24 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 14:12:24 [INFO] [HUB_CLIENT] Sending SMED data to hub:
+2025-08-16 14:12:24 [INFO] [HUB_CLIENT] - Terminal: webui
+2025-08-16 14:12:24 [INFO] [HUB_CLIENT] - Map: MAIN001
+2025-08-16 14:12:24 [INFO] [HUB_CLIENT] - Fields: 7 fields
+2025-08-16 14:12:24 [INFO] [HUB_CLIENT] - Program: MAIN001
+2025-08-16 14:12:24 [INFO] [HUB_CLIENT] SMED data sent to WebSocket Hub successfully
+2025-08-16 14:12:24 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=QG6GUrCvKooI4fCHAAA_ HTTP/1.1" 200 None
+2025-08-16 14:12:24 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=QG6GUrCvKooI4fCHAAA_&t=1755353544.3063889 HTTP/1.1" 200 None
+2025-08-16 14:12:24 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 14:12:24 [INFO] [HUB_CLIENT] Registration confirmed: {'success': True, 'client_id': 'hub_client_137460086003008', 'session_id': 'nlGCImmxncPngQwsAABA', 'message': 'Hub Client registered successfully', 'timestamp': '2025-08-16T14:12:24.313652'}
+2025-08-16 14:12:24 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 14:12:24 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=QG6GUrCvKooI4fCHAAA_ HTTP/1.1" 200 None
+2025-08-16 14:12:24 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=QG6GUrCvKooI4fCHAAA_&t=1755353544.3166466 HTTP/1.1" 200 None
+2025-08-16 14:12:24 [INFO] [HUB_CLIENT] Hub confirmation received: {'success': True, 'terminal_id': 'webui', 'map_file': 'MAIN001', 'fields_populated': 7, 'hub_session': 'nlGCImmxncPngQwsAABA', 'timestamp': '2025-08-16T14:12:24.319723', 'message': 'SMED data delivered via WebSocket Hub'}
+2025-08-16 14:12:24 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 14:12:25 [INFO] [HUB_CLIENT] Disconnected from WebSocket Hub
+2025-08-16 14:12:25 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 14:12:25 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=QG6GUrCvKooI4fCHAAA_ HTTP/1.1" 200 None
+2025-08-16 14:12:25 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=QG6GUrCvKooI4fCHAAA_&t=1755353544.3238294 HTTP/1.1" 200 None
+2025-08-16 14:12:25 [INFO] [HUB_CLIENT] Disconnected from WebSocket Hub
+[HUB_REGISTERED] Success: True
+[HUB_REGISTERED] Client ID: hub_client_137460086003008
+[HUB_REGISTERED] Message: Hub Client registered successfully
+[HUB_CONFIRM] Success: True
+[HUB_CONFIRM] Terminal: webui
+[HUB_CONFIRM] Map: MAIN001
+[HUB_CONFIRM] Fields: 7
+[SUCCESS] SMED data sent to WebSocket Hub
+[MAIN001] Display data sent to WebSocket Hub successfully
+[MAIN001] Menu displayed on terminal: webui
+[MAIN001] READ DISPFILE INTO DISP-RECORD - Waiting for user input
+[세션관리] 입력 버퍼 클리어 완료
+[세션관리] - 제거된 입력 수: 0
+[MAIN001] Interactive 모드: 이전 입력 버퍼 클리어 완료
+[MAIN001] 입력 버퍼가 클리어된 상태, 새로운 입력 대기
+[MAIN001] WebSocket timeout loaded from config: 86400 seconds
+[MAIN001] Waiting for WebSocket Hub input... (timeout: 86400 seconds)
+[MAIN001] Input file: /tmp/asp_input_webui.txt
+[MAIN001] Still waiting... (5/86400 seconds)
+[MAIN001] Still waiting... (10/86400 seconds)
+[MAIN001] Still waiting... (15/86400 seconds)
+
+=== Execution Completed (Return Code: 143) ===
+
+=== End MAIN001 Execution ===
+
+=== MAIN001 Java Execution (2025-08-16 14:13:29) ===
+=== MAIN001 Java Execution Log (2025-08-16 14:13:20) ===
+Command: java -Dfile.encoding=UTF-8 -cp /home/aspuser/app/volume/DISK01/JAVA MAIN001
+Working directory: /home/aspuser/app/volume/DISK01/JAVA
+Input JSON: {"program": "MAIN001", "library": "JAVA", "volume": "DISK01", "user": "system"}
+=== Program Output ===
+*** MAIN001 - Employee Management Menu (Enhanced with Session Management) ***
+DSP File Handling with WebSocket Hub Integration
+SJIS encoding support for Korean text
+장기 개선 방안 적용: 모드 분리, 세션 관리, COBOL 시맨틱스
+
+[환경감지] 실행 환경 분석 중...
+[환경감지] 전달된 인수: []
+[환경감지] 옵션 파라미터 없음
+[환경감지] → WebUI Interactive 모드로 판단
+Terminal ID: webui (from environment)
+[세션관리] 세션 초기화 완료
+[세션관리] - 세션 ID: session_1755353600603_0.5704923343653228
+[세션관리] - 터미널 ID: webui
+[MAIN001] 실행 모드: WebUI Interactive 모드 - 지속적 세션
+[MAIN001Interactive] WebUI Interactive 모드 - 지속적 세션 관리
+[MAIN001] OPEN I-O DISPFILE - Initializing DSP connection
+[MAIN001] SYMBOLIC DESTINATION 'DSP' - WebSocket Hub communication active
+[MAIN001] SELECTED FUNCTION IS EMP-FUNC - Ready for user input
+[MAIN001] MAIN-LOOP - Starting main processing loop
+[MAIN001] MAIN-LOOP iteration: 1
+[MAIN001] WRITE DISPFILE FROM DISP-RECORD - Sending display to webUI
+2025-08-16 14:13:20 [INFO] [HUB_CLIENT] Connecting to WebSocket Hub: http://localhost:8000
+2025-08-16 14:13:20 [DEBUG] Starting new HTTP connection (1): localhost:8000
+2025-08-16 14:13:20 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&t=1755353600.9131415 HTTP/1.1" 200 None
+2025-08-16 14:13:20 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 14:13:20 [DEBUG] Starting new HTTP connection (2): localhost:8000
+2025-08-16 14:13:20 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=abEal_6tTxYFpuD9AABB HTTP/1.1" 200 None
+2025-08-16 14:13:20 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=abEal_6tTxYFpuD9AABB&t=1755353600.9234564 HTTP/1.1" 200 None
+2025-08-16 14:13:20 [INFO] [HUB_CLIENT] Connected to WebSocket Hub: http://localhost:8000
+2025-08-16 14:13:20 [INFO] [HUB_CLIENT] Connection established, registering with hub...
+2025-08-16 14:13:20 [INFO] [HUB_CLIENT] Registration data sent to hub: hub_client_134189279663424
+2025-08-16 14:13:20 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 14:13:20 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 14:13:20 [INFO] [HUB_CLIENT] Sending SMED data to hub:
+2025-08-16 14:13:20 [INFO] [HUB_CLIENT] - Terminal: webui
+2025-08-16 14:13:20 [INFO] [HUB_CLIENT] - Map: MAIN001
+2025-08-16 14:13:20 [INFO] [HUB_CLIENT] - Fields: 7 fields
+2025-08-16 14:13:20 [INFO] [HUB_CLIENT] - Program: MAIN001
+2025-08-16 14:13:20 [INFO] [HUB_CLIENT] SMED data sent to WebSocket Hub successfully
+2025-08-16 14:13:20 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=abEal_6tTxYFpuD9AABB&t=1755353600.9324079 HTTP/1.1" 200 None
+2025-08-16 14:13:20 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=abEal_6tTxYFpuD9AABB HTTP/1.1" 200 None
+2025-08-16 14:13:20 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 14:13:20 [INFO] [HUB_CLIENT] Registration confirmed: {'success': True, 'client_id': 'hub_client_134189279663424', 'session_id': '1jSfPu0laYHGmVtwAABC', 'message': 'Hub Client registered successfully', 'timestamp': '2025-08-16T14:13:20.937663'}
+2025-08-16 14:13:20 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 14:13:20 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=abEal_6tTxYFpuD9AABB HTTP/1.1" 200 None
+2025-08-16 14:13:20 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=abEal_6tTxYFpuD9AABB&t=1755353600.9411402 HTTP/1.1" 200 None
+2025-08-16 14:13:20 [INFO] [HUB_CLIENT] Hub confirmation received: {'success': True, 'terminal_id': 'webui', 'map_file': 'MAIN001', 'fields_populated': 7, 'hub_session': '1jSfPu0laYHGmVtwAABC', 'timestamp': '2025-08-16T14:13:20.943968', 'message': 'SMED data delivered via WebSocket Hub'}
+2025-08-16 14:13:20 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 14:13:21 [INFO] [HUB_CLIENT] Disconnected from WebSocket Hub
+2025-08-16 14:13:21 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 14:13:21 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=abEal_6tTxYFpuD9AABB HTTP/1.1" 200 None
+2025-08-16 14:13:21 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=abEal_6tTxYFpuD9AABB&t=1755353600.9477139 HTTP/1.1" 200 None
+2025-08-16 14:13:21 [INFO] [HUB_CLIENT] Disconnected from WebSocket Hub
+[HUB_REGISTERED] Success: True
+[HUB_REGISTERED] Client ID: hub_client_134189279663424
+[HUB_REGISTERED] Message: Hub Client registered successfully
+[HUB_CONFIRM] Success: True
+[HUB_CONFIRM] Terminal: webui
+[HUB_CONFIRM] Map: MAIN001
+[HUB_CONFIRM] Fields: 7
+[SUCCESS] SMED data sent to WebSocket Hub
+[MAIN001] Display data sent to WebSocket Hub successfully
+[MAIN001] Menu displayed on terminal: webui
+[MAIN001] READ DISPFILE INTO DISP-RECORD - Waiting for user input
+[세션관리] 입력 버퍼 클리어 완료
+[세션관리] - 제거된 입력 수: 0
+[MAIN001] Interactive 모드: 이전 입력 버퍼 클리어 완료
+[MAIN001] 입력 버퍼가 클리어된 상태, 새로운 입력 대기
+[MAIN001] WebSocket timeout loaded from config: 86400 seconds
+[MAIN001] Waiting for WebSocket Hub input... (timeout: 86400 seconds)
+[MAIN001] Input file: /tmp/asp_input_webui.txt
+[MAIN001] Still waiting... (5/86400 seconds)
+
+=== Execution Completed (Return Code: 143) ===
+
+=== End MAIN001 Execution ===
+
+=== MAIN001 Java Execution (2025-08-16 14:17:04) ===
+=== MAIN001 Java Execution Log (2025-08-16 14:16:47) ===
+Command: java -Dfile.encoding=UTF-8 -cp /home/aspuser/app/volume/DISK01/JAVA MAIN001
+Working directory: /home/aspuser/app/volume/DISK01/JAVA
+Input JSON: {"program": "MAIN001", "library": "JAVA", "volume": "DISK01", "user": "system"}
+=== Program Output ===
+*** MAIN001 - Employee Management Menu (Enhanced with Session Management) ***
+DSP File Handling with WebSocket Hub Integration
+SJIS encoding support for Korean text
+장기 개선 방안 적용: 모드 분리, 세션 관리, COBOL 시맨틱스
+
+[환경감지] 실행 환경 분석 중...
+[환경감지] 전달된 인수: []
+[환경감지] 옵션 파라미터 없음
+[환경감지] → WebUI Interactive 모드로 판단
+Terminal ID: webui (from environment)
+[세션관리] 세션 초기화 완료
+[세션관리] - 세션 ID: session_1755353807718_0.15920982092452662
+[세션관리] - 터미널 ID: webui
+[MAIN001] 실행 모드: WebUI Interactive 모드 - 지속적 세션
+[MAIN001Interactive] WebUI Interactive 모드 - 지속적 세션 관리
+[MAIN001] OPEN I-O DISPFILE - Initializing DSP connection
+[MAIN001] SYMBOLIC DESTINATION 'DSP' - WebSocket Hub communication active
+[MAIN001] SELECTED FUNCTION IS EMP-FUNC - Ready for user input
+[MAIN001] MAIN-LOOP - Starting main processing loop
+[MAIN001] MAIN-LOOP iteration: 1
+[MAIN001] WRITE DISPFILE FROM DISP-RECORD - Sending display to webUI
+2025-08-16 14:16:48 [INFO] [HUB_CLIENT] Connecting to WebSocket Hub: http://localhost:8000
+2025-08-16 14:16:48 [DEBUG] Starting new HTTP connection (1): localhost:8000
+2025-08-16 14:16:48 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&t=1755353808.0818963 HTTP/1.1" 200 None
+2025-08-16 14:16:48 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 14:16:48 [DEBUG] Starting new HTTP connection (2): localhost:8000
+2025-08-16 14:16:48 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=J3d6yEugCAYaAotuAABD HTTP/1.1" 200 None
+2025-08-16 14:16:48 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=J3d6yEugCAYaAotuAABD&t=1755353808.0962603 HTTP/1.1" 200 None
+2025-08-16 14:16:48 [INFO] [HUB_CLIENT] Connected to WebSocket Hub: http://localhost:8000
+2025-08-16 14:16:48 [INFO] [HUB_CLIENT] Connection established, registering with hub...
+2025-08-16 14:16:48 [INFO] [HUB_CLIENT] Registration data sent to hub: hub_client_136358913578304
+2025-08-16 14:16:48 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 14:16:48 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 14:16:48 [INFO] [HUB_CLIENT] Sending SMED data to hub:
+2025-08-16 14:16:48 [INFO] [HUB_CLIENT] - Terminal: webui
+2025-08-16 14:16:48 [INFO] [HUB_CLIENT] - Map: MAIN001
+2025-08-16 14:16:48 [INFO] [HUB_CLIENT] - Fields: 7 fields
+2025-08-16 14:16:48 [INFO] [HUB_CLIENT] - Program: MAIN001
+2025-08-16 14:16:48 [INFO] [HUB_CLIENT] SMED data sent to WebSocket Hub successfully
+2025-08-16 14:16:48 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=J3d6yEugCAYaAotuAABD HTTP/1.1" 200 None
+2025-08-16 14:16:48 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=J3d6yEugCAYaAotuAABD&t=1755353808.1103754 HTTP/1.1" 200 None
+2025-08-16 14:16:48 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 14:16:48 [INFO] [HUB_CLIENT] Registration confirmed: {'success': True, 'client_id': 'hub_client_136358913578304', 'session_id': 'MRU8Dtay4tVOf6iuAABE', 'message': 'Hub Client registered successfully', 'timestamp': '2025-08-16T14:16:48.115939'}
+2025-08-16 14:16:48 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 14:16:48 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=J3d6yEugCAYaAotuAABD HTTP/1.1" 200 None
+2025-08-16 14:16:48 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=J3d6yEugCAYaAotuAABD&t=1755353808.1225777 HTTP/1.1" 200 None
+2025-08-16 14:16:48 [INFO] [HUB_CLIENT] Hub confirmation received: {'success': True, 'terminal_id': 'webui', 'map_file': 'MAIN001', 'fields_populated': 7, 'hub_session': 'MRU8Dtay4tVOf6iuAABE', 'timestamp': '2025-08-16T14:16:48.128799', 'message': 'SMED data delivered via WebSocket Hub'}
+2025-08-16 14:16:48 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 14:16:49 [INFO] [HUB_CLIENT] Disconnected from WebSocket Hub
+2025-08-16 14:16:49 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 14:16:49 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=J3d6yEugCAYaAotuAABD HTTP/1.1" 200 None
+2025-08-16 14:16:49 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=J3d6yEugCAYaAotuAABD&t=1755353808.1328902 HTTP/1.1" 200 None
+2025-08-16 14:16:49 [INFO] [HUB_CLIENT] Disconnected from WebSocket Hub
+[HUB_REGISTERED] Success: True
+[HUB_REGISTERED] Client ID: hub_client_136358913578304
+[HUB_REGISTERED] Message: Hub Client registered successfully
+[HUB_CONFIRM] Success: True
+[HUB_CONFIRM] Terminal: webui
+[HUB_CONFIRM] Map: MAIN001
+[HUB_CONFIRM] Fields: 7
+[SUCCESS] SMED data sent to WebSocket Hub
+[MAIN001] Display data sent to WebSocket Hub successfully
+[MAIN001] Menu displayed on terminal: webui
+[MAIN001] READ DISPFILE INTO DISP-RECORD - Waiting for user input
+[세션관리] 입력 버퍼 클리어 완료
+[세션관리] - 제거된 입력 수: 0
+[MAIN001] Interactive 모드: 이전 입력 버퍼 클리어 완료
+[MAIN001] 입력 버퍼가 클리어된 상태, 새로운 입력 대기
+[MAIN001] WebSocket timeout loaded from config: 86400 seconds
+[MAIN001] Waiting for WebSocket Hub input... (timeout: 86400 seconds)
+[MAIN001] Input file: /tmp/asp_input_webui.txt
+[MAIN001] Still waiting... (5/86400 seconds)
+[MAIN001] Still waiting... (10/86400 seconds)
+[MAIN001] Still waiting... (15/86400 seconds)
+
+=== Execution Completed (Return Code: 143) ===
+
+=== End MAIN001 Execution ===
+
+=== MAIN001 Java Execution (2025-08-16 15:24:46) ===
+=== MAIN001 Java Execution Log (2025-08-16 15:24:33) ===
+Command: java -Dfile.encoding=UTF-8 -cp /home/aspuser/app/volume/DISK01/JAVA MAIN001
+Working directory: /home/aspuser/app/volume/DISK01/JAVA
+Input JSON: {"program": "MAIN001", "library": "JAVA", "volume": "DISK01", "user": "system"}
+=== Program Output ===
+*** MAIN001 - Employee Management Menu (Enhanced with Session Management) ***
+DSP File Handling with WebSocket Hub Integration
+SJIS encoding support for Korean text
+장기 개선 방안 적용: 모드 분리, 세션 관리, COBOL 시맨틱스
+
+[환경감지] 실행 환경 분석 중...
+[환경감지] 전달된 인수: []
+[환경감지] 옵션 파라미터 없음
+[환경감지] → WebUI Interactive 모드로 판단
+Terminal ID: webui (from environment)
+[세션관리] 세션 초기화 완료
+[세션관리] - 세션 ID: session_1755357873385_0.03589009039518831
+[세션관리] - 터미널 ID: webui
+[MAIN001] 실행 모드: WebUI Interactive 모드 - 지속적 세션
+[MAIN001Interactive] WebUI Interactive 모드 - 지속적 세션 관리
+[MAIN001] OPEN I-O DISPFILE - Initializing DSP connection
+[MAIN001] SYMBOLIC DESTINATION 'DSP' - WebSocket Hub communication active
+[MAIN001] SELECTED FUNCTION IS EMP-FUNC - Ready for user input
+[MAIN001] MAIN-LOOP - Starting main processing loop
+[MAIN001] MAIN-LOOP iteration: 1
+[MAIN001] WRITE DISPFILE FROM DISP-RECORD - Sending display to webUI
+2025-08-16 15:24:33 [INFO] [HUB_CLIENT] Connecting to WebSocket Hub: http://localhost:8000
+2025-08-16 15:24:33 [DEBUG] Starting new HTTP connection (1): localhost:8000
+2025-08-16 15:24:33 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&t=1755357873.8563778 HTTP/1.1" 200 None
+2025-08-16 15:24:33 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:24:33 [DEBUG] Starting new HTTP connection (2): localhost:8000
+2025-08-16 15:24:33 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=jDImEgTtRnWMB87yAABM HTTP/1.1" 200 None
+2025-08-16 15:24:33 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=jDImEgTtRnWMB87yAABM&t=1755357873.8703897 HTTP/1.1" 200 None
+2025-08-16 15:24:33 [INFO] [HUB_CLIENT] Connected to WebSocket Hub: http://localhost:8000
+2025-08-16 15:24:33 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:24:33 [INFO] [HUB_CLIENT] Connection established, registering with hub...
+2025-08-16 15:24:33 [INFO] [HUB_CLIENT] Registration data sent to hub: hub_client_139070857663808
+2025-08-16 15:24:33 [INFO] [HUB_CLIENT] Sending SMED data to hub:
+2025-08-16 15:24:33 [INFO] [HUB_CLIENT] - Terminal: webui
+2025-08-16 15:24:33 [INFO] [HUB_CLIENT] - Map: MAIN001
+2025-08-16 15:24:33 [INFO] [HUB_CLIENT] - Fields: 7 fields
+2025-08-16 15:24:33 [INFO] [HUB_CLIENT] - Program: MAIN001
+2025-08-16 15:24:33 [INFO] [HUB_CLIENT] SMED data sent to WebSocket Hub successfully
+2025-08-16 15:24:33 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:24:33 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=jDImEgTtRnWMB87yAABM&t=1755357873.8851902 HTTP/1.1" 200 None
+2025-08-16 15:24:33 [INFO] [HUB_CLIENT] Registration confirmed: {'success': True, 'client_id': 'hub_client_139070857663808', 'session_id': 'wlxHPrjPktwN7A6vAABN', 'message': 'Hub Client registered successfully', 'timestamp': '2025-08-16T15:24:33.892054'}
+2025-08-16 15:24:33 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:24:33 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=jDImEgTtRnWMB87yAABM HTTP/1.1" 200 None
+2025-08-16 15:24:33 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=jDImEgTtRnWMB87yAABM&t=1755357873.8941514 HTTP/1.1" 200 None
+2025-08-16 15:24:33 [INFO] [HUB_CLIENT] Hub confirmation received: {'success': True, 'terminal_id': 'webui', 'map_file': 'MAIN001', 'fields_populated': 7, 'hub_session': 'wlxHPrjPktwN7A6vAABN', 'timestamp': '2025-08-16T15:24:33.895744', 'message': 'SMED data delivered via WebSocket Hub'}
+2025-08-16 15:24:33 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:24:34 [INFO] [HUB_CLIENT] Disconnected from WebSocket Hub
+2025-08-16 15:24:34 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:24:34 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=jDImEgTtRnWMB87yAABM HTTP/1.1" 200 None
+2025-08-16 15:24:34 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=jDImEgTtRnWMB87yAABM&t=1755357873.9010305 HTTP/1.1" 200 None
+2025-08-16 15:24:34 [INFO] [HUB_CLIENT] Disconnected from WebSocket Hub
+[HUB_REGISTERED] Success: True
+[HUB_REGISTERED] Client ID: hub_client_139070857663808
+[HUB_REGISTERED] Message: Hub Client registered successfully
+[HUB_CONFIRM] Success: True
+[HUB_CONFIRM] Terminal: webui
+[HUB_CONFIRM] Map: MAIN001
+[HUB_CONFIRM] Fields: 7
+[SUCCESS] SMED data sent to WebSocket Hub
+[MAIN001] Display data sent to WebSocket Hub successfully
+[MAIN001] Menu displayed on terminal: webui
+[MAIN001] READ DISPFILE INTO DISP-RECORD - Waiting for user input
+[세션관리] 입력 버퍼 클리어 완료
+[세션관리] - 제거된 입력 수: 0
+[MAIN001] Interactive 모드: 이전 입력 버퍼 클리어 완료
+[MAIN001] 입력 버퍼가 클리어된 상태, 새로운 입력 대기
+[MAIN001] WebSocket timeout loaded from config: 86400 seconds
+[MAIN001] Waiting for WebSocket Hub input... (timeout: 86400 seconds)
+[MAIN001] Input file: /tmp/asp_input_webui.txt
+[MAIN001] Still waiting... (5/86400 seconds)
+[MAIN001] Still waiting... (10/86400 seconds)
+
+=== Execution Completed (Return Code: 143) ===
+
+=== End MAIN001 Execution ===
+
+=== MAIN001 Java Execution (2025-08-16 15:27:11) ===
+=== MAIN001 Java Execution Log (2025-08-16 15:26:54) ===
+Command: java -Dfile.encoding=UTF-8 -cp /home/aspuser/app/volume/DISK01/JAVA MAIN001
+Working directory: /home/aspuser/app/volume/DISK01/JAVA
+Input JSON: {"program": "MAIN001", "library": "JAVA", "volume": "DISK01", "user": "system"}
+=== Program Output ===
+*** MAIN001 - Employee Management Menu (Enhanced with Session Management) ***
+DSP File Handling with WebSocket Hub Integration
+SJIS encoding support for Korean text
+장기 개선 방안 적용: 모드 분리, 세션 관리, COBOL 시맨틱스
+
+[환경감지] 실행 환경 분석 중...
+[환경감지] 전달된 인수: []
+[환경감지] 옵션 파라미터 없음
+[환경감지] → WebUI Interactive 모드로 판단
+Terminal ID: webui (from environment)
+[세션관리] 세션 초기화 완료
+[세션관리] - 세션 ID: session_1755358014513_0.5026306815363313
+[세션관리] - 터미널 ID: webui
+[MAIN001] 실행 모드: WebUI Interactive 모드 - 지속적 세션
+[MAIN001Interactive] WebUI Interactive 모드 - 지속적 세션 관리
+[MAIN001] OPEN I-O DISPFILE - Initializing DSP connection
+[MAIN001] SYMBOLIC DESTINATION 'DSP' - WebSocket Hub communication active
+[MAIN001] SELECTED FUNCTION IS EMP-FUNC - Ready for user input
+[MAIN001] MAIN-LOOP - Starting main processing loop
+[MAIN001] MAIN-LOOP iteration: 1
+[MAIN001] WRITE DISPFILE FROM DISP-RECORD - Sending display to webUI
+2025-08-16 15:26:54 [INFO] [HUB_CLIENT] Connecting to WebSocket Hub: http://localhost:8000
+2025-08-16 15:26:54 [DEBUG] Starting new HTTP connection (1): localhost:8000
+2025-08-16 15:26:54 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&t=1755358014.844298 HTTP/1.1" 200 None
+2025-08-16 15:26:54 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:26:54 [DEBUG] Starting new HTTP connection (2): localhost:8000
+2025-08-16 15:26:54 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=FAOBK2joILZl6vpPAABO HTTP/1.1" 200 None
+2025-08-16 15:26:54 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=FAOBK2joILZl6vpPAABO&t=1755358014.8578393 HTTP/1.1" 200 None
+2025-08-16 15:26:54 [INFO] [HUB_CLIENT] Connected to WebSocket Hub: http://localhost:8000
+2025-08-16 15:26:54 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:26:54 [INFO] [HUB_CLIENT] Connection established, registering with hub...
+2025-08-16 15:26:54 [INFO] [HUB_CLIENT] Registration data sent to hub: hub_client_138659582694720
+2025-08-16 15:26:54 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:26:54 [INFO] [HUB_CLIENT] Sending SMED data to hub:
+2025-08-16 15:26:54 [INFO] [HUB_CLIENT] - Terminal: webui
+2025-08-16 15:26:54 [INFO] [HUB_CLIENT] - Map: MAIN001
+2025-08-16 15:26:54 [INFO] [HUB_CLIENT] - Fields: 7 fields
+2025-08-16 15:26:54 [INFO] [HUB_CLIENT] - Program: MAIN001
+2025-08-16 15:26:54 [INFO] [HUB_CLIENT] SMED data sent to WebSocket Hub successfully
+2025-08-16 15:26:54 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=FAOBK2joILZl6vpPAABO HTTP/1.1" 200 None
+2025-08-16 15:26:54 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=FAOBK2joILZl6vpPAABO&t=1755358014.8708963 HTTP/1.1" 200 None
+2025-08-16 15:26:54 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:26:54 [INFO] [HUB_CLIENT] Registration confirmed: {'success': True, 'client_id': 'hub_client_138659582694720', 'session_id': 'Z2desFAaeXC81RBfAABP', 'message': 'Hub Client registered successfully', 'timestamp': '2025-08-16T15:26:54.877915'}
+2025-08-16 15:26:54 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:26:54 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=FAOBK2joILZl6vpPAABO HTTP/1.1" 200 None
+2025-08-16 15:26:54 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=FAOBK2joILZl6vpPAABO&t=1755358014.8821158 HTTP/1.1" 200 None
+2025-08-16 15:26:54 [INFO] [HUB_CLIENT] Hub confirmation received: {'success': True, 'terminal_id': 'webui', 'map_file': 'MAIN001', 'fields_populated': 7, 'hub_session': 'Z2desFAaeXC81RBfAABP', 'timestamp': '2025-08-16T15:26:54.887303', 'message': 'SMED data delivered via WebSocket Hub'}
+2025-08-16 15:26:54 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:26:55 [INFO] [HUB_CLIENT] Disconnected from WebSocket Hub
+2025-08-16 15:26:55 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:26:55 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=FAOBK2joILZl6vpPAABO HTTP/1.1" 200 None
+2025-08-16 15:26:55 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=FAOBK2joILZl6vpPAABO&t=1755358014.8901863 HTTP/1.1" 200 None
+2025-08-16 15:26:55 [INFO] [HUB_CLIENT] Disconnected from WebSocket Hub
+[HUB_REGISTERED] Success: True
+[HUB_REGISTERED] Client ID: hub_client_138659582694720
+[HUB_REGISTERED] Message: Hub Client registered successfully
+[HUB_CONFIRM] Success: True
+[HUB_CONFIRM] Terminal: webui
+[HUB_CONFIRM] Map: MAIN001
+[HUB_CONFIRM] Fields: 7
+[SUCCESS] SMED data sent to WebSocket Hub
+[MAIN001] Display data sent to WebSocket Hub successfully
+[MAIN001] Menu displayed on terminal: webui
+[MAIN001] READ DISPFILE INTO DISP-RECORD - Waiting for user input
+[세션관리] 입력 버퍼 클리어 완료
+[세션관리] - 제거된 입력 수: 0
+[MAIN001] Interactive 모드: 이전 입력 버퍼 클리어 완료
+[MAIN001] 입력 버퍼가 클리어된 상태, 새로운 입력 대기
+[MAIN001] WebSocket timeout loaded from config: 86400 seconds
+[MAIN001] Waiting for WebSocket Hub input... (timeout: 86400 seconds)
+[MAIN001] Input file: /tmp/asp_input_webui.txt
+[MAIN001] Still waiting... (5/86400 seconds)
+[MAIN001] Still waiting... (10/86400 seconds)
+[MAIN001] Still waiting... (15/86400 seconds)
+
+=== Execution Completed (Return Code: 143) ===
+
+=== End MAIN001 Execution ===
+
+=== MAIN001 Java Execution (2025-08-16 15:28:59) ===
+=== MAIN001 Java Execution Log (2025-08-16 15:28:43) ===
+Command: java -Dfile.encoding=UTF-8 -cp /home/aspuser/app/volume/DISK01/JAVA MAIN001
+Working directory: /home/aspuser/app/volume/DISK01/JAVA
+Input JSON: {"program": "MAIN001", "library": "JAVA", "volume": "DISK01", "user": "system"}
+=== Program Output ===
+*** MAIN001 - Employee Management Menu (Enhanced with Session Management) ***
+DSP File Handling with WebSocket Hub Integration
+SJIS encoding support for Korean text
+장기 개선 방안 적용: 모드 분리, 세션 관리, COBOL 시맨틱스
+
+[환경감지] 실행 환경 분석 중...
+[환경감지] 전달된 인수: []
+[환경감지] 옵션 파라미터 없음
+[환경감지] → WebUI Interactive 모드로 판단
+Terminal ID: webui (default)
+[세션관리] 세션 초기화 완료
+[세션관리] - 세션 ID: session_1755358123717_0.6246537381141205
+[세션관리] - 터미널 ID: webui
+[MAIN001] 실행 모드: WebUI Interactive 모드 - 지속적 세션
+[MAIN001Interactive] WebUI Interactive 모드 - 지속적 세션 관리
+[MAIN001] OPEN I-O DISPFILE - Initializing DSP connection
+[MAIN001] SYMBOLIC DESTINATION 'DSP' - WebSocket Hub communication active
+[MAIN001] SELECTED FUNCTION IS EMP-FUNC - Ready for user input
+[MAIN001] MAIN-LOOP - Starting main processing loop
+[MAIN001] MAIN-LOOP iteration: 1
+[MAIN001] WRITE DISPFILE FROM DISP-RECORD - Sending display to webUI
+2025-08-16 15:28:44 [INFO] [HUB_CLIENT] Connecting to WebSocket Hub: http://localhost:8000
+2025-08-16 15:28:44 [DEBUG] Starting new HTTP connection (1): localhost:8000
+2025-08-16 15:28:44 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&t=1755358124.1270695 HTTP/1.1" 200 None
+2025-08-16 15:28:44 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:28:44 [DEBUG] Starting new HTTP connection (2): localhost:8000
+2025-08-16 15:28:44 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=-d0XwhKiMWsyfSWEAABQ HTTP/1.1" 200 None
+2025-08-16 15:28:44 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=-d0XwhKiMWsyfSWEAABQ&t=1755358124.1380184 HTTP/1.1" 200 None
+2025-08-16 15:28:44 [INFO] [HUB_CLIENT] Connected to WebSocket Hub: http://localhost:8000
+2025-08-16 15:28:44 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:28:44 [INFO] [HUB_CLIENT] Connection established, registering with hub...
+2025-08-16 15:28:44 [INFO] [HUB_CLIENT] Registration data sent to hub: hub_client_129696379769840
+2025-08-16 15:28:44 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:28:44 [INFO] [HUB_CLIENT] Sending SMED data to hub:
+2025-08-16 15:28:44 [INFO] [HUB_CLIENT] - Terminal: webui
+2025-08-16 15:28:44 [INFO] [HUB_CLIENT] - Map: MAIN001
+2025-08-16 15:28:44 [INFO] [HUB_CLIENT] - Fields: 7 fields
+2025-08-16 15:28:44 [INFO] [HUB_CLIENT] - Program: MAIN001
+2025-08-16 15:28:44 [INFO] [HUB_CLIENT] SMED data sent to WebSocket Hub successfully
+2025-08-16 15:28:44 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=-d0XwhKiMWsyfSWEAABQ HTTP/1.1" 200 None
+2025-08-16 15:28:44 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=-d0XwhKiMWsyfSWEAABQ&t=1755358124.1441274 HTTP/1.1" 200 None
+2025-08-16 15:28:44 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:28:44 [INFO] [HUB_CLIENT] Registration confirmed: {'success': True, 'client_id': 'hub_client_129696379769840', 'session_id': 'Z3d_uJ1w-iyaXRxFAABR', 'message': 'Hub Client registered successfully', 'timestamp': '2025-08-16T15:28:44.151466'}
+2025-08-16 15:28:44 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:28:44 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=-d0XwhKiMWsyfSWEAABQ HTTP/1.1" 200 None
+2025-08-16 15:28:44 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=-d0XwhKiMWsyfSWEAABQ&t=1755358124.155421 HTTP/1.1" 200 None
+2025-08-16 15:28:44 [INFO] [HUB_CLIENT] Hub confirmation received: {'success': False, 'terminal_id': 'webui', 'map_file': 'MAIN001', 'fields_populated': 7, 'hub_session': 'Z3d_uJ1w-iyaXRxFAABR', 'timestamp': '2025-08-16T15:28:44.160820', 'message': 'SMED data failed to deliver via WebSocket Hub'}
+2025-08-16 15:28:44 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:28:45 [INFO] [HUB_CLIENT] Disconnected from WebSocket Hub
+2025-08-16 15:28:45 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:28:45 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=-d0XwhKiMWsyfSWEAABQ HTTP/1.1" 200 None
+2025-08-16 15:28:45 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=-d0XwhKiMWsyfSWEAABQ&t=1755358124.1628535 HTTP/1.1" 200 None
+2025-08-16 15:28:45 [INFO] [HUB_CLIENT] Disconnected from WebSocket Hub
+[HUB_REGISTERED] Success: True
+[HUB_REGISTERED] Client ID: hub_client_129696379769840
+[HUB_REGISTERED] Message: Hub Client registered successfully
+[HUB_CONFIRM] Success: False
+[HUB_CONFIRM] Terminal: webui
+[HUB_CONFIRM] Map: MAIN001
+[HUB_CONFIRM] Fields: 7
+[SUCCESS] SMED data sent to WebSocket Hub
+[MAIN001] Display data sent to WebSocket Hub successfully
+[MAIN001] Menu displayed on terminal: webui
+[MAIN001] READ DISPFILE INTO DISP-RECORD - Waiting for user input
+[세션관리] 입력 버퍼 클리어 완료
+[세션관리] - 제거된 입력 수: 0
+[MAIN001] Interactive 모드: 이전 입력 버퍼 클리어 완료
+[MAIN001] 입력 버퍼가 클리어된 상태, 새로운 입력 대기
+[MAIN001] WebSocket timeout loaded from config: 86400 seconds
+[MAIN001] Waiting for WebSocket Hub input... (timeout: 86400 seconds)
+[MAIN001] Input file: /tmp/asp_input_webui.txt
+[MAIN001] Still waiting... (5/86400 seconds)
+[MAIN001] Still waiting... (10/86400 seconds)
+
+=== Execution Completed (Return Code: 143) ===
+
+=== End MAIN001 Execution ===
+
+=== MAIN001 Java Execution (2025-08-16 15:30:59) ===
+=== MAIN001 Java Execution Log (2025-08-16 15:30:48) ===
+Command: java -Dfile.encoding=UTF-8 -cp /home/aspuser/app/volume/DISK01/JAVA MAIN001
+Working directory: /home/aspuser/app/volume/DISK01/JAVA
+Input JSON: {"program": "MAIN001", "library": "JAVA", "volume": "DISK01", "user": "system"}
+=== Program Output ===
+*** MAIN001 - Employee Management Menu (Enhanced with Session Management) ***
+DSP File Handling with WebSocket Hub Integration
+SJIS encoding support for Korean text
+장기 개선 방안 적용: 모드 분리, 세션 관리, COBOL 시맨틱스
+
+[환경감지] 실행 환경 분석 중...
+[환경감지] 전달된 인수: []
+[환경감지] 옵션 파라미터 없음
+[환경감지] → WebUI Interactive 모드로 판단
+Terminal ID: webui (from environment)
+[세션관리] 세션 초기화 완료
+[세션관리] - 세션 ID: session_1755358248598_0.2625274375258273
+[세션관리] - 터미널 ID: webui
+[MAIN001] 실행 모드: WebUI Interactive 모드 - 지속적 세션
+[MAIN001Interactive] WebUI Interactive 모드 - 지속적 세션 관리
+[MAIN001] OPEN I-O DISPFILE - Initializing DSP connection
+[MAIN001] SYMBOLIC DESTINATION 'DSP' - WebSocket Hub communication active
+[MAIN001] SELECTED FUNCTION IS EMP-FUNC - Ready for user input
+[MAIN001] MAIN-LOOP - Starting main processing loop
+[MAIN001] MAIN-LOOP iteration: 1
+[MAIN001] WRITE DISPFILE FROM DISP-RECORD - Sending display to webUI
+2025-08-16 15:30:48 [INFO] [HUB_CLIENT] Connecting to WebSocket Hub: http://localhost:8000
+2025-08-16 15:30:48 [DEBUG] Starting new HTTP connection (1): localhost:8000
+2025-08-16 15:30:48 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&t=1755358248.8541698 HTTP/1.1" 200 None
+2025-08-16 15:30:48 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:30:48 [DEBUG] Starting new HTTP connection (2): localhost:8000
+2025-08-16 15:30:48 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=1Jc3LEM7aFdfuR99AABY HTTP/1.1" 200 None
+2025-08-16 15:30:48 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=1Jc3LEM7aFdfuR99AABY&t=1755358248.8643603 HTTP/1.1" 200 None
+2025-08-16 15:30:48 [INFO] [HUB_CLIENT] Connected to WebSocket Hub: http://localhost:8000
+2025-08-16 15:30:48 [INFO] [HUB_CLIENT] Connection established, registering with hub...
+2025-08-16 15:30:48 [INFO] [HUB_CLIENT] Registration data sent to hub: hub_client_138747262735680
+2025-08-16 15:30:48 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:30:48 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:30:48 [INFO] [HUB_CLIENT] Sending SMED data to hub:
+2025-08-16 15:30:48 [INFO] [HUB_CLIENT] - Terminal: webui
+2025-08-16 15:30:48 [INFO] [HUB_CLIENT] - Map: MAIN001
+2025-08-16 15:30:48 [INFO] [HUB_CLIENT] - Fields: 7 fields
+2025-08-16 15:30:48 [INFO] [HUB_CLIENT] - Program: MAIN001
+2025-08-16 15:30:48 [INFO] [HUB_CLIENT] SMED data sent to WebSocket Hub successfully
+2025-08-16 15:30:48 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=1Jc3LEM7aFdfuR99AABY HTTP/1.1" 200 None
+2025-08-16 15:30:48 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=1Jc3LEM7aFdfuR99AABY&t=1755358248.8751752 HTTP/1.1" 200 None
+2025-08-16 15:30:48 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:30:48 [INFO] [HUB_CLIENT] Registration confirmed: {'success': True, 'client_id': 'hub_client_138747262735680', 'session_id': '64ABAOVTQdUtLDt5AABZ', 'message': 'Hub Client registered successfully', 'timestamp': '2025-08-16T15:30:48.880100'}
+2025-08-16 15:30:48 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:30:48 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=1Jc3LEM7aFdfuR99AABY HTTP/1.1" 200 None
+2025-08-16 15:30:48 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=1Jc3LEM7aFdfuR99AABY&t=1755358248.8850226 HTTP/1.1" 200 None
+2025-08-16 15:30:48 [INFO] [HUB_CLIENT] Hub confirmation received: {'success': True, 'terminal_id': 'webui', 'map_file': 'MAIN001', 'fields_populated': 7, 'hub_session': '64ABAOVTQdUtLDt5AABZ', 'timestamp': '2025-08-16T15:30:48.890317', 'message': 'SMED data delivered via WebSocket Hub'}
+2025-08-16 15:30:48 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:30:49 [INFO] [HUB_CLIENT] Disconnected from WebSocket Hub
+2025-08-16 15:30:49 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:30:49 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=1Jc3LEM7aFdfuR99AABY HTTP/1.1" 200 None
+2025-08-16 15:30:49 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=1Jc3LEM7aFdfuR99AABY&t=1755358248.8923948 HTTP/1.1" 200 None
+2025-08-16 15:30:49 [INFO] [HUB_CLIENT] Disconnected from WebSocket Hub
+[HUB_REGISTERED] Success: True
+[HUB_REGISTERED] Client ID: hub_client_138747262735680
+[HUB_REGISTERED] Message: Hub Client registered successfully
+[HUB_CONFIRM] Success: True
+[HUB_CONFIRM] Terminal: webui
+[HUB_CONFIRM] Map: MAIN001
+[HUB_CONFIRM] Fields: 7
+[SUCCESS] SMED data sent to WebSocket Hub
+[MAIN001] Display data sent to WebSocket Hub successfully
+[MAIN001] Menu displayed on terminal: webui
+[MAIN001] READ DISPFILE INTO DISP-RECORD - Waiting for user input
+[세션관리] 입력 버퍼 클리어 완료
+[세션관리] - 제거된 입력 수: 0
+[MAIN001] Interactive 모드: 이전 입력 버퍼 클리어 완료
+[MAIN001] 입력 버퍼가 클리어된 상태, 새로운 입력 대기
+[MAIN001] WebSocket timeout loaded from config: 86400 seconds
+[MAIN001] Waiting for WebSocket Hub input... (timeout: 86400 seconds)
+[MAIN001] Input file: /tmp/asp_input_webui.txt
+[MAIN001] Still waiting... (5/86400 seconds)
+
+=== Execution Completed (Return Code: 143) ===
+
+=== End MAIN001 Execution ===
+
+=== MAIN001 Java Execution (2025-08-16 15:32:54) ===
+=== MAIN001 Java Execution Log (2025-08-16 15:32:29) ===
+Command: java -Dfile.encoding=UTF-8 -cp /home/aspuser/app/volume/DISK01/JAVA MAIN001
+Working directory: /home/aspuser/app/volume/DISK01/JAVA
+Input JSON: {"program": "MAIN001", "library": "JAVA", "volume": "DISK01", "user": "system"}
+=== Program Output ===
+*** MAIN001 - Employee Management Menu (Enhanced with Session Management) ***
+DSP File Handling with WebSocket Hub Integration
+SJIS encoding support for Korean text
+장기 개선 방안 적용: 모드 분리, 세션 관리, COBOL 시맨틱스
+
+[환경감지] 실행 환경 분석 중...
+[환경감지] 전달된 인수: []
+[환경감지] 옵션 파라미터 없음
+[환경감지] → WebUI Interactive 모드로 판단
+Terminal ID: webui (from environment)
+[세션관리] 세션 초기화 완료
+[세션관리] - 세션 ID: session_1755358349855_0.7454987896669821
+[세션관리] - 터미널 ID: webui
+[MAIN001] 실행 모드: WebUI Interactive 모드 - 지속적 세션
+[MAIN001Interactive] WebUI Interactive 모드 - 지속적 세션 관리
+[MAIN001] OPEN I-O DISPFILE - Initializing DSP connection
+[MAIN001] SYMBOLIC DESTINATION 'DSP' - WebSocket Hub communication active
+[MAIN001] SELECTED FUNCTION IS EMP-FUNC - Ready for user input
+[MAIN001] MAIN-LOOP - Starting main processing loop
+[MAIN001] MAIN-LOOP iteration: 1
+[MAIN001] WRITE DISPFILE FROM DISP-RECORD - Sending display to webUI
+2025-08-16 15:32:30 [INFO] [HUB_CLIENT] Connecting to WebSocket Hub: http://localhost:8000
+2025-08-16 15:32:30 [DEBUG] Starting new HTTP connection (1): localhost:8000
+2025-08-16 15:32:30 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&t=1755358350.2697783 HTTP/1.1" 200 None
+2025-08-16 15:32:30 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:32:30 [DEBUG] Starting new HTTP connection (2): localhost:8000
+2025-08-16 15:32:30 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=zZLltfhR9VvPK7WlAABa HTTP/1.1" 200 None
+2025-08-16 15:32:30 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=zZLltfhR9VvPK7WlAABa&t=1755358350.2853541 HTTP/1.1" 200 None
+2025-08-16 15:32:30 [INFO] [HUB_CLIENT] Connected to WebSocket Hub: http://localhost:8000
+2025-08-16 15:32:30 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:32:30 [INFO] [HUB_CLIENT] Connection established, registering with hub...
+2025-08-16 15:32:30 [INFO] [HUB_CLIENT] Registration data sent to hub: hub_client_125953717769536
+2025-08-16 15:32:30 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:32:30 [INFO] [HUB_CLIENT] Sending SMED data to hub:
+2025-08-16 15:32:30 [INFO] [HUB_CLIENT] - Terminal: webui
+2025-08-16 15:32:30 [INFO] [HUB_CLIENT] - Map: MAIN001
+2025-08-16 15:32:30 [INFO] [HUB_CLIENT] - Fields: 7 fields
+2025-08-16 15:32:30 [INFO] [HUB_CLIENT] - Program: MAIN001
+2025-08-16 15:32:30 [INFO] [HUB_CLIENT] SMED data sent to WebSocket Hub successfully
+2025-08-16 15:32:30 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=zZLltfhR9VvPK7WlAABa HTTP/1.1" 200 None
+2025-08-16 15:32:30 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=zZLltfhR9VvPK7WlAABa&t=1755358350.297732 HTTP/1.1" 200 None
+2025-08-16 15:32:30 [INFO] [HUB_CLIENT] Registration confirmed: {'success': True, 'client_id': 'hub_client_125953717769536', 'session_id': '_2bC5NrUYcQSqADLAABb', 'message': 'Hub Client registered successfully', 'timestamp': '2025-08-16T15:32:30.306770'}
+2025-08-16 15:32:30 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:32:30 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:32:30 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=zZLltfhR9VvPK7WlAABa HTTP/1.1" 200 None
+2025-08-16 15:32:30 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=zZLltfhR9VvPK7WlAABa&t=1755358350.310364 HTTP/1.1" 200 None
+2025-08-16 15:32:30 [INFO] [HUB_CLIENT] Hub confirmation received: {'success': True, 'terminal_id': 'webui', 'map_file': 'MAIN001', 'fields_populated': 7, 'hub_session': '_2bC5NrUYcQSqADLAABb', 'timestamp': '2025-08-16T15:32:30.316317', 'message': 'SMED data delivered via WebSocket Hub'}
+2025-08-16 15:32:30 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:32:31 [INFO] [HUB_CLIENT] Disconnected from WebSocket Hub
+2025-08-16 15:32:31 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:32:31 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=zZLltfhR9VvPK7WlAABa HTTP/1.1" 200 None
+2025-08-16 15:32:31 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=zZLltfhR9VvPK7WlAABa&t=1755358350.3207617 HTTP/1.1" 200 None
+2025-08-16 15:32:31 [INFO] [HUB_CLIENT] Disconnected from WebSocket Hub
+[HUB_REGISTERED] Success: True
+[HUB_REGISTERED] Client ID: hub_client_125953717769536
+[HUB_REGISTERED] Message: Hub Client registered successfully
+[HUB_CONFIRM] Success: True
+[HUB_CONFIRM] Terminal: webui
+[HUB_CONFIRM] Map: MAIN001
+[HUB_CONFIRM] Fields: 7
+[SUCCESS] SMED data sent to WebSocket Hub
+[MAIN001] Display data sent to WebSocket Hub successfully
+[MAIN001] Menu displayed on terminal: webui
+[MAIN001] READ DISPFILE INTO DISP-RECORD - Waiting for user input
+[세션관리] 입력 버퍼 클리어 완료
+[세션관리] - 제거된 입력 수: 0
+[MAIN001] Interactive 모드: 이전 입력 버퍼 클리어 완료
+[MAIN001] 입력 버퍼가 클리어된 상태, 새로운 입력 대기
+[MAIN001] WebSocket timeout loaded from config: 86400 seconds
+[MAIN001] Waiting for WebSocket Hub input... (timeout: 86400 seconds)
+[MAIN001] Input file: /tmp/asp_input_webui.txt
+[MAIN001] Still waiting... (5/86400 seconds)
+[MAIN001] Still waiting... (10/86400 seconds)
+[MAIN001] Still waiting... (15/86400 seconds)
+[MAIN001] Still waiting... (20/86400 seconds)
+
+=== Execution Completed (Return Code: 143) ===
+
+=== End MAIN001 Execution ===
+
+=== MAIN001 Java Execution (2025-08-16 15:33:51) ===
+=== MAIN001 Java Execution Log (2025-08-16 15:33:42) ===
+Command: java -Dfile.encoding=UTF-8 -cp /home/aspuser/app/volume/DISK01/JAVA MAIN001
+Working directory: /home/aspuser/app/volume/DISK01/JAVA
+Input JSON: {"program": "MAIN001", "library": "JAVA", "volume": "DISK01", "user": "system"}
+=== Program Output ===
+*** MAIN001 - Employee Management Menu (Enhanced with Session Management) ***
+DSP File Handling with WebSocket Hub Integration
+SJIS encoding support for Korean text
+장기 개선 방안 적용: 모드 분리, 세션 관리, COBOL 시맨틱스
+
+[환경감지] 실행 환경 분석 중...
+[환경감지] 전달된 인수: []
+[환경감지] 옵션 파라미터 없음
+[환경감지] → WebUI Interactive 모드로 판단
+Terminal ID: webui (from environment)
+[세션관리] 세션 초기화 완료
+[세션관리] - 세션 ID: session_1755358423031_0.41733767888435025
+[세션관리] - 터미널 ID: webui
+[MAIN001] 실행 모드: WebUI Interactive 모드 - 지속적 세션
+[MAIN001Interactive] WebUI Interactive 모드 - 지속적 세션 관리
+[MAIN001] OPEN I-O DISPFILE - Initializing DSP connection
+[MAIN001] SYMBOLIC DESTINATION 'DSP' - WebSocket Hub communication active
+[MAIN001] SELECTED FUNCTION IS EMP-FUNC - Ready for user input
+[MAIN001] MAIN-LOOP - Starting main processing loop
+[MAIN001] MAIN-LOOP iteration: 1
+[MAIN001] WRITE DISPFILE FROM DISP-RECORD - Sending display to webUI
+2025-08-16 15:33:43 [INFO] [HUB_CLIENT] Connecting to WebSocket Hub: http://localhost:8000
+2025-08-16 15:33:43 [DEBUG] Starting new HTTP connection (1): localhost:8000
+2025-08-16 15:33:43 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&t=1755358423.3402915 HTTP/1.1" 200 None
+2025-08-16 15:33:43 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:33:43 [DEBUG] Starting new HTTP connection (2): localhost:8000
+2025-08-16 15:33:43 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=T7KxkLqmxBFG0b3FAABc HTTP/1.1" 200 None
+2025-08-16 15:33:43 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=T7KxkLqmxBFG0b3FAABc&t=1755358423.3518832 HTTP/1.1" 200 None
+2025-08-16 15:33:43 [INFO] [HUB_CLIENT] Connected to WebSocket Hub: http://localhost:8000
+2025-08-16 15:33:43 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:33:43 [INFO] [HUB_CLIENT] Connection established, registering with hub...
+2025-08-16 15:33:43 [INFO] [HUB_CLIENT] Registration data sent to hub: hub_client_128641303860544
+2025-08-16 15:33:43 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:33:43 [INFO] [HUB_CLIENT] Sending SMED data to hub:
+2025-08-16 15:33:43 [INFO] [HUB_CLIENT] - Terminal: webui
+2025-08-16 15:33:43 [INFO] [HUB_CLIENT] - Map: MAIN001
+2025-08-16 15:33:43 [INFO] [HUB_CLIENT] - Fields: 7 fields
+2025-08-16 15:33:43 [INFO] [HUB_CLIENT] - Program: MAIN001
+2025-08-16 15:33:43 [INFO] [HUB_CLIENT] SMED data sent to WebSocket Hub successfully
+2025-08-16 15:33:43 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=T7KxkLqmxBFG0b3FAABc&t=1755358423.3619013 HTTP/1.1" 200 None
+2025-08-16 15:33:43 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=T7KxkLqmxBFG0b3FAABc HTTP/1.1" 200 None
+2025-08-16 15:33:43 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:33:43 [INFO] [HUB_CLIENT] Registration confirmed: {'success': True, 'client_id': 'hub_client_128641303860544', 'session_id': 'A_s2l2SiVVln3jHOAABd', 'message': 'Hub Client registered successfully', 'timestamp': '2025-08-16T15:33:43.368433'}
+2025-08-16 15:33:43 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:33:43 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=T7KxkLqmxBFG0b3FAABc HTTP/1.1" 200 None
+2025-08-16 15:33:43 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=T7KxkLqmxBFG0b3FAABc&t=1755358423.372273 HTTP/1.1" 200 None
+2025-08-16 15:33:43 [INFO] [HUB_CLIENT] Hub confirmation received: {'success': True, 'terminal_id': 'webui', 'map_file': 'MAIN001', 'fields_populated': 7, 'hub_session': 'A_s2l2SiVVln3jHOAABd', 'timestamp': '2025-08-16T15:33:43.376946', 'message': 'SMED data delivered via WebSocket Hub'}
+2025-08-16 15:33:43 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:33:44 [INFO] [HUB_CLIENT] Disconnected from WebSocket Hub
+2025-08-16 15:33:44 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:33:44 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=T7KxkLqmxBFG0b3FAABc HTTP/1.1" 200 None
+2025-08-16 15:33:44 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=T7KxkLqmxBFG0b3FAABc&t=1755358423.3801873 HTTP/1.1" 200 None
+2025-08-16 15:33:44 [INFO] [HUB_CLIENT] Disconnected from WebSocket Hub
+[HUB_REGISTERED] Success: True
+[HUB_REGISTERED] Client ID: hub_client_128641303860544
+[HUB_REGISTERED] Message: Hub Client registered successfully
+[HUB_CONFIRM] Success: True
+[HUB_CONFIRM] Terminal: webui
+[HUB_CONFIRM] Map: MAIN001
+[HUB_CONFIRM] Fields: 7
+[SUCCESS] SMED data sent to WebSocket Hub
+[MAIN001] Display data sent to WebSocket Hub successfully
+[MAIN001] Menu displayed on terminal: webui
+[MAIN001] READ DISPFILE INTO DISP-RECORD - Waiting for user input
+[세션관리] 입력 버퍼 클리어 완료
+[세션관리] - 제거된 입력 수: 0
+[MAIN001] Interactive 모드: 이전 입력 버퍼 클리어 완료
+[MAIN001] 입력 버퍼가 클리어된 상태, 새로운 입력 대기
+[MAIN001] WebSocket timeout loaded from config: 86400 seconds
+[MAIN001] Waiting for WebSocket Hub input... (timeout: 86400 seconds)
+[MAIN001] Input file: /tmp/asp_input_webui.txt
+[MAIN001] Still waiting... (5/86400 seconds)
+
+=== Execution Completed (Return Code: 143) ===
+
+=== End MAIN001 Execution ===
+
+=== MAIN001 Java Execution (2025-08-16 15:40:01) ===
+=== MAIN001 Java Execution Log (2025-08-16 15:39:49) ===
+Command: java -Dfile.encoding=UTF-8 -cp /home/aspuser/app/volume/DISK01/JAVA MAIN001
+Working directory: /home/aspuser/app/volume/DISK01/JAVA
+Input JSON: {"program": "MAIN001", "library": "JAVA", "volume": "DISK01", "user": "system"}
+=== Program Output ===
+*** MAIN001 - Employee Management Menu (Enhanced with Session Management) ***
+DSP File Handling with WebSocket Hub Integration
+SJIS encoding support for Korean text
+장기 개선 방안 적용: 모드 분리, 세션 관리, COBOL 시맨틱스
+
+[환경감지] 실행 환경 분석 중...
+[환경감지] 전달된 인수: []
+[환경감지] 옵션 파라미터 없음
+[환경감지] → WebUI Interactive 모드로 판단
+Terminal ID: webui (from environment)
+[세션관리] 세션 초기화 완료
+[세션관리] - 세션 ID: session_1755358790027_0.37853909660252427
+[세션관리] - 터미널 ID: webui
+[MAIN001] 실행 모드: WebUI Interactive 모드 - 지속적 세션
+[MAIN001Interactive] WebUI Interactive 모드 - 지속적 세션 관리
+[MAIN001] OPEN I-O DISPFILE - Initializing DSP connection
+[MAIN001] SYMBOLIC DESTINATION 'DSP' - WebSocket Hub communication active
+[MAIN001] SELECTED FUNCTION IS EMP-FUNC - Ready for user input
+[MAIN001] MAIN-LOOP - Starting main processing loop
+[MAIN001] MAIN-LOOP iteration: 1
+[MAIN001] WRITE DISPFILE FROM DISP-RECORD - Sending display to webUI
+2025-08-16 15:39:50 [INFO] [HUB_CLIENT] Connecting to WebSocket Hub: http://localhost:8000
+2025-08-16 15:39:50 [DEBUG] Starting new HTTP connection (1): localhost:8000
+2025-08-16 15:39:50 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&t=1755358790.4019547 HTTP/1.1" 200 None
+2025-08-16 15:39:50 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:39:50 [DEBUG] Starting new HTTP connection (2): localhost:8000
+2025-08-16 15:39:50 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=p_Wqihcy8yFMk32yAABg HTTP/1.1" 200 None
+2025-08-16 15:39:50 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=p_Wqihcy8yFMk32yAABg&t=1755358790.4149694 HTTP/1.1" 200 None
+2025-08-16 15:39:50 [INFO] [HUB_CLIENT] Connected to WebSocket Hub: http://localhost:8000
+2025-08-16 15:39:50 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:39:50 [INFO] [HUB_CLIENT] Connection established, registering with hub...
+2025-08-16 15:39:50 [INFO] [HUB_CLIENT] Registration data sent to hub: hub_client_128911582205248
+2025-08-16 15:39:50 [INFO] [HUB_CLIENT] Sending SMED data to hub:
+2025-08-16 15:39:50 [INFO] [HUB_CLIENT] - Terminal: webui
+2025-08-16 15:39:50 [INFO] [HUB_CLIENT] - Map: MAIN001
+2025-08-16 15:39:50 [INFO] [HUB_CLIENT] - Fields: 7 fields
+2025-08-16 15:39:50 [INFO] [HUB_CLIENT] - Program: MAIN001
+2025-08-16 15:39:50 [INFO] [HUB_CLIENT] SMED data sent to WebSocket Hub successfully
+2025-08-16 15:39:50 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:39:50 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=p_Wqihcy8yFMk32yAABg HTTP/1.1" 200 None
+2025-08-16 15:39:50 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=p_Wqihcy8yFMk32yAABg&t=1755358790.4260452 HTTP/1.1" 200 None
+2025-08-16 15:39:50 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:39:50 [INFO] [HUB_CLIENT] Registration confirmed: {'success': True, 'client_id': 'hub_client_128911582205248', 'session_id': 'vdmi5VBx6IEn641WAABh', 'message': 'Hub Client registered successfully', 'timestamp': '2025-08-16T15:39:50.433718'}
+2025-08-16 15:39:50 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:39:50 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=p_Wqihcy8yFMk32yAABg HTTP/1.1" 200 None
+2025-08-16 15:39:50 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=p_Wqihcy8yFMk32yAABg&t=1755358790.4381893 HTTP/1.1" 200 None
+2025-08-16 15:39:50 [INFO] [HUB_CLIENT] Hub confirmation received: {'success': True, 'terminal_id': 'webui', 'map_file': 'MAIN001', 'fields_populated': 7, 'hub_session': 'vdmi5VBx6IEn641WAABh', 'timestamp': '2025-08-16T15:39:50.446059', 'message': 'SMED data delivered via WebSocket Hub'}
+2025-08-16 15:39:50 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:39:51 [INFO] [HUB_CLIENT] Disconnected from WebSocket Hub
+2025-08-16 15:39:51 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:39:51 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=p_Wqihcy8yFMk32yAABg HTTP/1.1" 200 None
+2025-08-16 15:39:51 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=p_Wqihcy8yFMk32yAABg&t=1755358790.4500926 HTTP/1.1" 200 None
+2025-08-16 15:39:51 [INFO] [HUB_CLIENT] Disconnected from WebSocket Hub
+[HUB_REGISTERED] Success: True
+[HUB_REGISTERED] Client ID: hub_client_128911582205248
+[HUB_REGISTERED] Message: Hub Client registered successfully
+[HUB_CONFIRM] Success: True
+[HUB_CONFIRM] Terminal: webui
+[HUB_CONFIRM] Map: MAIN001
+[HUB_CONFIRM] Fields: 7
+[SUCCESS] SMED data sent to WebSocket Hub
+[MAIN001] Display data sent to WebSocket Hub successfully
+[MAIN001] Menu displayed on terminal: webui
+[MAIN001] READ DISPFILE INTO DISP-RECORD - Waiting for user input
+[세션관리] 입력 버퍼 클리어 완료
+[세션관리] - 제거된 입력 수: 0
+[MAIN001] Interactive 모드: 이전 입력 버퍼 클리어 완료
+[MAIN001] 입력 버퍼가 클리어된 상태, 새로운 입력 대기
+[MAIN001] WebSocket timeout loaded from config: 86400 seconds
+[MAIN001] Waiting for WebSocket Hub input... (timeout: 86400 seconds)
+[MAIN001] Input file: /tmp/asp_input_webui.txt
+[MAIN001] Still waiting... (5/86400 seconds)
+
+=== Execution Completed (Return Code: 143) ===
+
+=== End MAIN001 Execution ===
+
+=== MAIN001 Java Execution (2025-08-16 15:47:34) ===
+=== MAIN001 Java Execution Log (2025-08-16 15:47:25) ===
+Command: java -Dfile.encoding=UTF-8 -cp /home/aspuser/app/volume/DISK01/JAVA MAIN001
+Working directory: /home/aspuser/app/volume/DISK01/JAVA
+Input JSON: {"program": "MAIN001", "library": "JAVA", "volume": "DISK01", "user": "system"}
+=== Program Output ===
+*** MAIN001 - Employee Management Menu (Enhanced with Session Management) ***
+DSP File Handling with WebSocket Hub Integration
+SJIS encoding support for Korean text
+장기 개선 방안 적용: 모드 분리, 세션 관리, COBOL 시맨틱스
+
+[환경감지] 실행 환경 분석 중...
+[환경감지] 전달된 인수: []
+[환경감지] 옵션 파라미터 없음
+[환경감지] → WebUI Interactive 모드로 판단
+Terminal ID: webui (from environment)
+[세션관리] 세션 초기화 완료
+[세션관리] - 세션 ID: session_1755359245329_0.14186703851076743
+[세션관리] - 터미널 ID: webui
+[MAIN001] 실행 모드: WebUI Interactive 모드 - 지속적 세션
+[MAIN001Interactive] WebUI Interactive 모드 - 지속적 세션 관리
+[MAIN001] OPEN I-O DISPFILE - Initializing DSP connection
+[MAIN001] SYMBOLIC DESTINATION 'DSP' - WebSocket Hub communication active
+[MAIN001] SELECTED FUNCTION IS EMP-FUNC - Ready for user input
+[MAIN001] MAIN-LOOP - Starting main processing loop
+[MAIN001] MAIN-LOOP iteration: 1
+[MAIN001] WRITE DISPFILE FROM DISP-RECORD - Sending display to webUI
+2025-08-16 15:47:25 [INFO] [HUB_CLIENT] Connecting to WebSocket Hub: http://localhost:8000
+2025-08-16 15:47:25 [DEBUG] Starting new HTTP connection (1): localhost:8000
+2025-08-16 15:47:25 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&t=1755359245.6223426 HTTP/1.1" 200 None
+2025-08-16 15:47:25 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:47:25 [DEBUG] Starting new HTTP connection (2): localhost:8000
+2025-08-16 15:47:25 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=WXV4gILfweV_Zz1nAABk HTTP/1.1" 200 None
+2025-08-16 15:47:25 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=WXV4gILfweV_Zz1nAABk&t=1755359245.647367 HTTP/1.1" 200 None
+2025-08-16 15:47:25 [INFO] [HUB_CLIENT] Connected to WebSocket Hub: http://localhost:8000
+2025-08-16 15:47:25 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:47:25 [INFO] [HUB_CLIENT] Connection established, registering with hub...
+2025-08-16 15:47:25 [INFO] [HUB_CLIENT] Registration data sent to hub: hub_client_133219945960768
+2025-08-16 15:47:25 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:47:25 [INFO] [HUB_CLIENT] Sending SMED data to hub:
+2025-08-16 15:47:25 [INFO] [HUB_CLIENT] - Terminal: webui
+2025-08-16 15:47:25 [INFO] [HUB_CLIENT] - Map: MAIN001
+2025-08-16 15:47:25 [INFO] [HUB_CLIENT] - Fields: 7 fields
+2025-08-16 15:47:25 [INFO] [HUB_CLIENT] - Program: MAIN001
+2025-08-16 15:47:25 [INFO] [HUB_CLIENT] SMED data sent to WebSocket Hub successfully
+2025-08-16 15:47:25 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=WXV4gILfweV_Zz1nAABk&t=1755359245.6583884 HTTP/1.1" 200 None
+2025-08-16 15:47:25 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=WXV4gILfweV_Zz1nAABk HTTP/1.1" 200 None
+2025-08-16 15:47:25 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:47:25 [INFO] [HUB_CLIENT] Registration confirmed: {'success': True, 'client_id': 'hub_client_133219945960768', 'session_id': 'rxlnN4RlxgyQjycvAABl', 'message': 'Hub Client registered successfully', 'timestamp': '2025-08-16T15:47:25.665137'}
+2025-08-16 15:47:25 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:47:25 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=WXV4gILfweV_Zz1nAABk HTTP/1.1" 200 None
+2025-08-16 15:47:25 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=WXV4gILfweV_Zz1nAABk&t=1755359245.6686113 HTTP/1.1" 200 None
+2025-08-16 15:47:25 [INFO] [HUB_CLIENT] Hub confirmation received: {'success': True, 'terminal_id': 'webui', 'map_file': 'MAIN001', 'fields_populated': 7, 'hub_session': 'rxlnN4RlxgyQjycvAABl', 'timestamp': '2025-08-16T15:47:25.672474', 'message': 'SMED data delivered via WebSocket Hub'}
+2025-08-16 15:47:25 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:47:26 [INFO] [HUB_CLIENT] Disconnected from WebSocket Hub
+2025-08-16 15:47:26 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:47:26 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=WXV4gILfweV_Zz1nAABk HTTP/1.1" 200 None
+2025-08-16 15:47:26 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=WXV4gILfweV_Zz1nAABk&t=1755359245.6758337 HTTP/1.1" 200 None
+2025-08-16 15:47:26 [INFO] [HUB_CLIENT] Disconnected from WebSocket Hub
+[HUB_REGISTERED] Success: True
+[HUB_REGISTERED] Client ID: hub_client_133219945960768
+[HUB_REGISTERED] Message: Hub Client registered successfully
+[HUB_CONFIRM] Success: True
+[HUB_CONFIRM] Terminal: webui
+[HUB_CONFIRM] Map: MAIN001
+[HUB_CONFIRM] Fields: 7
+[SUCCESS] SMED data sent to WebSocket Hub
+[MAIN001] Display data sent to WebSocket Hub successfully
+[MAIN001] Menu displayed on terminal: webui
+[MAIN001] READ DISPFILE INTO DISP-RECORD - Waiting for user input
+[세션관리] 입력 버퍼 클리어 완료
+[세션관리] - 제거된 입력 수: 0
+[MAIN001] Interactive 모드: 이전 입력 버퍼 클리어 완료
+[MAIN001] 입력 버퍼가 클리어된 상태, 새로운 입력 대기
+[MAIN001] WebSocket timeout loaded from config: 86400 seconds
+[MAIN001] Waiting for WebSocket Hub input... (timeout: 86400 seconds)
+[MAIN001] Input file: /tmp/asp_input_webui.txt
+[MAIN001] Still waiting... (5/86400 seconds)
+
+=== Execution Completed (Return Code: 143) ===
+
+=== End MAIN001 Execution ===
+
+=== MAIN001 Java Execution (2025-08-16 15:53:22) ===
+=== MAIN001 Java Execution Log (2025-08-16 15:53:09) ===
+Command: java -Dfile.encoding=UTF-8 -cp /home/aspuser/app/volume/DISK01/JAVA MAIN001
+Working directory: /home/aspuser/app/volume/DISK01/JAVA
+Input JSON: {"program": "MAIN001", "library": "JAVA", "volume": "DISK01", "user": "system"}
+=== Program Output ===
+*** MAIN001 - Employee Management Menu (Enhanced with Session Management) ***
+DSP File Handling with WebSocket Hub Integration
+SJIS encoding support for Korean text
+장기 개선 방안 적용: 모드 분리, 세션 관리, COBOL 시맨틱스
+
+[환경감지] 실행 환경 분석 중...
+[환경감지] 전달된 인수: []
+[환경감지] 옵션 파라미터 없음
+[환경감지] → WebUI Interactive 모드로 판단
+Terminal ID: webui (from environment)
+[세션관리] 세션 초기화 완료
+[세션관리] - 세션 ID: session_1755359589869_0.038831135781053794
+[세션관리] - 터미널 ID: webui
+[MAIN001] 실행 모드: WebUI Interactive 모드 - 지속적 세션
+[MAIN001Interactive] WebUI Interactive 모드 - 지속적 세션 관리
+[MAIN001] OPEN I-O DISPFILE - Initializing DSP connection
+[MAIN001] SYMBOLIC DESTINATION 'DSP' - WebSocket Hub communication active
+[MAIN001] SELECTED FUNCTION IS EMP-FUNC - Ready for user input
+[MAIN001] MAIN-LOOP - Starting main processing loop
+[MAIN001] MAIN-LOOP iteration: 1
+[MAIN001] WRITE DISPFILE FROM DISP-RECORD - Sending display to webUI
+2025-08-16 15:53:10 [INFO] [HUB_CLIENT] Connecting to WebSocket Hub: http://localhost:8000
+2025-08-16 15:53:10 [DEBUG] Starting new HTTP connection (1): localhost:8000
+2025-08-16 15:53:10 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&t=1755359590.1509366 HTTP/1.1" 200 None
+2025-08-16 15:53:10 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:53:10 [DEBUG] Starting new HTTP connection (2): localhost:8000
+2025-08-16 15:53:10 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=DpTGOdmUOAuwvPnpAABo HTTP/1.1" 200 None
+2025-08-16 15:53:10 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=DpTGOdmUOAuwvPnpAABo&t=1755359590.1627057 HTTP/1.1" 200 None
+2025-08-16 15:53:10 [INFO] [HUB_CLIENT] Connected to WebSocket Hub: http://localhost:8000
+2025-08-16 15:53:10 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:53:10 [INFO] [HUB_CLIENT] Connection established, registering with hub...
+2025-08-16 15:53:10 [INFO] [HUB_CLIENT] Registration data sent to hub: hub_client_137506124174656
+2025-08-16 15:53:10 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:53:10 [INFO] [HUB_CLIENT] Sending SMED data to hub:
+2025-08-16 15:53:10 [INFO] [HUB_CLIENT] - Terminal: webui
+2025-08-16 15:53:10 [INFO] [HUB_CLIENT] - Map: MAIN001
+2025-08-16 15:53:10 [INFO] [HUB_CLIENT] - Fields: 7 fields
+2025-08-16 15:53:10 [INFO] [HUB_CLIENT] - Program: MAIN001
+2025-08-16 15:53:10 [INFO] [HUB_CLIENT] SMED data sent to WebSocket Hub successfully
+2025-08-16 15:53:10 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=DpTGOdmUOAuwvPnpAABo&t=1755359590.1719594 HTTP/1.1" 200 None
+2025-08-16 15:53:10 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=DpTGOdmUOAuwvPnpAABo HTTP/1.1" 200 None
+2025-08-16 15:53:10 [INFO] [HUB_CLIENT] Registration confirmed: {'success': True, 'client_id': 'hub_client_137506124174656', 'session_id': 'O6aAbkDa56Iq2eebAABp', 'message': 'Hub Client registered successfully', 'timestamp': '2025-08-16T15:53:10.177377'}
+2025-08-16 15:53:10 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:53:10 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:53:10 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=DpTGOdmUOAuwvPnpAABo HTTP/1.1" 200 None
+2025-08-16 15:53:10 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=DpTGOdmUOAuwvPnpAABo&t=1755359590.1796212 HTTP/1.1" 200 None
+2025-08-16 15:53:10 [INFO] [HUB_CLIENT] Hub confirmation received: {'success': True, 'terminal_id': 'webui', 'map_file': 'MAIN001', 'fields_populated': 7, 'hub_session': 'O6aAbkDa56Iq2eebAABp', 'timestamp': '2025-08-16T15:53:10.186541', 'message': 'SMED data delivered via WebSocket Hub'}
+2025-08-16 15:53:10 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:53:11 [INFO] [HUB_CLIENT] Disconnected from WebSocket Hub
+2025-08-16 15:53:11 [DEBUG] Resetting dropped connection: localhost
+2025-08-16 15:53:11 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=DpTGOdmUOAuwvPnpAABo HTTP/1.1" 200 None
+2025-08-16 15:53:11 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=DpTGOdmUOAuwvPnpAABo&t=1755359590.189674 HTTP/1.1" 200 None
+2025-08-16 15:53:11 [INFO] [HUB_CLIENT] Disconnected from WebSocket Hub
+[HUB_REGISTERED] Success: True
+[HUB_REGISTERED] Client ID: hub_client_137506124174656
+[HUB_REGISTERED] Message: Hub Client registered successfully
+[HUB_CONFIRM] Success: True
+[HUB_CONFIRM] Terminal: webui
+[HUB_CONFIRM] Map: MAIN001
+[HUB_CONFIRM] Fields: 7
+[SUCCESS] SMED data sent to WebSocket Hub
+[MAIN001] Display data sent to WebSocket Hub successfully
+[MAIN001] Menu displayed on terminal: webui
+[MAIN001] READ DISPFILE INTO DISP-RECORD - Waiting for user input
+[세션관리] 입력 버퍼 클리어 완료
+[세션관리] - 제거된 입력 수: 0
+[MAIN001] Interactive 모드: 이전 입력 버퍼 클리어 완료
+[MAIN001] 입력 버퍼가 클리어된 상태, 새로운 입력 대기
+[MAIN001] WebSocket timeout loaded from config: 86400 seconds
+[MAIN001] Waiting for WebSocket Hub input... (timeout: 86400 seconds)
+[MAIN001] Input file: /tmp/asp_input_webui.txt
+[MAIN001] Still waiting... (5/86400 seconds)
+[MAIN001] Still waiting... (10/86400 seconds)
+
+=== Execution Completed (Return Code: 143) ===
+
+=== End MAIN001 Execution ===
+
+=== MAIN001 Java Execution (2025-08-17 00:01:52) ===
+=== MAIN001 Java Execution Log (2025-08-17 00:01:39) ===
+Command: java -Dfile.encoding=UTF-8 -cp /home/aspuser/app/volume/DISK01/JAVA MAIN001
+Working directory: /home/aspuser/app/volume/DISK01/JAVA
+Input JSON: {"program": "MAIN001", "library": "JAVA", "volume": "DISK01", "user": "system"}
+=== Program Output ===
+*** MAIN001 - Employee Management Menu (Enhanced with Session Management) ***
+DSP File Handling with WebSocket Hub Integration
+SJIS encoding support for Korean text
+장기 개선 방안 적용: 모드 분리, 세션 관리, COBOL 시맨틱스
+
+[환경감지] 실행 환경 분석 중...
+[환경감지] 전달된 인수: []
+[환경감지] 옵션 파라미터 없음
+[환경감지] → WebUI Interactive 모드로 판단
+Terminal ID: webui (from environment)
+[세션관리] 세션 초기화 완료
+[세션관리] - 세션 ID: session_1755388899498_0.7838955674515878
+[세션관리] - 터미널 ID: webui
+[MAIN001] 실행 모드: WebUI Interactive 모드 - 지속적 세션
+[MAIN001Interactive] WebUI Interactive 모드 - 지속적 세션 관리
+[MAIN001] OPEN I-O DISPFILE - Initializing DSP connection
+[MAIN001] SYMBOLIC DESTINATION 'DSP' - WebSocket Hub communication active
+[MAIN001] SELECTED FUNCTION IS EMP-FUNC - Ready for user input
+[MAIN001] MAIN-LOOP - Starting main processing loop
+[MAIN001] MAIN-LOOP iteration: 1
+[MAIN001] WRITE DISPFILE FROM DISP-RECORD - Sending display to webUI
+2025-08-17 00:01:39 [INFO] [HUB_CLIENT] Connecting to WebSocket Hub: http://localhost:8000
+2025-08-17 00:01:39 [DEBUG] Starting new HTTP connection (1): localhost:8000
+2025-08-17 00:01:39 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&t=1755388899.7699249 HTTP/1.1" 200 None
+2025-08-17 00:01:39 [DEBUG] Resetting dropped connection: localhost
+2025-08-17 00:01:39 [DEBUG] Starting new HTTP connection (2): localhost:8000
+2025-08-17 00:01:39 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=rChdyxOXT7mQfJo_AAB4 HTTP/1.1" 200 None
+2025-08-17 00:01:39 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=rChdyxOXT7mQfJo_AAB4&t=1755388899.7833178 HTTP/1.1" 200 None
+2025-08-17 00:01:39 [INFO] [HUB_CLIENT] Connected to WebSocket Hub: http://localhost:8000
+2025-08-17 00:01:39 [DEBUG] Resetting dropped connection: localhost
+2025-08-17 00:01:39 [INFO] [HUB_CLIENT] Connection established, registering with hub...
+2025-08-17 00:01:39 [INFO] [HUB_CLIENT] Registration data sent to hub: hub_client_139925876888896
+2025-08-17 00:01:39 [DEBUG] Resetting dropped connection: localhost
+2025-08-17 00:01:39 [INFO] [HUB_CLIENT] Sending SMED data to hub:
+2025-08-17 00:01:39 [INFO] [HUB_CLIENT] - Terminal: webui
+2025-08-17 00:01:39 [INFO] [HUB_CLIENT] - Map: MAIN001
+2025-08-17 00:01:39 [INFO] [HUB_CLIENT] - Fields: 7 fields
+2025-08-17 00:01:39 [INFO] [HUB_CLIENT] - Program: MAIN001
+2025-08-17 00:01:39 [INFO] [HUB_CLIENT] SMED data sent to WebSocket Hub successfully
+2025-08-17 00:01:39 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=rChdyxOXT7mQfJo_AAB4 HTTP/1.1" 200 None
+2025-08-17 00:01:39 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=rChdyxOXT7mQfJo_AAB4&t=1755388899.7925339 HTTP/1.1" 200 None
+2025-08-17 00:01:39 [DEBUG] Resetting dropped connection: localhost
+2025-08-17 00:01:39 [INFO] [HUB_CLIENT] Registration confirmed: {'success': True, 'client_id': 'hub_client_139925876888896', 'session_id': 'sXZGahNWi_mtvg9XAAB5', 'message': 'Hub Client registered successfully', 'timestamp': '2025-08-17T00:01:39.798975'}
+2025-08-17 00:01:39 [DEBUG] Resetting dropped connection: localhost
+2025-08-17 00:01:39 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=rChdyxOXT7mQfJo_AAB4 HTTP/1.1" 200 None
+2025-08-17 00:01:39 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=rChdyxOXT7mQfJo_AAB4&t=1755388899.803025 HTTP/1.1" 200 None
+2025-08-17 00:01:39 [INFO] [HUB_CLIENT] Hub confirmation received: {'success': True, 'terminal_id': 'webui', 'map_file': 'MAIN001', 'fields_populated': 7, 'hub_session': 'sXZGahNWi_mtvg9XAAB5', 'timestamp': '2025-08-17T00:01:39.807824', 'message': 'SMED data delivered via WebSocket Hub'}
+2025-08-17 00:01:39 [DEBUG] Resetting dropped connection: localhost
+2025-08-17 00:01:40 [INFO] [HUB_CLIENT] Disconnected from WebSocket Hub
+2025-08-17 00:01:40 [DEBUG] Resetting dropped connection: localhost
+2025-08-17 00:01:40 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=rChdyxOXT7mQfJo_AAB4 HTTP/1.1" 200 None
+2025-08-17 00:01:40 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=rChdyxOXT7mQfJo_AAB4&t=1755388899.8121433 HTTP/1.1" 200 None
+2025-08-17 00:01:40 [INFO] [HUB_CLIENT] Disconnected from WebSocket Hub
+[HUB_REGISTERED] Success: True
+[HUB_REGISTERED] Client ID: hub_client_139925876888896
+[HUB_REGISTERED] Message: Hub Client registered successfully
+[HUB_CONFIRM] Success: True
+[HUB_CONFIRM] Terminal: webui
+[HUB_CONFIRM] Map: MAIN001
+[HUB_CONFIRM] Fields: 7
+[SUCCESS] SMED data sent to WebSocket Hub
+[MAIN001] Display data sent to WebSocket Hub successfully
+[MAIN001] Menu displayed on terminal: webui
+[MAIN001] READ DISPFILE INTO DISP-RECORD - Waiting for user input
+[세션관리] 입력 버퍼 클리어 완료
+[세션관리] - 제거된 입력 수: 0
+[MAIN001] Interactive 모드: 이전 입력 버퍼 클리어 완료
+[MAIN001] 입력 버퍼가 클리어된 상태, 새로운 입력 대기
+[MAIN001] WebSocket timeout loaded from config: 86400 seconds
+[MAIN001] Waiting for WebSocket Hub input... (timeout: 86400 seconds)
+[MAIN001] Input file: /tmp/asp_input_webui.txt
+[MAIN001] Still waiting... (5/86400 seconds)
+[MAIN001] Still waiting... (10/86400 seconds)
+
+=== Execution Completed (Return Code: 143) ===
+
+=== End MAIN001 Execution ===
+
+=== MAIN001 Java Execution (2025-08-17 00:18:59) ===
+=== MAIN001 Java Execution Log (2025-08-17 00:18:10) ===
+Command: java -Dfile.encoding=UTF-8 -cp /home/aspuser/app/volume/DISK01/JAVA MAIN001
+Working directory: /home/aspuser/app/volume/DISK01/JAVA
+Input JSON: {"program": "MAIN001", "library": "JAVA", "volume": "DISK01", "user": "system"}
+=== Program Output ===
+*** MAIN001 - Employee Management Menu (Enhanced with Session Management) ***
+DSP File Handling with WebSocket Hub Integration
+SJIS encoding support for Korean text
+장기 개선 방안 적용: 모드 분리, 세션 관리, COBOL 시맨틱스
+
+[환경감지] 실행 환경 분석 중...
+[환경감지] 전달된 인수: []
+[환경감지] 옵션 파라미터 없음
+[환경감지] → WebUI Interactive 모드로 판단
+Terminal ID: webui (from environment)
+[세션관리] 세션 초기화 완료
+[세션관리] - 세션 ID: session_1755389890541_0.5219818653025583
+[세션관리] - 터미널 ID: webui
+[MAIN001] 실행 모드: WebUI Interactive 모드 - 지속적 세션
+[MAIN001Interactive] WebUI Interactive 모드 - 지속적 세션 관리
+[MAIN001] OPEN I-O DISPFILE - Initializing DSP connection
+[MAIN001] SYMBOLIC DESTINATION 'DSP' - WebSocket Hub communication active
+[MAIN001] SELECTED FUNCTION IS EMP-FUNC - Ready for user input
+[MAIN001] MAIN-LOOP - Starting main processing loop
+[MAIN001] MAIN-LOOP iteration: 1
+[MAIN001] WRITE DISPFILE FROM DISP-RECORD - Sending display to webUI
+2025-08-17 00:18:10 [INFO] [HUB_CLIENT] Connecting to WebSocket Hub: http://localhost:8000
+2025-08-17 00:18:10 [DEBUG] Starting new HTTP connection (1): localhost:8000
+2025-08-17 00:18:10 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&t=1755389890.85362 HTTP/1.1" 200 None
+2025-08-17 00:18:10 [DEBUG] Resetting dropped connection: localhost
+2025-08-17 00:18:10 [DEBUG] Starting new HTTP connection (2): localhost:8000
+2025-08-17 00:18:10 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=xLgZ1m4h6QrVM6JiAAAI HTTP/1.1" 200 None
+2025-08-17 00:18:10 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=xLgZ1m4h6QrVM6JiAAAI&t=1755389890.8700552 HTTP/1.1" 200 None
+2025-08-17 00:18:10 [INFO] [HUB_CLIENT] Connected to WebSocket Hub: http://localhost:8000
+2025-08-17 00:18:10 [INFO] [HUB_CLIENT] Connection established, registering with hub...
+2025-08-17 00:18:10 [INFO] [HUB_CLIENT] Registration data sent to hub: hub_client_123994561123696
+2025-08-17 00:18:10 [DEBUG] Resetting dropped connection: localhost
+2025-08-17 00:18:10 [INFO] [HUB_CLIENT] Sending SMED data to hub:
+2025-08-17 00:18:10 [INFO] [HUB_CLIENT] - Terminal: webui
+2025-08-17 00:18:10 [INFO] [HUB_CLIENT] - Map: MAIN001
+2025-08-17 00:18:10 [INFO] [HUB_CLIENT] - Fields: 7 fields
+2025-08-17 00:18:10 [INFO] [HUB_CLIENT] - Program: MAIN001
+2025-08-17 00:18:10 [INFO] [HUB_CLIENT] SMED data sent to WebSocket Hub successfully
+2025-08-17 00:18:10 [DEBUG] Resetting dropped connection: localhost
+2025-08-17 00:18:10 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=xLgZ1m4h6QrVM6JiAAAI HTTP/1.1" 200 None
+2025-08-17 00:18:10 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=xLgZ1m4h6QrVM6JiAAAI&t=1755389890.8844233 HTTP/1.1" 200 None
+2025-08-17 00:18:10 [INFO] [HUB_CLIENT] Registration confirmed: {'success': True, 'client_id': 'hub_client_123994561123696', 'session_id': 'iHn9cImFFZ4xPspCAAAJ', 'message': 'Hub Client registered successfully', 'timestamp': '2025-08-17T00:18:10.887970'}
+2025-08-17 00:18:10 [DEBUG] Resetting dropped connection: localhost
+2025-08-17 00:18:10 [DEBUG] Resetting dropped connection: localhost
+2025-08-17 00:18:10 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=xLgZ1m4h6QrVM6JiAAAI&t=1755389890.8933985 HTTP/1.1" 200 None
+2025-08-17 00:18:10 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=xLgZ1m4h6QrVM6JiAAAI HTTP/1.1" 200 None
+2025-08-17 00:18:10 [INFO] [HUB_CLIENT] Hub confirmation received: {'success': True, 'terminal_id': 'webui', 'map_file': 'MAIN001', 'fields_populated': 7, 'hub_session': 'iHn9cImFFZ4xPspCAAAJ', 'timestamp': '2025-08-17T00:18:10.899455', 'message': 'SMED data delivered via WebSocket Hub'}
+2025-08-17 00:18:10 [DEBUG] Resetting dropped connection: localhost
+2025-08-17 00:18:11 [INFO] [HUB_CLIENT] Disconnected from WebSocket Hub
+2025-08-17 00:18:11 [DEBUG] Resetting dropped connection: localhost
+2025-08-17 00:18:11 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=xLgZ1m4h6QrVM6JiAAAI HTTP/1.1" 200 None
+2025-08-17 00:18:11 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=xLgZ1m4h6QrVM6JiAAAI&t=1755389890.9028273 HTTP/1.1" 200 None
+2025-08-17 00:18:11 [INFO] [HUB_CLIENT] Disconnected from WebSocket Hub
+[HUB_REGISTERED] Success: True
+[HUB_REGISTERED] Client ID: hub_client_123994561123696
+[HUB_REGISTERED] Message: Hub Client registered successfully
+[HUB_CONFIRM] Success: True
+[HUB_CONFIRM] Terminal: webui
+[HUB_CONFIRM] Map: MAIN001
+[HUB_CONFIRM] Fields: 7
+[SUCCESS] SMED data sent to WebSocket Hub
+[MAIN001] Display data sent to WebSocket Hub successfully
+[MAIN001] Menu displayed on terminal: webui
+[MAIN001] READ DISPFILE INTO DISP-RECORD - Waiting for user input
+[세션관리] 입력 버퍼 클리어 완료
+[세션관리] - 제거된 입력 수: 0
+[MAIN001] Interactive 모드: 이전 입력 버퍼 클리어 완료
+[MAIN001] 입력 버퍼가 클리어된 상태, 새로운 입력 대기
+[MAIN001] WebSocket timeout loaded from config: 86400 seconds
+[MAIN001] Waiting for WebSocket Hub input... (timeout: 86400 seconds)
+[MAIN001] Input file: /tmp/asp_input_webui.txt
+[MAIN001] Still waiting... (5/86400 seconds)
+[MAIN001] Still waiting... (10/86400 seconds)
+[MAIN001] Still waiting... (15/86400 seconds)
+[MAIN001] Still waiting... (20/86400 seconds)
+[MAIN001] Still waiting... (25/86400 seconds)
+[MAIN001] Still waiting... (30/86400 seconds)
+[MAIN001] Still waiting... (35/86400 seconds)
+[MAIN001] Still waiting... (40/86400 seconds)
+[MAIN001] Still waiting... (45/86400 seconds)
+
+=== Execution Completed (Return Code: 143) ===
+
+=== End MAIN001 Execution ===
+
+=== MAIN001 Java Execution (2025-08-17 00:19:57) ===
+=== MAIN001 Java Execution Log (2025-08-17 00:19:42) ===
+Command: java -Dfile.encoding=UTF-8 -cp /home/aspuser/app/volume/DISK01/JAVA MAIN001
+Working directory: /home/aspuser/app/volume/DISK01/JAVA
+Input JSON: {"program": "MAIN001", "library": "JAVA", "volume": "DISK01", "user": "system"}
+=== Program Output ===
+*** MAIN001 - Employee Management Menu (Enhanced with Session Management) ***
+DSP File Handling with WebSocket Hub Integration
+SJIS encoding support for Korean text
+장기 개선 방안 적용: 모드 분리, 세션 관리, COBOL 시맨틱스
+
+[환경감지] 실행 환경 분석 중...
+[환경감지] 전달된 인수: []
+[환경감지] 옵션 파라미터 없음
+[환경감지] → WebUI Interactive 모드로 판단
+Terminal ID: webui (from environment)
+[세션관리] 세션 초기화 완료
+[세션관리] - 세션 ID: session_1755389982257_0.5045938129116347
+[세션관리] - 터미널 ID: webui
+[MAIN001] 실행 모드: WebUI Interactive 모드 - 지속적 세션
+[MAIN001Interactive] WebUI Interactive 모드 - 지속적 세션 관리
+[MAIN001] OPEN I-O DISPFILE - Initializing DSP connection
+[MAIN001] SYMBOLIC DESTINATION 'DSP' - WebSocket Hub communication active
+[MAIN001] SELECTED FUNCTION IS EMP-FUNC - Ready for user input
+[MAIN001] MAIN-LOOP - Starting main processing loop
+[MAIN001] MAIN-LOOP iteration: 1
+[MAIN001] WRITE DISPFILE FROM DISP-RECORD - Sending display to webUI
+2025-08-17 00:19:42 [INFO] [HUB_CLIENT] Connecting to WebSocket Hub: http://localhost:8000
+2025-08-17 00:19:42 [DEBUG] Starting new HTTP connection (1): localhost:8000
+2025-08-17 00:19:42 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&t=1755389982.5556526 HTTP/1.1" 200 None
+2025-08-17 00:19:42 [DEBUG] Resetting dropped connection: localhost
+2025-08-17 00:19:42 [DEBUG] Starting new HTTP connection (2): localhost:8000
+2025-08-17 00:19:42 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=pQ-1Dqm92W5nerJCAAAK HTTP/1.1" 200 None
+2025-08-17 00:19:42 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=pQ-1Dqm92W5nerJCAAAK&t=1755389982.566598 HTTP/1.1" 200 None
+2025-08-17 00:19:42 [INFO] [HUB_CLIENT] Connected to WebSocket Hub: http://localhost:8000
+2025-08-17 00:19:42 [INFO] [HUB_CLIENT] Connection established, registering with hub...
+2025-08-17 00:19:42 [INFO] [HUB_CLIENT] Registration data sent to hub: hub_client_128872167396720
+2025-08-17 00:19:42 [DEBUG] Resetting dropped connection: localhost
+2025-08-17 00:19:42 [DEBUG] Resetting dropped connection: localhost
+2025-08-17 00:19:42 [INFO] [HUB_CLIENT] Sending SMED data to hub:
+2025-08-17 00:19:42 [INFO] [HUB_CLIENT] - Terminal: webui
+2025-08-17 00:19:42 [INFO] [HUB_CLIENT] - Map: MAIN001
+2025-08-17 00:19:42 [INFO] [HUB_CLIENT] - Fields: 7 fields
+2025-08-17 00:19:42 [INFO] [HUB_CLIENT] - Program: MAIN001
+2025-08-17 00:19:42 [INFO] [HUB_CLIENT] SMED data sent to WebSocket Hub successfully
+2025-08-17 00:19:42 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=pQ-1Dqm92W5nerJCAAAK HTTP/1.1" 200 None
+2025-08-17 00:19:42 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=pQ-1Dqm92W5nerJCAAAK&t=1755389982.5750477 HTTP/1.1" 200 None
+2025-08-17 00:19:42 [DEBUG] Resetting dropped connection: localhost
+2025-08-17 00:19:42 [INFO] [HUB_CLIENT] Registration confirmed: {'success': True, 'client_id': 'hub_client_128872167396720', 'session_id': 'BXJ4t5pDuLkqKgYQAAAL', 'message': 'Hub Client registered successfully', 'timestamp': '2025-08-17T00:19:42.581557'}
+2025-08-17 00:19:42 [DEBUG] Resetting dropped connection: localhost
+2025-08-17 00:19:42 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=pQ-1Dqm92W5nerJCAAAK HTTP/1.1" 200 None
+2025-08-17 00:19:42 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=pQ-1Dqm92W5nerJCAAAK&t=1755389982.584876 HTTP/1.1" 200 None
+2025-08-17 00:19:42 [INFO] [HUB_CLIENT] Hub confirmation received: {'success': True, 'terminal_id': 'webui', 'map_file': 'MAIN001', 'fields_populated': 7, 'hub_session': 'BXJ4t5pDuLkqKgYQAAAL', 'timestamp': '2025-08-17T00:19:42.587800', 'message': 'SMED data delivered via WebSocket Hub'}
+2025-08-17 00:19:42 [DEBUG] Resetting dropped connection: localhost
+2025-08-17 00:19:43 [INFO] [HUB_CLIENT] Disconnected from WebSocket Hub
+2025-08-17 00:19:43 [DEBUG] Resetting dropped connection: localhost
+2025-08-17 00:19:43 [DEBUG] http://localhost:8000 "POST /socket.io/?transport=polling&EIO=4&sid=pQ-1Dqm92W5nerJCAAAK HTTP/1.1" 200 None
+2025-08-17 00:19:43 [DEBUG] http://localhost:8000 "GET /socket.io/?transport=polling&EIO=4&sid=pQ-1Dqm92W5nerJCAAAK&t=1755389982.5910423 HTTP/1.1" 200 None
+2025-08-17 00:19:43 [INFO] [HUB_CLIENT] Disconnected from WebSocket Hub
+[HUB_REGISTERED] Success: True
+[HUB_REGISTERED] Client ID: hub_client_128872167396720
+[HUB_REGISTERED] Message: Hub Client registered successfully
+[HUB_CONFIRM] Success: True
+[HUB_CONFIRM] Terminal: webui
+[HUB_CONFIRM] Map: MAIN001
+[HUB_CONFIRM] Fields: 7
+[SUCCESS] SMED data sent to WebSocket Hub
+[MAIN001] Display data sent to WebSocket Hub successfully
+[MAIN001] Menu displayed on terminal: webui
+[MAIN001] READ DISPFILE INTO DISP-RECORD - Waiting for user input
+[세션관리] 입력 버퍼 클리어 완료
+[세션관리] - 제거된 입력 수: 0
+[MAIN001] Interactive 모드: 이전 입력 버퍼 클리어 완료
+[MAIN001] 입력 버퍼가 클리어된 상태, 새로운 입력 대기
+[MAIN001] WebSocket timeout loaded from config: 86400 seconds
+[MAIN001] Waiting for WebSocket Hub input... (timeout: 86400 seconds)
+[MAIN001] Input file: /tmp/asp_input_webui.txt
+[MAIN001] Still waiting... (5/86400 seconds)
+[MAIN001] Still waiting... (10/86400 seconds)
+
+=== Execution Completed (Return Code: 143) ===
+
+=== End MAIN001 Execution ===

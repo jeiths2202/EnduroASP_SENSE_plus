@@ -44,21 +44,191 @@ OpenASP AX는 레거시 ASP(Advanced System Products) 시스템을 현대적인 
 - **목적**: 레거시 SMED 화면 맵 뷰어
 - **주요 기능**: 24x80 터미널 시뮬레이션, 필드 관리, Java 프로그램 연동
 - **기술**: React, TypeScript, CSS Grid
+- **실행**: `npm start`
 
-### 2. [OpenASP Refactor](./ofasp-refactor/) (포트 3005)
-- **목적**: 코드 변환 및 리팩토링 도구
-- **주요 기능**: COBOL/CL 변환, EBCDIC 변환, AI 지원
-- **기술**: React, TypeScript, CodeMirror
-
-### 3. [ASP Manager](./asp-manager/) (포트 3007)
-- **목적**: AI 기반 시스템 관리 인터페이스
-- **주요 기능**: RAG 문서 검색, 시스템 모니터링, 가상 터미널
-- **기술**: React, TensorFlow.js, Express.js
-
-### 4. [Python 변환 서비스](./ofasp-refactor/python-service/) (포트 3003)
+### 2. [Python 변환 서비스](./ofasp-refactor/python-service/) (포트 3003)
 - **목적**: EBCDIC/ASCII 변환 백엔드
 - **주요 기능**: RESTful API, SOSI 처리, 배치 최적화
 - **기술**: Python, Flask, Flask-CORS
+- **실행**: `FLASK_PORT=3003 python -c "from src.api.app import api; api.run()"`
+
+### 3. [System API Server](./ofasp-refactor/server/) (포트 3004)
+- **목적**: OpenASP 시스템 관리 API
+- **주요 기능**: 시스템 명령어 처리, 웹 인터페이스 연동
+- **기술**: Python, Flask
+- **실행**: `ASPMGR_WEB_PORT=3004 python aspmgr_web.py`
+
+### 4. [OpenASP Refactor](./ofasp-refactor/) (포트 3005)
+- **목적**: 코드 변환 및 리팩토링 도구, 멀티모달 AI 채팅
+- **주요 기능**: 
+  - COBOL/CL 변환, EBCDIC 변환, AI 지원
+  - 멀티모달 AI 채팅 (텍스트, 이미지, 파일 업로드)
+  - RAG 문서 검색 (/ofasp-refactor/public/RAG)
+  - AI 모델 선택 (Gemma 2B, GPT-OSS 20B)
+- **기술**: React, TypeScript, CodeMirror
+- **실행**: `PORT=3005 npm start`
+
+### 5. [Chat API Server](./ofasp-refactor/server/) (포트 3006)
+- **목적**: AI 채팅 백엔드 API
+- **주요 기능**: Ollama 연동, 멀티모달 지원, RAG 문서 검색
+- **기술**: Python, Flask, Ollama API
+- **실행**: `python chat_api.py`
+
+### 6. [ASP Manager](./asp-manager/) (포트 3007)
+- **목적**: AI 기반 시스템 관리 인터페이스
+- **주요 기능**: RAG 문서 검색, 시스템 모니터링, 가상 터미널
+- **기술**: React, TensorFlow.js, Express.js
+- **실행**: `PORT=3007 npm start`
+
+### 7. [API Server](./server/) (포트 8000)
+- **목적**: 통합 백엔드 API 서버
+- **주요 기능**: 데이터베이스 연동, 파일 관리, 시스템 통합
+- **기술**: Python, Flask
+- **실행**: `python api_server.py`
+
+### 8. [Ollama Server](./ofasp-refactor/) (포트 3014)
+- **목적**: 로컬 AI 모델 서버
+- **주요 기능**: Gemma 2B, GPT-OSS 20B 모델 서비스
+- **기술**: Ollama, AI 모델 호스팅
+- **실행**: Chat 서비스를 통해 자동 시작
+
+## 🔍 모니터링 시스템 (Zabbix)
+
+### 9. [Zabbix 모니터링 시스템] (포트 3015)
+- **웹 인터페이스**: http://localhost:3015
+- **로그인**: Admin / zabbix
+- **목적**: OpenASP AX 전체 시스템 모니터링 및 알림
+
+#### 📊 모니터링 대상
+- **API Server** (포트 8000): HTTP 응답, 프로세스 상태
+- **SMED Viewer** (포트 3000): HTTP 응답, React 앱 상태
+- **Python Service** (포트 3003): Flask 서비스 상태
+- **Refactor Service** (포트 3005): 코드 변환 서비스 상태
+- **Manager Service** (포트 3007): AI 관리 인터페이스 상태
+- **로그 모니터링**: 
+  - `/home/aspuser/app/logs/` (메인 로그)
+  - `/home/aspuser/app/ofasp-refactor/logs/` (리팩터 로그)
+- **dslock_suite**: 파일 락 관리 시스템 상태
+
+#### 🔧 Zabbix 구성 요소
+
+##### PostgreSQL 데이터베이스
+```bash
+# 데이터베이스 정보
+호스트: localhost
+포트: 5432
+데이터베이스: zabbix
+사용자: zabbix
+패스워드: zabbix_password
+
+# 접속 방법
+su - postgres
+psql zabbix
+
+# 주요 테이블
+- users: Zabbix 사용자 정보
+- items: 모니터링 아이템 정의
+- triggers: 알림 트리거 설정
+- history: 모니터링 데이터 히스토리
+```
+
+##### Zabbix 서버
+```bash
+# 서비스 관리
+service zabbix-server start|stop|restart|status
+
+# 설정 파일
+/etc/zabbix/zabbix_server.conf
+
+# 로그 파일
+/var/log/zabbix/zabbix_server.log
+
+# 주요 설정
+- 서버 포트: 10051
+- 데이터베이스 연결: PostgreSQL localhost:5432/zabbix
+```
+
+##### Zabbix Agent
+```bash
+# 서비스 관리
+service zabbix-agent start|stop|restart|status
+
+# 설정 파일
+/etc/zabbix/zabbix_agentd.conf
+/etc/zabbix/zabbix_agentd.d/openasp.conf  # OpenASP 커스텀 파라미터
+
+# 로그 파일
+/var/log/zabbix/zabbix_agentd.log
+
+# 주요 설정
+- 에이전트 포트: 10050
+- 서버 연결: localhost:10051
+```
+
+##### Nginx 웹 서버
+```bash
+# 서비스 관리
+service nginx start|stop|restart|status
+
+# 설정 파일
+/etc/zabbix/nginx.conf           # Zabbix 전용 설정
+/etc/nginx/sites-enabled/zabbix  # Nginx 사이트 설정
+
+# 로그 파일
+/var/log/nginx/access.log
+/var/log/nginx/error.log
+
+# 주요 설정
+- 웹 포트: 3015
+- 문서 루트: /usr/share/zabbix
+- PHP-FPM 연결: unix:/var/run/php/zabbix.sock
+```
+
+##### PHP-FPM
+```bash
+# 서비스 관리
+service php8.2-fpm start|stop|restart|status
+
+# 설정 파일
+/etc/php/8.2/fpm/pool.d/zabbix.conf
+
+# 로그 파일
+/var/log/php8.2-fpm.log
+
+# 확장 모듈
+- pgsql: PostgreSQL 연결
+- pdo_pgsql: PDO PostgreSQL 드라이버
+```
+
+#### 🎯 커스텀 모니터링 스크립트
+```bash
+# 스크립트 위치
+/home/aspuser/app/monitoring/scripts/
+
+# 서비스 상태 확인
+check_services.py  - 모든 OpenASP 서비스 HTTP 상태 체크
+
+# 로그 모니터링
+log_monitor.py     - 오류/경고 로그 감지 및 분석
+
+# dslock 상태 확인
+check_dslock.py    - dslock_suite 상태 및 활성 락 모니터링
+
+# 설정 파일
+/home/aspuser/app/monitoring/config/zabbix.conf
+```
+
+#### 🚨 알림 설정
+- **서비스 다운**: HTTP 응답 실패 시 즉시 알림
+- **로그 오류**: 로그 파일에서 오류/경고 감지 시 알림
+- **시스템 리소스**: CPU, 메모리, 디스크 임계값 초과 시 알림
+- **dslock 문제**: 파일 락 시스템 오류 시 알림
+
+#### 🔄 모니터링 주기
+- **서비스 상태**: 60초마다 체크
+- **로그 모니터링**: 300초마다 체크
+- **dslock 상태**: 120초마다 체크
+- **시스템 리소스**: 60초마다 체크
 
 ## 🚀 빠른 시작
 
@@ -81,13 +251,39 @@ npm start
 cd ofasp-refactor/python-service
 FLASK_PORT=3003 python -c "from src.api.app import api; api.run()"
 
+# System API Server
+cd ofasp-refactor/server
+ASPMGR_WEB_PORT=3004 python aspmgr_web.py
+
 # OpenASP Refactor
 cd ofasp-refactor
 PORT=3005 npm start
 
+# Chat Service (Ollama + Chat API)
+cd ofasp-refactor
+./scripts/chat-start.sh
+
 # ASP Manager
 cd asp-manager
 PORT=3007 npm start
+
+# API Server
+cd server
+python api_server.py
+```
+
+### Chat Service 관리
+```bash
+# Chat Service 개별 시작
+cd ofasp-refactor
+./scripts/chat-start.sh
+
+# Chat Service 개별 종료
+./scripts/chat-stop.sh
+
+# Chat Service 상태 확인
+curl http://localhost:3014/api/tags  # Ollama 모델 목록
+curl http://localhost:3006/api/health # Chat API 상태
 ```
 
 ## 📋 주요 문서
@@ -95,6 +291,7 @@ PORT=3007 npm start
 - [MASTER_CLAUDE.md](./MASTER_CLAUDE.md) - 전체 프로젝트 작업 히스토리
 - [PROJECT_CONTEXT.json](./PROJECT_CONTEXT.json) - 구조화된 프로젝트 정보
 - [CODING_RULES.md](./ofasp-refactor/CODING_RULES.md) - 개발 규칙 및 표준
+- [CHAT_SERVICE_SCRIPTS.md](./ofasp-refactor/docs/CHAT_SERVICE_SCRIPTS.md) - Chat Service 관리 스크립트 설명서
 
 ## 🧪 테스트
 
@@ -107,9 +304,37 @@ python convert_file.py /tmp/sample.ebc -e JP -s --sosi-handling space -o /tmp/ou
 ### API 상태 확인
 ```bash
 curl http://localhost:3000         # SMED Viewer
-curl http://localhost:3003/health  # Python 서비스
-curl http://localhost:3005         # Refactor 앱
-curl http://localhost:3007         # Manager 앱
+curl http://localhost:3003/health  # Python 변환 서비스
+curl http://localhost:3004         # System API Server
+curl http://localhost:3005         # OpenASP Refactor
+curl http://localhost:3006/api/health # Chat API Server
+curl http://localhost:3007         # ASP Manager
+curl http://localhost:8000         # API Server
+curl http://localhost:3014/api/tags # Ollama Server
+curl http://localhost:3015         # Zabbix 모니터링
+```
+
+### Zabbix 모니터링 상태 확인
+```bash
+# 서비스 상태
+service zabbix-server status
+service zabbix-agent status  
+service nginx status
+service php8.2-fpm status
+service postgresql status
+
+# 모니터링 스크립트 테스트
+python3 /home/aspuser/app/monitoring/scripts/check_services.py --json
+python3 /home/aspuser/app/monitoring/scripts/log_monitor.py --json
+python3 /home/aspuser/app/monitoring/scripts/check_dslock.py --json
+
+# Zabbix Agent 파라미터 테스트
+zabbix_agentd -t openasp.services.check
+zabbix_agentd -t openasp.service.api
+zabbix_agentd -t openasp.service.smed
+
+# 데이터베이스 접속
+su - postgres -c "psql zabbix"
 ```
 
 ## 🔧 개발 환경
@@ -121,9 +346,31 @@ curl http://localhost:3007         # Manager 앱
 
 ### 환경 변수
 ```bash
+# Python 변환 서비스
 FLASK_PORT=3003
 REACT_APP_PYTHON_CONVERTER_URL=http://localhost:3003
 CODEPAGE_BASE_PATH=/home/aspuser/app/ofasp-refactor/public/codepages
+
+# System API Server
+ASPMGR_WEB_PORT=3004
+
+# OpenASP Refactor
+PORT=3005
+
+# Chat API Server
+CHAT_API_PORT=3006
+OLLAMA_URL=http://localhost:3014
+RAG_DIRECTORY=/home/aspuser/app/ofasp-refactor/public/RAG
+
+# ASP Manager
+PORT=3007
+
+# API Server
+API_SERVER_PORT=8000
+
+# Ollama Server
+OLLAMA_HOST=http://0.0.0.0:3014
+OLLAMA_MODELS=/home/aspuser/.ollama/models
 ```
 
 ### 문자 인코딩 및 국제화 규칙
@@ -290,18 +537,24 @@ iconv -f UTF-8 -t SHIFT_JIS input.sh > output.sh
 ./master-stop.sh     # 모든 서비스 정지
 
 # 개별 서비스 확인
-curl http://localhost:3000  # SMED Viewer
-curl http://localhost:3003  # Python Service  
-curl http://localhost:3005  # OFASP Refactor
+curl http://localhost:3000  # SMED Map Viewer
+curl http://localhost:3003  # Python 변환 서비스  
+curl http://localhost:3004  # System API Server
+curl http://localhost:3005  # OpenASP Refactor
+curl http://localhost:3006  # Chat API Server
 curl http://localhost:3007  # ASP Manager
 curl http://localhost:8000  # API Server
+curl http://localhost:3014  # Ollama Server
 
 # 로그 확인
-tail -f logs/python-service.log
 tail -f logs/smed-viewer.log
+tail -f logs/python-service.log
+tail -f logs/system-api.log
 tail -f logs/ofasp-refactor.log
 tail -f logs/asp-manager.log
 tail -f logs/api-server.log
+tail -f ofasp-refactor/logs/chat-api.log
+tail -f ofasp-refactor/logs/ollama.log
 ```
 
 ### 문제 해결
