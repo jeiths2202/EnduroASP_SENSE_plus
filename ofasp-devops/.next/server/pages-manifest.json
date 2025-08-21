@@ -1,0 +1,10 @@
+{
+  "/_app": "pages/_app.js",
+  "/_error": "pages/_error.js",
+  "/_document": "pages/_document.js",
+  "/": "pages/index.js",
+  "/api/pipeline-status": "pages/api/pipeline-status.js",
+  "/api/monitoring/system-metrics": "pages/api/monitoring/system-metrics.js",
+  "/api/monitoring/alerts": "pages/api/monitoring/alerts.js",
+  "/api/monitoring/logs": "pages/api/monitoring/logs.js"
+}

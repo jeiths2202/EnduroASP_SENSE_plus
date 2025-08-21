@@ -1,0 +1,192 @@
+version: '3.8'
+
+services:
+  ofasp-devops:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3016:3016"
+    environment:
+      - NODE_ENV=production
+      - API_BASE_URL=http://localhost:8000
+      - PYTHON_SERVICE_URL=http://python-service:3001
+      - COBOL_SERVICE_URL=http://cobol-service:3002
+      - DATASET_SERVICE_URL=http://dataset-service:3003
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - openaspax-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3016/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Mock backend services for demo
+  python-service:
+    image: python:3.11-alpine
+    ports:
+      - "3001:3001"
+    command: |
+      sh -c "
+        echo 'Starting Python conversion service...' &&
+        python -c '
+import http.server
+import socketserver
+import json
+from urllib.parse import urlparse, parse_qs
+
+class ConversionHandler(http.server.BaseHTTPRequestHandler):
+    def do_POST(self):
+        if self.path == \"/api/convert\":
+            self.send_response(200)
+            self.send_header(\"Content-type\", \"application/json\")
+            self.send_header(\"Access-Control-Allow-Origin\", \"*\")
+            self.end_headers()
+            response = {\"status\": \"success\", \"message\": \"Conversion completed\"}
+            self.wfile.write(json.dumps(response).encode())
+        else:
+            self.send_response(404)
+            self.end_headers()
+    
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self.send_header(\"Access-Control-Allow-Origin\", \"*\")
+        self.send_header(\"Access-Control-Allow-Methods\", \"POST, GET, OPTIONS\")
+        self.send_header(\"Access-Control-Allow-Headers\", \"Content-Type\")
+        self.end_headers()
+
+with socketserver.TCPServer((\"\", 3001), ConversionHandler) as httpd:
+    print(\"Python service serving on port 3001\")
+    httpd.serve_forever()
+        '
+      "
+    networks:
+      - openaspax-network
+    restart: unless-stopped
+
+  cobol-service:
+    image: openjdk:11-jre-slim
+    ports:
+      - "3002:3002"
+    command: |
+      sh -c "
+        echo 'Starting COBOL conversion service...' &&
+        apt-get update && apt-get install -y python3 &&
+        python3 -c '
+import http.server
+import socketserver
+import json
+
+class CobolHandler(http.server.BaseHTTPRequestHandler):
+    def do_POST(self):
+        if self.path == \"/api/convert\":
+            self.send_response(200)
+            self.send_header(\"Content-type\", \"application/json\")
+            self.send_header(\"Access-Control-Allow-Origin\", \"*\")
+            self.end_headers()
+            response = {\"status\": \"success\", \"message\": \"COBOL conversion completed\"}
+            self.wfile.write(json.dumps(response).encode())
+        else:
+            self.send_response(404)
+            self.end_headers()
+    
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self.send_header(\"Access-Control-Allow-Origin\", \"*\")
+        self.send_header(\"Access-Control-Allow-Methods\", \"POST, GET, OPTIONS\")
+        self.send_header(\"Access-Control-Allow-Headers\", \"Content-Type\")
+        self.end_headers()
+
+with socketserver.TCPServer((\"\", 3002), CobolHandler) as httpd:
+    print(\"COBOL service serving on port 3002\")
+    httpd.serve_forever()
+        '
+      "
+    networks:
+      - openaspax-network
+    restart: unless-stopped
+
+  dataset-service:
+    image: python:3.11-alpine
+    ports:
+      - "3003:3003"
+    command: |
+      sh -c "
+        echo 'Starting Dataset conversion service...' &&
+        python -c '
+import http.server
+import socketserver
+import json
+
+class DatasetHandler(http.server.BaseHTTPRequestHandler):
+    def do_POST(self):
+        if self.path == \"/api/convert\":
+            self.send_response(200)
+            self.send_header(\"Content-type\", \"application/json\")
+            self.send_header(\"Access-Control-Allow-Origin\", \"*\")
+            self.end_headers()
+            response = {\"status\": \"success\", \"message\": \"Dataset conversion completed\"}
+            self.wfile.write(json.dumps(response).encode())
+        else:
+            self.send_response(404)
+            self.end_headers()
+    
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self.send_header(\"Access-Control-Allow-Origin\", \"*\")
+        self.send_header(\"Access-Control-Allow-Methods\", \"POST, GET, OPTIONS\")
+        self.send_header(\"Access-Control-Allow-Headers\", \"Content-Type\")
+        self.end_headers()
+
+with socketserver.TCPServer((\"\", 3003), DatasetHandler) as httpd:
+    print(\"Dataset service serving on port 3003\")
+    httpd.serve_forever()
+        '
+      "
+    networks:
+      - openaspax-network
+    restart: unless-stopped
+
+  # Monitoring stack for DevOps demonstration
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    networks:
+      - openaspax-network
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-storage:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    networks:
+      - openaspax-network
+    restart: unless-stopped
+
+volumes:
+  grafana-storage:
+
+networks:
+  openaspax-network:
+    driver: bridge
+    name: openaspax-devops

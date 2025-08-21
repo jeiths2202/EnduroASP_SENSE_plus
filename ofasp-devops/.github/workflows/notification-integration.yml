@@ -1,0 +1,530 @@
+name: Notification Integration Testing
+
+on:
+  workflow_dispatch:
+    inputs:
+      notification_type:
+        description: 'Type of notification to test'
+        required: true
+        default: 'deployment_completed'
+        type: choice
+        options:
+        - deployment_started
+        - deployment_completed
+        - deployment_failed
+        - pipeline_completed
+        - performance_regression
+        - security_alert
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - staging
+        - production
+        - development
+
+env:
+  SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+  DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+
+jobs:
+  test-notifications:
+    name: Test Notification Integration
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Test notification system
+      run: |
+        echo "🧪 Testing notification integration..."
+        
+        # Create test notification script
+        cat > test-notification.js << 'EOF'
+        const { notificationService, NotificationTemplates } = require('./dist/utils/notifications');
+        
+        async function testNotification() {
+          const type = process.env.NOTIFICATION_TYPE || 'deployment_completed';
+          const environment = process.env.ENVIRONMENT || 'staging';
+          
+          let event;
+          
+          switch (type) {
+            case 'deployment_started':
+              event = NotificationTemplates.deploymentStarted(
+                environment,
+                'feature/ci-cd-implementation',
+                'devops-bot'
+              );
+              break;
+              
+            case 'deployment_completed':
+              event = NotificationTemplates.deploymentCompleted(
+                environment,
+                'main',
+                'developer',
+                '3m 45s',
+                'https://github.com/' + process.env.GITHUB_REPOSITORY + '/actions/runs/' + process.env.GITHUB_RUN_ID
+              );
+              break;
+              
+            case 'deployment_failed':
+              event = NotificationTemplates.deploymentFailed(
+                environment,
+                'feature/hotfix',
+                'developer',
+                'Database migration failed: connection timeout',
+                'https://github.com/' + process.env.GITHUB_REPOSITORY + '/actions/runs/' + process.env.GITHUB_RUN_ID
+              );
+              break;
+              
+            case 'pipeline_completed':
+              event = NotificationTemplates.pipelineCompleted(
+                'develop',
+                'ci-bot',
+                '8m 32s',
+                'https://github.com/' + process.env.GITHUB_REPOSITORY + '/actions/runs/' + process.env.GITHUB_RUN_ID
+              );
+              break;
+              
+            case 'performance_regression':
+              event = NotificationTemplates.performanceRegression(
+                {
+                  'Lighthouse Score': '78.5 (-8.2)',
+                  'Bundle Size': '+15% increase',
+                  'Load Time': '2.8s (+800ms)'
+                },
+                'feature/optimization'
+              );
+              break;
+              
+            case 'security_alert':
+              event = NotificationTemplates.securityAlert(
+                'medium',
+                'Dependency vulnerability detected in axios@0.21.1',
+                'main'
+              );
+              break;
+              
+            default:
+              console.error('Unknown notification type:', type);
+              process.exit(1);
+          }
+          
+          console.log('Sending test notification:', JSON.stringify(event, null, 2));
+          
+          try {
+            await notificationService.sendNotification(event);
+            console.log('✅ Test notification sent successfully!');
+          } catch (error) {
+            console.error('❌ Failed to send test notification:', error);
+            process.exit(1);
+          }
+        }
+        
+        testNotification().catch(console.error);
+        EOF
+        
+        # Build the project first
+        npm run build
+        
+        # Run the test
+        NOTIFICATION_TYPE="${{ github.event.inputs.notification_type }}" \
+        ENVIRONMENT="${{ github.event.inputs.environment }}" \
+        node test-notification.js
+
+  # Add notifications to existing workflows
+  enhance-existing-workflows:
+    name: Enhance Existing Workflows
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Add notification steps to CI/CD workflow
+      run: |
+        echo "🔧 Adding notification integration to existing workflows..."
+        
+        # Create notification action
+        mkdir -p .github/actions/send-notification
+        
+        cat > .github/actions/send-notification/action.yml << 'EOF'
+        name: 'Send Notification'
+        description: 'Send deployment notifications to Slack/Discord'
+        inputs:
+          type:
+            description: 'Notification type'
+            required: true
+          environment:
+            description: 'Environment name'
+            required: true
+          status:
+            description: 'Status (success/failure/started)'
+            required: true
+          branch:
+            description: 'Git branch'
+            required: false
+            default: ${{ github.ref_name }}
+          author:
+            description: 'Author'
+            required: false
+            default: ${{ github.actor }}
+          duration:
+            description: 'Duration'
+            required: false
+          error:
+            description: 'Error message for failures'
+            required: false
+          url:
+            description: 'Reference URL'
+            required: false
+          slack_webhook:
+            description: 'Slack webhook URL'
+            required: false
+          discord_webhook:
+            description: 'Discord webhook URL'
+            required: false
+            
+        runs:
+          using: 'node16'
+          main: 'index.js'
+        EOF
+        
+        # Create the action implementation
+        cat > .github/actions/send-notification/index.js << 'EOF'
+        const core = require('@actions/core');
+        const github = require('@actions/github');
+        
+        // Simplified notification function for GitHub Actions
+        async function sendNotification(webhook, payload) {
+          if (!webhook) return;
+          
+          const fetch = (await import('node-fetch')).default;
+          
+          try {
+            const response = await fetch(webhook, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+            
+            if (!response.ok) {
+              throw new Error(`HTTP ${response.status}`);
+            }
+            
+            console.log('✅ Notification sent successfully');
+          } catch (error) {
+            console.error('❌ Failed to send notification:', error.message);
+          }
+        }
+        
+        async function run() {
+          try {
+            const type = core.getInput('type');
+            const environment = core.getInput('environment');
+            const status = core.getInput('status');
+            const branch = core.getInput('branch');
+            const author = core.getInput('author');
+            const duration = core.getInput('duration');
+            const error = core.getInput('error');
+            const url = core.getInput('url');
+            const slackWebhook = core.getInput('slack_webhook');
+            const discordWebhook = core.getInput('discord_webhook');
+            
+            const emoji = status === 'success' ? '✅' : status === 'failure' ? '❌' : '🚀';
+            const title = `${emoji} ${type.replace('_', ' ').toUpperCase()}`;
+            
+            let description = `${type.replace('_', ' ')} ${status}`;
+            if (environment) description += ` for ${environment}`;
+            
+            // Slack payload
+            if (slackWebhook) {
+              const slackPayload = {
+                text: title,
+                blocks: [
+                  {
+                    type: 'header',
+                    text: { type: 'plain_text', text: title, emoji: true }
+                  },
+                  {
+                    type: 'section',
+                    fields: [
+                      { type: 'mrkdwn', text: `*Environment:*\n${environment}`, short: true },
+                      { type: 'mrkdwn', text: `*Branch:*\n\`${branch}\``, short: true },
+                      { type: 'mrkdwn', text: `*Author:*\n${author}`, short: true },
+                      ...(duration ? [{ type: 'mrkdwn', text: `*Duration:*\n${duration}`, short: true }] : [])
+                    ]
+                  }
+                ]
+              };
+              
+              if (error) {
+                slackPayload.blocks.push({
+                  type: 'section',
+                  text: { type: 'mrkdwn', text: `*Error:*\n\`\`\`${error}\`\`\`` }
+                });
+              }
+              
+              if (url) {
+                slackPayload.blocks.push({
+                  type: 'actions',
+                  elements: [{
+                    type: 'button',
+                    text: { type: 'plain_text', text: 'View Details', emoji: true },
+                    url: url
+                  }]
+                });
+              }
+              
+              await sendNotification(slackWebhook, slackPayload);
+            }
+            
+            // Discord payload
+            if (discordWebhook) {
+              const color = status === 'success' ? 0x36a64f : status === 'failure' ? 0xff0000 : 0x439FE0;
+              
+              const discordPayload = {
+                embeds: [{
+                  title,
+                  description,
+                  color,
+                  fields: [
+                    { name: 'Environment', value: environment, inline: true },
+                    { name: 'Branch', value: `\`${branch}\``, inline: true },
+                    { name: 'Author', value: author, inline: true },
+                    ...(duration ? [{ name: 'Duration', value: duration, inline: true }] : []),
+                    ...(error ? [{ name: 'Error', value: `\`\`\`${error.substring(0, 1000)}\`\`\``, inline: false }] : [])
+                  ],
+                  timestamp: new Date().toISOString()
+                }],
+                ...(url ? { content: `🔗 **View Details:** ${url}` } : {})
+              };
+              
+              await sendNotification(discordWebhook, discordPayload);
+            }
+            
+          } catch (error) {
+            core.setFailed(error.message);
+          }
+        }
+        
+        run();
+        EOF
+        
+        # Create package.json for the action
+        cat > .github/actions/send-notification/package.json << 'EOF'
+        {
+          "name": "send-notification-action",
+          "version": "1.0.0",
+          "description": "Send deployment notifications",
+          "main": "index.js",
+          "dependencies": {
+            "@actions/core": "^1.10.1",
+            "@actions/github": "^6.0.0",
+            "node-fetch": "^3.3.2"
+          }
+        }
+        EOF
+        
+        echo "✅ Notification action created successfully!"
+
+  create-notification-examples:
+    name: Create Notification Examples
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Create notification examples and documentation
+      run: |
+        echo "📖 Creating notification integration examples..."
+        
+        # Create example workflow showing notification integration
+        mkdir -p examples
+        
+        cat > examples/deployment-with-notifications.yml << 'EOF'
+        # Example: How to integrate notifications into your deployment workflow
+        
+        name: Deployment with Notifications
+        
+        on:
+          push:
+            branches: [main]
+        
+        jobs:
+          deploy:
+            runs-on: ubuntu-latest
+            steps:
+            - uses: actions/checkout@v4
+            
+            # Send deployment started notification
+            - name: Notify deployment started
+              uses: ./.github/actions/send-notification
+              with:
+                type: 'deployment'
+                environment: 'production'
+                status: 'started'
+                slack_webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+                discord_webhook: ${{ secrets.DISCORD_WEBHOOK_URL }}
+            
+            # Your deployment steps here
+            - name: Deploy application
+              run: |
+                echo "Deploying application..."
+                # Your deployment commands
+                
+            # Send success notification
+            - name: Notify deployment success
+              if: success()
+              uses: ./.github/actions/send-notification
+              with:
+                type: 'deployment'
+                environment: 'production'
+                status: 'success'
+                duration: '5m 30s'
+                url: 'https://your-app.com'
+                slack_webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+                discord_webhook: ${{ secrets.DISCORD_WEBHOOK_URL }}
+                
+            # Send failure notification
+            - name: Notify deployment failure
+              if: failure()
+              uses: ./.github/actions/send-notification
+              with:
+                type: 'deployment'
+                environment: 'production'
+                status: 'failure'
+                error: 'Database connection failed'
+                url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+                slack_webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+                discord_webhook: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        EOF
+        
+        echo "✅ Example workflows created!"
+
+  # Test webhook endpoints (mock)
+  test-webhook-endpoints:
+    name: Test Webhook Endpoints
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Test Slack webhook format
+      run: |
+        echo "🧪 Testing Slack webhook format..."
+        
+        # Mock Slack webhook test
+        cat > slack-test.json << 'EOF'
+        {
+          "text": "🚀 Deployment Started",
+          "blocks": [
+            {
+              "type": "header",
+              "text": {
+                "type": "plain_text",
+                "text": "🚀 Deployment Started",
+                "emoji": true
+              }
+            },
+            {
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": "Deployment to production environment has been initiated."
+              }
+            },
+            {
+              "type": "section",
+              "fields": [
+                {
+                  "type": "mrkdwn",
+                  "text": "*Environment:*\nproduction",
+                  "short": true
+                },
+                {
+                  "type": "mrkdwn",
+                  "text": "*Branch:*\n`main`",
+                  "short": true
+                },
+                {
+                  "type": "mrkdwn",
+                  "text": "*Author:*\ndeveloper",
+                  "short": true
+                },
+                {
+                  "type": "mrkdwn",
+                  "text": "*Duration:*\n3m 45s",
+                  "short": true
+                }
+              ]
+            }
+          ]
+        }
+        EOF
+        
+        echo "Slack payload example:"
+        cat slack-test.json | jq '.'
+        
+    - name: Test Discord webhook format
+      run: |
+        echo "🧪 Testing Discord webhook format..."
+        
+        # Mock Discord webhook test
+        cat > discord-test.json << 'EOF'
+        {
+          "username": "OpenASP DevOps",
+          "avatar_url": "https://via.placeholder.com/64/4F46E5/FFFFFF?text=🚀",
+          "embeds": [
+            {
+              "title": "🚀 Deployment Started",
+              "description": "Deployment to production environment has been initiated.",
+              "color": 4502752,
+              "fields": [
+                {
+                  "name": "Environment",
+                  "value": "production",
+                  "inline": true
+                },
+                {
+                  "name": "Branch",
+                  "value": "`main`",
+                  "inline": true
+                },
+                {
+                  "name": "Author",
+                  "value": "developer",
+                  "inline": true
+                },
+                {
+                  "name": "Duration",
+                  "value": "3m 45s",
+                  "inline": true
+                }
+              ],
+              "timestamp": "2024-01-20T12:00:00Z",
+              "author": {
+                "name": "OpenASP DevOps",
+                "icon_url": "https://via.placeholder.com/32/4F46E5/FFFFFF?text=🚀"
+              },
+              "footer": {
+                "text": "Environment: production"
+              }
+            }
+          ]
+        }
+        EOF
+        
+        echo "Discord payload example:"
+        cat discord-test.json | jq '.'
+        
+        echo "✅ Webhook format tests completed!"
