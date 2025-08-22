@@ -2,7 +2,9 @@ import java.util.*;
 import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.file.*;
+import java.nio.file.StandardOpenOption;
 import java.lang.reflect.*;
+import java.text.SimpleDateFormat;
 import com.openasp.sub.SUB001;
 
 /**
@@ -35,6 +37,8 @@ public class MAIN001 {
         String filler5 = " ";                           // PIC X(1) VALUE SPACE
         String option4 = "4) Delete";                   // PIC X(20) VALUE Korean text
         String filler6 = " ";                           // PIC X(1) VALUE SPACE
+        String option9 = "9) ABEND Test";               // PIC X(20) VALUE ABEND test option
+        String filler9 = " ";                           // PIC X(1) VALUE SPACE
         String selectionPrompt = "Selection:";           // PIC X(20) VALUE Korean text
         String empFunc = "";                            // PIC X(1) - User input field
         
@@ -46,6 +50,7 @@ public class MAIN001 {
             fields.put("OPTION_2", option2);
             fields.put("OPTION_3", option3);
             fields.put("OPTION_4", option4);
+            fields.put("OPTION_9", option9);
             fields.put("SELECTION_PROMPT", selectionPrompt);
             fields.put("EMP_FUNC", empFunc);
             return fields;
@@ -530,9 +535,21 @@ public class MAIN001 {
                 wsEndFlag = "Y";
                 break;
                 
+            case "9":
+                System.out.println("[MAIN001] WHEN '9' - ABEND Test Scenario");
+                System.out.println("[MAIN001] Option 9 currently disabled - use F3 for ABEND test");
+                dispRecord.empFunc = "";
+                break;
+                
+            case "F3":
+            case "f3":
+                System.out.println("[MAIN001] WHEN 'F3' - Function Key 3 pressed");
+                handleF3Key();
+                break;
+                
             default:
                 System.out.println("[MAIN001] WHEN OTHER - Invalid selection: '" + dispRecord.empFunc + "'");
-                System.out.println("[MAIN001] Valid options: 1-4 (menu options), 0 (exit)");
+                System.out.println("[MAIN001] Valid options: 1-4 (menu options), F3 (return to logo), 0 (exit)");
                 // Reset invalid input and continue
                 dispRecord.empFunc = "";
                 break;
@@ -714,6 +731,7 @@ public class MAIN001 {
         System.out.println(dispRecord.option2);
         System.out.println(dispRecord.option3);
         System.out.println(dispRecord.option4);
+        System.out.println(dispRecord.option9);
         System.out.println();
         System.out.print(dispRecord.selectionPrompt + " ");
     }
@@ -1093,6 +1111,166 @@ public class MAIN001 {
             
         } catch (Exception e) {
             System.err.println("[MAIN001] Error sending error message: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Handle F3 key press - Currently configured to trigger ABEND for testing
+     * Original behavior: Return to LOGO screen
+     * Test scenario: Trigger ABEND for DevOps pipeline testing
+     */
+    private void handleF3Key() {
+        System.out.println("[MAIN001] F3 key handler - Starting processing");
+        
+        // TEST: NEW ABEND scenario for UI monitoring demonstration
+        returnToLogo();
+    }
+    
+    /**
+     * Original F3 key behavior - Return to LOGO screen
+     * This method will be activated after DevOps pipeline fixes the ABEND
+     */
+    private void returnToLogo() {
+        System.out.println("[MAIN001] F3 - Returning to LOGO screen");
+        
+        try {
+            // Create LOGO screen data
+            Map<String, Object> logoData = new HashMap<>();
+            logoData.put("action", "display_map");
+            logoData.put("map_file", "ENDUROASP_LOGO");
+            logoData.put("terminal_id", currentTerminalId);
+            logoData.put("program_name", "MAIN001");
+            logoData.put("encoding", "SJIS");
+            
+            // Send to WebSocket Hub
+            boolean success = sendToWebSocketHub(logoData);
+            if (success) {
+                System.out.println("[MAIN001] Successfully returned to LOGO screen");
+            } else {
+                System.out.println("[MAIN001] Failed to return to LOGO screen");
+            }
+            
+            // Exit to LOGO screen
+            System.out.println("[MAIN001] F3 - Terminating MAIN001, control transferred to LOGO");
+            sessionManager.terminateSession();
+            System.exit(0);
+            
+        } catch (Exception e) {
+            System.err.println("[MAIN001] Error returning to LOGO: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
+    /**
+     * Test scenario method - Triggers ABEND when F3 is pressed
+     * This simulates a critical system failure for DevOps testing
+     */
+    private void triggerAbendOnF3() {
+        System.err.println("[MAIN001] *** CRITICAL ERROR - ABEND TRIGGERED BY F3 KEY ***");
+        System.err.println("[MAIN001] ABEND CODE: CEE3204S");
+        System.err.println("[MAIN001] DESCRIPTION: The system detected a protection exception (System Completion Code=0C4)");
+        System.err.println("[MAIN001] LOCATION: MAIN001.handleF3Key() at line " + Thread.currentThread().getStackTrace()[1].getLineNumber());
+        System.err.println("[MAIN001] TIMESTAMP: " + new java.util.Date());
+        System.err.println("[MAIN001] TERMINAL: " + currentTerminalId);
+        System.err.println("[MAIN001] SESSION: " + sessionManager.getSessionId());
+        
+        // Log ABEND to file for Zabbix monitoring
+        logAbendToFile("CEE3204S", "Protection exception on F3 key press", "MAIN001.handleF3Key()");
+        
+        // Send ABEND information to WebUI
+        sendAbendToWebUI("CEE3204S", "System protection exception - F3 key handler failed");
+        
+        // Create stack trace for debugging
+        System.err.println("[MAIN001] STACK TRACE:");
+        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+        for (int i = 0; i < Math.min(stackTrace.length, 10); i++) {
+            System.err.println("[MAIN001]   at " + stackTrace[i]);
+        }
+        
+        // Simulate system dump and cleanup
+        System.err.println("[MAIN001] *** SYSTEM DUMP INITIATED ***");
+        System.err.println("[MAIN001] *** PROGRAM TERMINATED ABNORMALLY ***");
+        
+        // Force abnormal termination
+        sessionManager.terminateSession();
+        System.exit(9); // Exit with ABEND code
+    }
+    
+    /**
+     * Log ABEND information to file for Zabbix monitoring
+     */
+    private void logAbendToFile(String abendCode, String description, String location) {
+        try {
+            String logFile = "/home/aspuser/app/logs/abend.log";
+            String timestamp = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date());
+            
+            String logEntry = String.format(
+                "[%s] ABEND %s in %s: %s (Terminal: %s, Session: %s)%n",
+                timestamp, abendCode, location, description, currentTerminalId, 
+                sessionManager.getSessionId()
+            );
+            
+            // Ensure log directory exists
+            File logDir = new File("/home/aspuser/app/logs");
+            if (!logDir.exists()) {
+                logDir.mkdirs();
+            }
+            
+            // Append to log file
+            Files.write(
+                Paths.get(logFile), 
+                logEntry.getBytes(), 
+                StandardOpenOption.CREATE, 
+                StandardOpenOption.APPEND
+            );
+            
+            System.err.println("[MAIN001] ABEND logged to: " + logFile);
+            
+        } catch (Exception e) {
+            System.err.println("[MAIN001] Failed to log ABEND: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Send ABEND information to WebUI for user display
+     */
+    private void sendAbendToWebUI(String abendCode, String description) {
+        try {
+            System.err.println("[MAIN001] Sending ABEND information to WebUI");
+            
+            // Create ABEND display data
+            Map<String, Object> abendData = new HashMap<>();
+            abendData.put("action", "display_abend");
+            abendData.put("map_file", "MAIN001_ABEND");
+            abendData.put("terminal_id", currentTerminalId);
+            abendData.put("program_name", "MAIN001");
+            abendData.put("encoding", "SJIS");
+            
+            // ABEND details
+            Map<String, Object> abendFields = new HashMap<>();
+            abendFields.put("ABEND_CODE", abendCode);
+            abendFields.put("DESCRIPTION", description);
+            abendFields.put("PROGRAM", "MAIN001");
+            abendFields.put("LOCATION", "handleF3Key()");
+            abendFields.put("TIMESTAMP", new java.util.Date().toString());
+            abendFields.put("TERMINAL", currentTerminalId);
+            abendFields.put("SESSION", sessionManager.getSessionId());
+            abendFields.put("SEVERITY", "CRITICAL");
+            abendFields.put("ACTION_REQUIRED", "Contact system administrator immediately");
+            abendFields.put("ERROR_MESSAGE", "F3 key processing failed - System protection exception");
+            
+            abendData.put("fields", abendFields);
+            
+            // Send to WebSocket Hub
+            boolean success = sendToWebSocketHub(abendData);
+            if (success) {
+                System.err.println("[MAIN001] ABEND information sent to WebUI successfully");
+            } else {
+                System.err.println("[MAIN001] Failed to send ABEND information to WebUI");
+            }
+            
+        } catch (Exception e) {
+            System.err.println("[MAIN001] Error sending ABEND to WebUI: " + e.getMessage());
         }
     }
 }

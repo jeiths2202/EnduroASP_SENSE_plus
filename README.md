@@ -92,9 +92,31 @@ OpenASP AX는 레거시 ASP(Advanced System Products) 시스템을 현대적인 
 - **기술**: Ollama, AI 모델 호스팅
 - **실행**: Chat 서비스를 통해 자동 시작
 
+### 9. [OpenASP DevOps](./ofasp-devops/) (포트 3016)
+- **목적**: Enterprise급 CI/CD & 자동화 통합 모니터링 플랫폼
+- **주요 기능**: 
+  - COBOL/CL 변환 엔진 (Java, Python, C, Shell)
+  - 9개 전문화된 GitHub Actions CI/CD 워크플로우
+  - 실시간 시스템 모니터링 (CPU, 메모리, 디스크, 네트워크)
+  - **ABEND 자동 감지 및 수정 시스템**
+  - **실시간 CI/CD Workflow 의존성 시각화**
+  - 알림 시스템 (Critical/High/Medium/Low)
+  - 투자자 시연용 대시보드
+- **기술**: Next.js 14, TypeScript, Docker, GitHub Actions
+- **실행**: 
+  ```bash
+  cd ofasp-devops
+  npm run dev  # 개발 모드
+  # 또는
+  docker compose up -d  # Docker 전체 스택
+  ```
+- **모니터링 스택**:
+  - Prometheus (포트 3011): 메트릭 수집
+  - Grafana (포트 3010): 시각화 대시보드 (admin/admin123)
+
 ## 🔍 모니터링 시스템 (Zabbix)
 
-### 9. [Zabbix 모니터링 시스템] (포트 3015)
+### 10. [Zabbix 모니터링 시스템] (포트 3015)
 - **웹 인터페이스**: http://localhost:3015
 - **로그인**: Admin / zabbix
 - **목적**: OpenASP AX 전체 시스템 모니터링 및 알림
@@ -105,10 +127,13 @@ OpenASP AX는 레거시 ASP(Advanced System Products) 시스템을 현대적인 
 - **Python Service** (포트 3003): Flask 서비스 상태
 - **Refactor Service** (포트 3005): 코드 변환 서비스 상태
 - **Manager Service** (포트 3007): AI 관리 인터페이스 상태
+- **OpenASP DevOps** (포트 3016): CI/CD & 통합 모니터링 상태
 - **로그 모니터링**: 
   - `/home/aspuser/app/logs/` (메인 로그)
   - `/home/aspuser/app/ofasp-refactor/logs/` (리팩터 로그)
+  - **ABEND 로그**: `/home/aspuser/app/logs/abend.log` (ABEND 감지 이력)
 - **dslock_suite**: 파일 락 관리 시스템 상태
+- **ABEND 자동 감지**: CEE3204S 에러 코드 실시간 모니터링
 
 #### 🔧 Zabbix 구성 요소
 
@@ -214,8 +239,12 @@ log_monitor.py     - 오류/경고 로그 감지 및 분석
 # dslock 상태 확인
 check_dslock.py    - dslock_suite 상태 및 활성 락 모니터링
 
+# ABEND 자동 감지 및 수정
+check_abend.py     - ABEND CEE3204S 감지 및 자동 수정 트리거
+
 # 설정 파일
 /home/aspuser/app/monitoring/config/zabbix.conf
+/etc/zabbix/zabbix_agentd.d/openasp.conf  # ABEND 모니터링 파라미터
 ```
 
 #### 🚨 알림 설정
@@ -223,12 +252,77 @@ check_dslock.py    - dslock_suite 상태 및 활성 락 모니터링
 - **로그 오류**: 로그 파일에서 오류/경고 감지 시 알림
 - **시스템 리소스**: CPU, 메모리, 디스크 임계값 초과 시 알림
 - **dslock 문제**: 파일 락 시스템 오류 시 알림
+- **ABEND 감지**: CEE3204S ABEND 발생 시 즉시 알림 및 자동 수정 트리거
 
 #### 🔄 모니터링 주기
 - **서비스 상태**: 60초마다 체크
 - **로그 모니터링**: 300초마다 체크
 - **dslock 상태**: 120초마다 체크
+- **ABEND 감지**: 60초마다 체크 (실시간 대응)
 - **시스템 리소스**: 60초마다 체크
+
+## 🔄 ABEND 자동 감지 및 수정 시스템
+
+### 🎯 통합 테스트 시나리오
+OpenASP AX 시스템은 **ABEND 발생 → Zabbix 감지 → DevOps CI/CD 자동 수정 → 정상화** 의 완전 자동화된 장애 대응 시스템을 구현합니다.
+
+### 📋 ABEND 자동 대응 프로세스
+
+#### 1️⃣ **ABEND 발생 단계**
+- **트리거**: F3 키 입력 시 MAIN001.java에서 CEE3204S ABEND 발생
+- **위치**: `/home/aspuser/app/volume/DISK01/JAVA/MAIN001.java:handleF3Key()`
+- **로그**: ABEND 정보가 `/home/aspuser/app/logs/abend.log`에 기록
+
+#### 2️⃣ **Zabbix 실시간 감지**
+- **감지 스크립트**: `check_abend.py` (60초 주기)
+- **Zabbix 파라미터**: `openasp.abend.check`, `openasp.abend.count`
+- **알림**: Zabbix UI의 "OpenASP AX" 호스트에서 ABEND 알림 표시
+
+#### 3️⃣ **CI/CD 자동 수정 파이프라인**
+- **워크플로우**: ABEND Auto-Fix Pipeline (4단계)
+  1. 🔍 **Detect and Analyze ABEND**: 코드 체크아웃, 로그 분석, 백업 생성
+  2. 🔧 **Auto-Fix ABEND**: F3 키 핸들러 수정, 코드 컴파일, 테스트
+  3. 🚀 **Deploy Fixed Code**: 운영 배포, 서비스 재시작, 배포 검증
+  4. 📢 **Notify Fix Completion**: 수정 결과 로깅, 모니터링 업데이트
+
+#### 4️⃣ **실시간 시각화 모니터링**
+- **URL**: http://localhost:3016/ (CI/CD Workflow Visualizer)
+- **기능**: 
+  - 실시간 워크플로우 상태 표시
+  - Job 의존성 그래프 시각화
+  - 히스토리 ABEND 카운트 추적
+  - 자동 새로고침 (10초 주기)
+
+### 🔧 **구성 파일**
+```bash
+# ABEND 모니터링 설정
+/etc/zabbix/zabbix_agentd.d/openasp.conf
+
+# 감지 스크립트
+/home/aspuser/app/monitoring/scripts/check_abend.py
+
+# 자동 수정 대상 파일
+/home/aspuser/app/volume/DISK01/JAVA/MAIN001.java
+
+# ABEND 로그
+/home/aspuser/app/logs/abend.log
+
+# CI/CD Workflow API
+/home/aspuser/app/ofasp-devops/src/pages/api/workflow-data.ts
+/home/aspuser/app/ofasp-devops/src/pages/api/abend-status.ts
+```
+
+### 🧪 **테스트 시나리오 실행**
+1. **MAIN001.java 실행**: F3 키 입력으로 ABEND 발생
+2. **Zabbix 모니터링**: http://localhost:3015 에서 알림 확인
+3. **CI/CD 시각화**: http://localhost:3016 에서 파이프라인 진행 상황 확인
+4. **자동 수정 확인**: F3 키가 정상 동작하는지 검증
+
+### 📊 **모니터링 지표**
+- **총 ABEND 발생 수**: 과거부터 누적된 전체 ABEND 건수
+- **현재 ABEND 수**: 현재 활성 상태의 ABEND 건수  
+- **워크플로우 상태**: pending → in_progress → completed
+- **자동 수정 성공률**: 수정 완료된 ABEND 비율
 
 ## 🚀 빠른 시작
 
@@ -312,6 +406,9 @@ curl http://localhost:3007         # ASP Manager
 curl http://localhost:8000         # API Server
 curl http://localhost:3014/api/tags # Ollama Server
 curl http://localhost:3015         # Zabbix 모니터링
+curl http://localhost:3016         # OpenASP DevOps (CI/CD Workflow Visualizer)
+curl http://localhost:3011         # Prometheus
+curl http://localhost:3010         # Grafana
 ```
 
 ### Zabbix 모니터링 상태 확인
@@ -327,11 +424,14 @@ service postgresql status
 python3 /home/aspuser/app/monitoring/scripts/check_services.py --json
 python3 /home/aspuser/app/monitoring/scripts/log_monitor.py --json
 python3 /home/aspuser/app/monitoring/scripts/check_dslock.py --json
+python3 /home/aspuser/app/monitoring/scripts/check_abend.py --json  # ABEND 감지 테스트
 
 # Zabbix Agent 파라미터 테스트
 zabbix_agentd -t openasp.services.check
 zabbix_agentd -t openasp.service.api
 zabbix_agentd -t openasp.service.smed
+zabbix_agentd -t openasp.abend.check      # ABEND 감지 파라미터 테스트
+zabbix_agentd -t openasp.abend.count      # ABEND 카운트 파라미터 테스트
 
 # 데이터베이스 접속
 su - postgres -c "psql zabbix"
@@ -343,6 +443,19 @@ su - postgres -c "psql zabbix"
 - Node.js 18+
 - Python 3.10+
 - npm 또는 yarn
+
+### 서비스 포트 구성
+- 3000: SMED Map Viewer (화면 맵 뷰어)
+- 3003: Python EBCDIC 변환 서비스
+- 3005: OpenASP Refactor 메인
+- 3007: ASP Manager
+- 3008: ASP Manager 백엔드
+- 3010: Grafana (모니터링 시각화)
+- 3011: Prometheus (메트릭 수집)
+- 3014: Ollama Server (AI 모델)
+- 3015: Zabbix (시스템 모니터링)
+- 3016: OpenASP DevOps (CI/CD & 모니터링)
+- 8000: API Server (통합 백엔드)
 
 ### 환경 변수
 ```bash
