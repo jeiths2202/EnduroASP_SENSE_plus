@@ -5,13 +5,16 @@ import { Language } from '../i18n';
 import '../styles/globals.css';
 
 function MyApp({ Component, pageProps }: AppProps) {
-  const [language, setLanguage] = useState<Language>('en');
+  const [language, setLanguage] = useState<Language>('ja');
 
   useEffect(() => {
     // Load language from localStorage
     const savedLanguage = localStorage.getItem('language') as Language;
     if (savedLanguage && ['ja', 'en', 'ko'].includes(savedLanguage)) {
       setLanguage(savedLanguage);
+    } else {
+      // Set Japanese as default if no saved language
+      setLanguage('ja');
     }
   }, []);
 

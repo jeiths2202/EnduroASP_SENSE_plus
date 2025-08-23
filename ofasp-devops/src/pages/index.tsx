@@ -16,7 +16,7 @@ import {
 const HomePage: React.FC = () => {
   const { t, language, setLanguage } = useI18n();
   const [currentPage, setCurrentPage] = useState<'dashboard' | 'cobol' | 'cl' | 'monitoring'>('dashboard');
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(true);
 
   const navigation = [
     { id: 'dashboard', name: 'DevOps Dashboard', icon: HomeIcon },

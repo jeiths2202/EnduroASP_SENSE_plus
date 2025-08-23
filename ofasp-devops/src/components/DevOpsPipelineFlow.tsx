@@ -219,36 +219,36 @@ const DevOpsPipelineFlow: React.FC<DevOpsPipelineFlowProps> = ({ isDarkMode = fa
   };
 
   const getNodeColor = (node: PipelineNode) => {
-    if (node.type === 'external') return '#e5e7eb';
+    if (node.type === 'external') return isDarkMode ? '#6b7280' : '#e5e7eb';
     
     switch (node.status) {
-      case 'running': return '#3b82f6';
-      case 'success': return '#10b981';
-      case 'failed': return '#ef4444';
-      case 'warning': return '#f59e0b';
-      default: return node.type === 'decision' ? '#f472b6' : '#3b82f6';
+      case 'running': return isDarkMode ? '#60a5fa' : '#3b82f6';
+      case 'success': return isDarkMode ? '#34d399' : '#10b981';
+      case 'failed': return isDarkMode ? '#f87171' : '#ef4444';
+      case 'warning': return isDarkMode ? '#fbbf24' : '#f59e0b';
+      default: return node.type === 'decision' ? (isDarkMode ? '#f472b6' : '#f472b6') : (isDarkMode ? '#60a5fa' : '#3b82f6');
     }
   };
 
   const getNodeStroke = (node: PipelineNode) => {
-    if (node.id === selectedNode) return '#1e40af';
-    if (node.type === 'external') return '#9ca3af';
+    if (node.id === selectedNode) return isDarkMode ? '#3b82f6' : '#1e40af';
+    if (node.type === 'external') return isDarkMode ? '#d1d5db' : '#9ca3af';
     
     switch (node.status) {
-      case 'running': return '#1e40af';
-      case 'success': return '#059669';
-      case 'failed': return '#dc2626';
-      case 'warning': return '#d97706';
-      default: return node.type === 'decision' ? '#be185d' : '#1e40af';
+      case 'running': return isDarkMode ? '#3b82f6' : '#1e40af';
+      case 'success': return isDarkMode ? '#10b981' : '#059669';
+      case 'failed': return isDarkMode ? '#ef4444' : '#dc2626';
+      case 'warning': return isDarkMode ? '#f59e0b' : '#d97706';
+      default: return node.type === 'decision' ? (isDarkMode ? '#ec4899' : '#be185d') : (isDarkMode ? '#3b82f6' : '#1e40af');
     }
   };
 
   const getEdgeColor = (edge: PipelineEdge) => {
     switch (edge.type) {
-      case 'success': return '#10b981';
-      case 'failure': return '#ef4444';
-      case 'feedback': return '#f59e0b';
-      default: return '#374151';
+      case 'success': return isDarkMode ? '#34d399' : '#10b981';
+      case 'failure': return isDarkMode ? '#f87171' : '#ef4444';
+      case 'feedback': return isDarkMode ? '#fbbf24' : '#f59e0b';
+      default: return isDarkMode ? '#9ca3af' : '#374151';
     }
   };
 
@@ -285,7 +285,7 @@ const DevOpsPipelineFlow: React.FC<DevOpsPipelineFlowProps> = ({ isDarkMode = fa
               y="5"
               textAnchor="middle"
               className="text-xs font-semibold"
-              fill="#1f2937"
+              fill={isDarkMode ? "#f3f4f6" : "#1f2937"}
             >
               {node.label.split(' ')[0]}
             </text>
@@ -294,7 +294,7 @@ const DevOpsPipelineFlow: React.FC<DevOpsPipelineFlowProps> = ({ isDarkMode = fa
               y="18"
               textAnchor="middle"
               className="text-xs font-semibold"
-              fill="#1f2937"
+              fill={isDarkMode ? "#f3f4f6" : "#1f2937"}
             >
               {node.label.split(' ')[1]}
             </text>
@@ -338,15 +338,15 @@ const DevOpsPipelineFlow: React.FC<DevOpsPipelineFlowProps> = ({ isDarkMode = fa
             y="-64"
             textAnchor="middle"
             className="text-sm font-semibold"
-            fill="#374151"
+            fill={isDarkMode ? "#f3f4f6" : "#374151"}
           >
             {node.label}
           </text>
           
           {/* Standard build items with better spacing */}
-          <text x="-85" y="-42" className="text-xs" fill="#6b7280">• Dependencies</text>
-          <text x="-85" y="-30" className="text-xs" fill="#6b7280">• Compiled Code</text>
-          <text x="-85" y="-18" className="text-xs" fill="#6b7280">• Build Output</text>
+          <text x="-85" y="-42" className="text-xs" fill={isDarkMode ? "#d1d5db" : "#6b7280"}>• Dependencies</text>
+          <text x="-85" y="-30" className="text-xs" fill={isDarkMode ? "#d1d5db" : "#6b7280"}>• Compiled Code</text>
+          <text x="-85" y="-18" className="text-xs" fill={isDarkMode ? "#d1d5db" : "#6b7280"}>• Build Output</text>
           
           {/* AI Verification separator line - moved down */}
           <line
@@ -364,7 +364,7 @@ const DevOpsPipelineFlow: React.FC<DevOpsPipelineFlowProps> = ({ isDarkMode = fa
             y="30"
             textAnchor="middle"
             className="text-sm font-semibold"
-            fill="#1e40af"
+            fill={isDarkMode ? "#60a5fa" : "#1e40af"}
           >
             🤖 AI Verification
           </text>
@@ -373,19 +373,19 @@ const DevOpsPipelineFlow: React.FC<DevOpsPipelineFlowProps> = ({ isDarkMode = fa
           <g className={node.status === 'running' ? 'animate-pulse' : ''}>
             {/* Code Quality AI Analysis */}
             <rect x="-85" y="55" width="170" height="20" fill="#dbeafe" stroke="#3b82f6" strokeWidth="1" rx="4"/>
-            <text x="-80" y="68" className="text-xs" fill="#1e40af">🤖 Code Quality AI Analysis</text>
+            <text x="-80" y="68" className="text-xs" fill={isDarkMode ? "#60a5fa" : "#1e40af"}>🤖 Code Quality AI Analysis</text>
             
             {/* Security AI Pre-scan */}
             <rect x="-85" y="90" width="170" height="20" fill="#dbeafe" stroke="#3b82f6" strokeWidth="1" rx="4"/>
-            <text x="-80" y="103" className="text-xs" fill="#1e40af">🤖 Security AI Pre-scan</text>
+            <text x="-80" y="103" className="text-xs" fill={isDarkMode ? "#60a5fa" : "#1e40af"}>🤖 Security AI Pre-scan</text>
             
             {/* Performance AI Check */}
             <rect x="-85" y="125" width="170" height="20" fill="#dbeafe" stroke="#3b82f6" strokeWidth="1" rx="4"/>
-            <text x="-80" y="138" className="text-xs" fill="#1e40af">🤖 Performance AI Check</text>
+            <text x="-80" y="138" className="text-xs" fill={isDarkMode ? "#60a5fa" : "#1e40af"}>🤖 Performance AI Check</text>
             
             {/* Architecture AI Review */}
             <rect x="-85" y="160" width="170" height="20" fill="#dbeafe" stroke="#3b82f6" strokeWidth="1" rx="4"/>
-            <text x="-80" y="173" className="text-xs" fill="#1e40af">🤖 Architecture AI Review</text>
+            <text x="-80" y="173" className="text-xs" fill={isDarkMode ? "#60a5fa" : "#1e40af"}>🤖 Architecture AI Review</text>
           </g>
           
           {/* Progress indicator (green bar) - positioned below AI items */}
@@ -423,7 +423,7 @@ const DevOpsPipelineFlow: React.FC<DevOpsPipelineFlowProps> = ({ isDarkMode = fa
             <text
               y="5"
               textAnchor="middle"
-              className={`text-xs font-semibold ${node.type === 'external' ? 'text-gray-700' : 'text-white'}`}
+              className={`text-xs font-semibold ${node.type === 'external' ? (isDarkMode ? 'text-white' : 'text-gray-700') : 'text-white'}`}
             >
               {node.label}
             </text>
@@ -657,12 +657,12 @@ const DevOpsPipelineFlow: React.FC<DevOpsPipelineFlowProps> = ({ isDarkMode = fa
         </defs>
 
         {/* Title */}
-        <text x="800" y="30" textAnchor="middle" className="text-2xl font-bold" fill="#1e293b">
+        <text x="800" y="30" textAnchor="middle" className="text-2xl font-bold" fill={isDarkMode ? "#f1f5f9" : "#1e293b"}>
           DevOps CI/CD Pipeline Workflow
         </text>
 
         {/* Subtitle */}
-        <text x="800" y="55" textAnchor="middle" className="text-sm" fill="#6b7280">
+        <text x="800" y="55" textAnchor="middle" className="text-sm" fill={isDarkMode ? "#9ca3af" : "#6b7280"}>
           Real-time Pipeline Execution Monitor
         </text>
 
@@ -673,27 +673,27 @@ const DevOpsPipelineFlow: React.FC<DevOpsPipelineFlowProps> = ({ isDarkMode = fa
         {nodes.map(node => renderNode(node))}
 
         {/* Stage labels - adjusted to new node positions */}
-        <text x="350" y="100" textAnchor="middle" className="text-sm font-semibold" fill="#3b82f6">
+        <text x="350" y="100" textAnchor="middle" className="text-sm font-semibold" fill={isDarkMode ? "#60a5fa" : "#3b82f6"}>
           CI/CD Pipeline Stages
         </text>
-        <text x="350" y="120" textAnchor="middle" className="text-xs" fill="#6b7280">
+        <text x="350" y="120" textAnchor="middle" className="text-xs" fill={isDarkMode ? "#d1d5db" : "#6b7280"}>
           1. Source Control
         </text>
-        <text x="500" y="120" textAnchor="middle" className="text-xs" fill="#6b7280">
+        <text x="500" y="120" textAnchor="middle" className="text-xs" fill={isDarkMode ? "#d1d5db" : "#6b7280"}>
           2. Build & AI Verify
         </text>
-        <text x="830" y="120" textAnchor="middle" className="text-xs" fill="#6b7280">
+        <text x="830" y="120" textAnchor="middle" className="text-xs" fill={isDarkMode ? "#d1d5db" : "#6b7280"}>
           3. Automated Testing
         </text>
-        <text x="1010" y="120" textAnchor="middle" className="text-xs" fill="#6b7280">
+        <text x="1010" y="120" textAnchor="middle" className="text-xs" fill={isDarkMode ? "#d1d5db" : "#6b7280"}>
           4. Security & Quality
         </text>
-        <text x="1190" y="120" textAnchor="middle" className="text-xs" fill="#6b7280">
+        <text x="1190" y="120" textAnchor="middle" className="text-xs" fill={isDarkMode ? "#d1d5db" : "#6b7280"}>
           5. Deployment
         </text>
 
         {/* Feedback loop label */}
-        <text x="850" y="520" textAnchor="middle" className="text-xs" fill="#f59e0b">
+        <text x="850" y="520" textAnchor="middle" className="text-xs" fill={isDarkMode ? "#fbbf24" : "#f59e0b"}>
           Feedback loops for continuous improvement
         </text>
       </svg>
@@ -748,66 +748,66 @@ const DevOpsPipelineFlow: React.FC<DevOpsPipelineFlowProps> = ({ isDarkMode = fa
       )}
 
       {/* Legend */}
-      <div className="absolute bottom-4 left-4 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-lg shadow-lg p-4 max-w-xs border border-gray-200 dark:border-gray-700">
-        <h4 className="font-semibold text-sm mb-3">Legend</h4>
+      <div className={`absolute bottom-4 left-4 backdrop-blur-sm rounded-lg shadow-lg p-4 max-w-xs border ${isDarkMode ? 'bg-gray-800/95 border-gray-600' : 'bg-white/95 border-gray-200'}`}>
+        <h4 className={`font-semibold text-sm mb-3 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Legend</h4>
         <div className="grid grid-cols-1 gap-3 text-xs">
           <div className="space-y-2">
-            <div className="font-medium text-xs mb-1">Node Types:</div>
+            <div className={`font-medium text-xs mb-1 ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>Node Types:</div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 rounded-full bg-blue-500"></div>
-              <span>Process Node</span>
+              <span className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>Process Node</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 bg-pink-500 transform rotate-45"></div>
-              <span>Decision Point</span>
+              <span className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>Decision Point</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 border-2 border-dashed border-gray-500"></div>
-              <span>Artifact with AI</span>
+              <span className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>Artifact with AI</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 rounded-full bg-gray-300"></div>
-              <span>External Input</span>
+              <span className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>External Input</span>
             </div>
           </div>
           
           <div className="space-y-2">
-            <div className="font-medium text-xs mb-1">🤖 AI Verification:</div>
+            <div className={`font-medium text-xs mb-1 ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>🤖 AI Verification:</div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-2 bg-blue-200 border border-blue-400 rounded-sm"></div>
-              <span>Quality AI</span>
+              <span className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>Quality AI</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-2 bg-blue-200 border border-blue-400 rounded-sm"></div>
-              <span>Security AI</span>
+              <span className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>Security AI</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-2 bg-blue-200 border border-blue-400 rounded-sm"></div>
-              <span>Performance AI</span>
+              <span className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>Performance AI</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-2 bg-blue-200 border border-blue-400 rounded-sm"></div>
-              <span>Architecture AI</span>
+              <span className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>Architecture AI</span>
             </div>
           </div>
           
           <div className="space-y-2">
-            <div className="font-medium text-xs mb-1">Failure Routes:</div>
+            <div className={`font-medium text-xs mb-1 ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>Failure Routes:</div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-1 bg-red-500" style={{borderStyle: 'dashed', borderWidth: '1px 0'}}></div>
-              <span>Build Fails</span>
+              <span className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>Build Fails</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-1 bg-orange-500" style={{borderStyle: 'dashed', borderWidth: '1px 0'}}></div>
-              <span>Test Fails</span>
+              <span className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>Test Fails</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-1 bg-fuchsia-500" style={{borderStyle: 'dashed', borderWidth: '1px 0'}}></div>
-              <span>Security Fails</span>
+              <span className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>Security Fails</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-1 bg-indigo-500" style={{borderStyle: 'dashed', borderWidth: '1px 0'}}></div>
-              <span>Deploy Fails</span>
+              <span className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>Deploy Fails</span>
             </div>
           </div>
         </div>
