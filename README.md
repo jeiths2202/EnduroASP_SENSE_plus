@@ -98,11 +98,20 @@ OpenASP AX는 레거시 ASP(Advanced System Products) 시스템을 현대적인 
   - COBOL/CL 변환 엔진 (Java, Python, C, Shell)
   - 9개 전문화된 GitHub Actions CI/CD 워크플로우
   - 실시간 시스템 모니터링 (CPU, 메모리, 디스크, 네트워크)
+  - **✨ NEW: 인터랙티브 Pipeline Flow 시각화**
+    - 실시간 CI/CD 파이프라인 진행 상황 시각화
+    - 색상별 실패 경로 구분 (Build/Test/Security/Deploy 실패)
+    - 직선 점선으로 각 단계별 복귀 경로 명확 표시
+    - 실시간 상태 업데이트 (5초 간격)
+  - **✨ NEW: ABEND Auto-Fix Integration Test**
+    - 7단계 ABEND 자동 수정 프로세스 시각화
+    - 5-10초 간격 실시간 진행 상황 모니터링
+    - F3 키 수정 → Zabbix 감지 → DevOps 자동 수정 → 검증 전체 과정
+    - test_complete_scenario.sh와 웹 UI 연동
   - **ABEND 자동 감지 및 수정 시스템**
-  - **실시간 CI/CD Workflow 의존성 시각화**
   - 알림 시스템 (Critical/High/Medium/Low)
   - 투자자 시연용 대시보드
-- **기술**: Next.js 14, TypeScript, Docker, GitHub Actions
+- **기술**: Next.js 14, TypeScript, Docker, GitHub Actions, SVG 시각화
 - **실행**: 
   ```bash
   cd ofasp-devops
@@ -393,6 +402,39 @@ curl http://localhost:3006/api/health # Chat API 상태
 ```bash
 cd ofasp-refactor/python-service
 python convert_file.py /tmp/sample.ebc -e JP -s --sosi-handling space -o /tmp/output.txt
+```
+
+### 🔄 NEW: DevOps Pipeline API 엔드포인트
+
+#### Pipeline Flow API (포트 3016)
+```bash
+# 실시간 파이프라인 상태 조회
+GET /api/pipeline-flow-status
+# 응답: 각 노드별 상태, 진행률, 지속시간 정보
+
+# ABEND 테스트 시나리오 상태 조회
+GET /api/abend-test-scenario
+# 응답: 7단계 테스트 진행 상황, 현재 단계, 전체 상태
+
+# ABEND 테스트 시나리오 시작
+POST /api/abend-test-scenario?action=start
+# 기능: test_complete_scenario.sh 연동하여 실제 ABEND 자동 수정 프로세스 실행
+
+# 단계별 상태 업데이트 (스크립트에서 호출)
+POST /api/abend-test-scenario?action=update
+# 바디: { "stepId": "f3-check", "status": "success", "message": "..." }
+```
+
+#### 사용 예시
+```bash
+# Pipeline 상태 확인
+curl http://localhost:3016/api/pipeline-flow-status
+
+# ABEND 테스트 상태 확인
+curl http://localhost:3016/api/abend-test-scenario
+
+# ABEND 테스트 시작 (실제 test_complete_scenario.sh 실행)
+curl -X POST http://localhost:3016/api/abend-test-scenario?action=start
 ```
 
 ### API 상태 확인

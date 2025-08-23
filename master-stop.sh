@@ -125,6 +125,10 @@ force_kill_by_pattern "python.*api_server" "Python API Servers"
 force_kill_by_pattern "python.*aspmgr_web" "System API Servers"
 force_kill_by_pattern "python.*-c.*_job_processor_worker" "Job Processor Services"
 
+# Next.js DevOps services
+force_kill_by_pattern "next-server" "Next.js DevOps Server"
+force_kill_by_pattern "start-server.sh" "DevOps Startup Script"
+
 echo -e "\n${YELLOW}Force killing processes by port...${NC}"
 
 # Force kill by each port
@@ -132,6 +136,7 @@ force_kill_by_port "3000" "SMED Map Viewer"
 force_kill_by_port "3003" "Python Service"
 force_kill_by_port "3004" "System API Server"
 force_kill_by_port "3005" "OpenASP Refactor"
+force_kill_by_port "3016" "OpenASP DevOps"
 force_kill_by_port "3007" "ASP Manager"
 force_kill_by_port "3008" "ASP Manager Backend"
 force_kill_by_port "8000" "API Server"
@@ -175,7 +180,7 @@ sleep 3
 echo -e "\n${YELLOW}Final port status check...${NC}"
 all_clear=true
 
-for port in 3000 3003 3004 3005 3007 3008 8000 3015 10050 10051; do
+for port in 3000 3003 3004 3005 3016 3007 3008 8000 3015 10050 10051; do
     if lsof -i :$port > /dev/null 2>&1; then
         echo -e "${RED}[WARN] Port $port still in use${NC}"
         all_clear=false

@@ -155,7 +155,7 @@ with socketserver.TCPServer((\"\", 3003), DatasetHandler) as httpd:
   prometheus:
     image: prom/prometheus:latest
     ports:
-      - "9090:9090"
+      - "3011:9090"
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
     command:
@@ -171,7 +171,7 @@ with socketserver.TCPServer((\"\", 3003), DatasetHandler) as httpd:
   grafana:
     image: grafana/grafana:latest
     ports:
-      - "3000:3000"
+      - "3010:3000"
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin123
       - GF_USERS_ALLOW_SIGN_UP=false

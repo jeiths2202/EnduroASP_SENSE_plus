@@ -182,7 +182,19 @@ else
     echo -e "${RED}[NG] api_server.py not found.${NC}"
 fi
 
-# 6. System API Server startup (Port 3004) - DISABLED (file not found)
+# 6. OpenASP DevOps startup (Port 3016)
+cd "$APP_ROOT/ofasp-devops"
+if [ -f "package.json" ]; then
+    start_service "[DEVOPS] OpenASP DevOps" 3016 \
+        "nohup /home/aspuser/app/ofasp-devops/start-server.sh" \
+        "$APP_ROOT/logs/ofasp-devops.log" \
+        "$APP_ROOT/pids/ofasp-devops.pid"
+    DEVOPS_PID=$!
+else
+    echo -e "${RED}[NG] ofasp-devops package.json not found.${NC}"
+fi
+
+# 7. System API Server startup (Port 3004) - DISABLED (file not found)
 # cd "$APP_ROOT/ofasp-refactor/server"
 # if [ -f "aspmgr_web.py" ]; then
 #     start_service "[SYSTEM] System API Server" 3004 \
@@ -195,7 +207,7 @@ echo -e "${YELLOW}[SKIP] System API Server - aspmgr_web.py not found, skipping.$
 SYSTEM_API_PID=""
 # fi
 
-# 7. Zabbix Monitoring System startup
+# 8. Zabbix Monitoring System startup
 echo -e "\n${YELLOW}[MONITOR] Starting Zabbix monitoring system...${NC}"
 
 # Check if we're running as root for Zabbix services
@@ -240,6 +252,7 @@ check_service "OpenASP Refactor" 3005 "$APP_ROOT/logs/ofasp-refactor.log"
 check_service "ASP Manager" 3007 "$APP_ROOT/logs/asp-manager.log"
 check_service "ASP Manager Backend" 3008 "$APP_ROOT/logs/asp-manager-backend.log"
 check_service "API Server" 8000 "$APP_ROOT/logs/api-server.log"
+check_service "OpenASP DevOps" 3016 "$APP_ROOT/logs/ofasp-devops.log"
 # Only check System API Server if it was started
 if [ -n "$SYSTEM_API_PID" ]; then
     check_service "System API Server" 3004 "$APP_ROOT/logs/system-api.log"
@@ -256,6 +269,7 @@ REFACTOR_APP_PID=$REFACTOR_PID
 MANAGER_APP_PID=$MANAGER_PID
 MANAGER_BACKEND_PID=$MANAGER_BACKEND_PID
 API_SERVER_PID=$API_SERVER_PID
+DEVOPS_PID=$DEVOPS_PID
 SYSTEM_API_PID=$SYSTEM_API_PID
 STARTED_AT="$(date)"
 EOF
@@ -273,6 +287,7 @@ else
     echo "   - System API Server: DISABLED (aspmgr_web.py not found)"
 fi
 echo "   - OpenASP Refactor: http://localhost:3005"
+echo "   - OpenASP DevOps: http://localhost:3016"
 echo "   - ASP Manager: http://localhost:3007"
 echo "   - ASP Manager Backend: http://localhost:3008"
 echo "   - API Server: http://localhost:8000"
@@ -282,6 +297,7 @@ echo "[LIST] Log files:"
 echo "   - Python Service: $APP_ROOT/logs/python-service.log"
 echo "   - SMED Viewer: $APP_ROOT/logs/smed-viewer.log"
 echo "   - Refactor: $APP_ROOT/logs/ofasp-refactor.log"
+echo "   - DevOps: $APP_ROOT/logs/ofasp-devops.log"
 echo "   - Manager: $APP_ROOT/logs/asp-manager.log"
 echo "   - Manager Backend: $APP_ROOT/logs/asp-manager-backend.log"
 echo "   - System API: $APP_ROOT/logs/system-api.log"

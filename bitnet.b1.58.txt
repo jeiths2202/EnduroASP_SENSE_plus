@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# === 0. 준비: 기본 도구 ===
+sudo apt-get update
+sudo apt-get install -y git python3-venv python3-pip build-essential cmake curl wget
+
+# === 1. Clang 18 (요구사항) 설치 ===
+# bitnet.cpp는 clang>=18을 권장합니다.
+# 공식 스크립트로 LLVM/Clang 18 설치
+bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)"   # 대화형 아님
+sudo apt-get install -y clang-18 lld-18
+sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-18 100
+sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-18 100
+
+# === 2. 리포지토리 클론 ===
+git clone --recursive https://github.com/microsoft/BitNet.git
+cd BitNet
+
+# === 3. 파이썬 환경 & 의존성 ===
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -U pip
+pip install -r requirements.txt   # huggingface-cli 등 포함
+
+# (옵션) Hugging Face 로그인 필요 시:
+# huggingface-cli login --token HF_xxx
+
+# === 4. 모델(gguf) 다운로드 ===
+# 공식 GGUF 저장소 → 로컬 디렉터리(models/BitNet-b1.58-2B-4T)로 저장
+huggingface-cli download microsoft/bitnet-b1.58-2B-4T-gguf \
+  --local-dir models/BitNet-b1.58-2B-4T
+
+# === 5. 환경 세팅/빌드 ===
+# quant 타입 i2_s 사용 (공식 README 예시)
+python setup_env.py -md models/BitNet-b1.58-2B-4T -q i2_s
+
+# === 6. 실행(간단 테스트) ===
+python run_inference.py \
+  -m models/BitNet-b1.58-2B-4T/ggml-model-i2_s.gguf \
+  -p "You are a helpful assistant. Say hello in one short sentence." \
+  -t $(nproc) \
+  -cnv

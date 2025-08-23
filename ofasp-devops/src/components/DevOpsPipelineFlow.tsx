@@ -40,30 +40,29 @@ const DevOpsPipelineFlow: React.FC<DevOpsPipelineFlowProps> = ({ isDarkMode = fa
   // Initialize pipeline structure
   useEffect(() => {
     const pipelineNodes: PipelineNode[] = [
-      // Main Flow
-      { id: 'commit', label: 'Code Commit', type: 'process', status: 'idle', position: { x: 180, y: 200 } },
-      { id: 'build-artifact', label: 'Build Artifact', type: 'artifact', status: 'idle', position: { x: 310, y: 200 } },
-      { id: 'build', label: 'Build Check', type: 'process', status: 'idle', position: { x: 440, y: 200 } },
-      { id: 'build-decision', label: 'Build Success?', type: 'decision', status: 'idle', position: { x: 530, y: 200 } },
-      { id: 'test', label: 'Testing', type: 'process', status: 'idle', position: { x: 620, y: 200 } },
-      { id: 'test-decision', label: 'Tests Pass?', type: 'decision', status: 'idle', position: { x: 710, y: 200 } },
-      { id: 'security', label: 'Security Scan', type: 'process', status: 'idle', position: { x: 800, y: 200 } },
-      { id: 'security-decision', label: 'Security Pass?', type: 'decision', status: 'idle', position: { x: 890, y: 200 } },
-      { id: 'deploy', label: 'Deploy', type: 'process', status: 'idle', position: { x: 980, y: 200 } },
-      { id: 'deploy-decision', label: 'Deploy Success?', type: 'decision', status: 'idle', position: { x: 1070, y: 200 } },
-      { id: 'production', label: 'Production Ready', type: 'process', status: 'idle', position: { x: 1170, y: 200 } },
+      // Main Flow - moved down to create more space from stage labels
+      { id: 'commit', label: 'Code Commit', type: 'process', status: 'idle', position: { x: 350, y: 250 } },
+      { id: 'build-artifact', label: 'Build Artifact', type: 'artifact', status: 'idle', position: { x: 500, y: 250 } },
+      { id: 'build', label: 'Build Check', type: 'process', status: 'idle', position: { x: 650, y: 250 } },
+      { id: 'build-decision', label: 'Build Success?', type: 'decision', status: 'idle', position: { x: 740, y: 250 } },
+      { id: 'test', label: 'Testing', type: 'process', status: 'idle', position: { x: 830, y: 250 } },
+      { id: 'test-decision', label: 'Tests Pass?', type: 'decision', status: 'idle', position: { x: 920, y: 250 } },
+      { id: 'security', label: 'Security Scan', type: 'process', status: 'idle', position: { x: 1010, y: 250 } },
+      { id: 'security-decision', label: 'Security Pass?', type: 'decision', status: 'idle', position: { x: 1100, y: 250 } },
+      { id: 'deploy', label: 'Deploy', type: 'process', status: 'idle', position: { x: 1190, y: 250 } },
+      { id: 'deploy-decision', label: 'Deploy Success?', type: 'decision', status: 'idle', position: { x: 1280, y: 250 } },
+      { id: 'production', label: 'Production Ready', type: 'process', status: 'idle', position: { x: 1380, y: 250 } },
       
-      // External Inputs
-      { id: 'devops-docs', label: 'DevOps Docs', type: 'external', status: 'idle', position: { x: 90, y: 350 } },
-      { id: 'ci-cd-tools', label: 'CI/CD Tools', type: 'external', status: 'idle', position: { x: 290, y: 350 } },
-      { id: 'infrastructure', label: 'Infrastructure', type: 'external', status: 'idle', position: { x: 490, y: 425 } },
-      { id: 'monitoring', label: 'Monitoring', type: 'external', status: 'idle', position: { x: 1140, y: 425 } }
+      // External Inputs - CI/CD Tools moved further down to point at Build Artifact box
+      { id: 'devops-docs', label: 'DevOps Docs', type: 'external', status: 'idle', position: { x: 280, y: 400 } },
+      { id: 'ci-cd-tools', label: 'CI/CD Tools', type: 'external', status: 'idle', position: { x: 400, y: 600 } },
+      { id: 'infrastructure', label: 'Infrastructure', type: 'external', status: 'idle', position: { x: 1010, y: 400 } },
+      { id: 'monitoring', label: 'Monitoring', type: 'external', status: 'idle', position: { x: 1350, y: 475 } }
     ];
 
     const pipelineEdges: PipelineEdge[] = [
-      // Main flow
-      { from: 'commit', to: 'build-artifact', type: 'standard' },
-      { from: 'build-artifact', to: 'build', type: 'standard' },
+      // Main flow - direct connection from commit to build, bypassing build-artifact visually
+      { from: 'commit', to: 'build', type: 'standard' },
       { from: 'build', to: 'build-decision', type: 'standard' },
       { from: 'build-decision', to: 'test', type: 'success', label: 'Yes' },
       { from: 'test', to: 'test-decision', type: 'standard' },
@@ -73,11 +72,11 @@ const DevOpsPipelineFlow: React.FC<DevOpsPipelineFlowProps> = ({ isDarkMode = fa
       { from: 'deploy', to: 'deploy-decision', type: 'standard' },
       { from: 'deploy-decision', to: 'production', type: 'success', label: 'Yes' },
       
-      // Failure feedback loops - each goes to different recovery point
+      // Failure feedback loops - all point to Build Artifact node (dashed box)
       { from: 'build-decision', to: 'build-artifact', type: 'failure', label: 'No' },
-      { from: 'test-decision', to: 'build', type: 'failure', label: 'No' },
-      { from: 'security-decision', to: 'test', type: 'failure', label: 'No' },
-      { from: 'deploy-decision', to: 'security', type: 'failure', label: 'No' },
+      { from: 'test-decision', to: 'build-artifact', type: 'failure', label: 'No' },
+      { from: 'security-decision', to: 'build-artifact', type: 'failure', label: 'No' },
+      { from: 'deploy-decision', to: 'build-artifact', type: 'failure', label: 'No' },
       
       // External connections
       { from: 'devops-docs', to: 'commit', type: 'standard' },
@@ -303,7 +302,7 @@ const DevOpsPipelineFlow: React.FC<DevOpsPipelineFlowProps> = ({ isDarkMode = fa
         </g>
       );
     } else if (node.type === 'artifact') {
-      // Dashed box for artifacts
+      // Enhanced artifact box with AI Verification section
       return (
         <g
           key={node.id}
@@ -313,40 +312,91 @@ const DevOpsPipelineFlow: React.FC<DevOpsPipelineFlowProps> = ({ isDarkMode = fa
           onMouseLeave={handleNodeLeave}
           style={{ cursor: 'pointer' }}
         >
+          {/* Main artifact box - extended downward to red bar position */}
           <rect
-            x="-60"
-            y="-40"
-            width="120"
-            height="80"
+            x="-100"
+            y="-90"
+            width="200"
+            height="340"
             fill="none"
             stroke="#6b7280"
             strokeWidth="2"
             strokeDasharray="5,5"
           />
+          
+          {/* Artifact title */}
           <rect
-            x="-50"
-            y="-30"
-            width="100"
-            height="20"
+            x="-90"
+            y="-80"
+            width="180"
+            height="22"
             fill="#f9fafb"
             stroke="#d1d5db"
           />
           <text
             x="0"
-            y="-15"
+            y="-64"
             textAnchor="middle"
-            className="text-xs"
-            fill="#6b7280"
+            className="text-sm font-semibold"
+            fill="#374151"
           >
             {node.label}
           </text>
+          
+          {/* Standard build items with better spacing */}
+          <text x="-85" y="-42" className="text-xs" fill="#6b7280">• Dependencies</text>
+          <text x="-85" y="-30" className="text-xs" fill="#6b7280">• Compiled Code</text>
+          <text x="-85" y="-18" className="text-xs" fill="#6b7280">• Build Output</text>
+          
+          {/* AI Verification separator line - moved down */}
+          <line
+            x1="-90"
+            y1="10"
+            x2="90"
+            y2="10"
+            stroke="#1e40af"
+            strokeWidth="2"
+          />
+          
+          {/* AI Verification section title - moved down */}
+          <text
+            x="0"
+            y="30"
+            textAnchor="middle"
+            className="text-sm font-semibold"
+            fill="#1e40af"
+          >
+            🤖 AI Verification
+          </text>
+          
+          {/* AI verification items in vertical layout with optimized spacing */}
+          <g className={node.status === 'running' ? 'animate-pulse' : ''}>
+            {/* Code Quality AI Analysis */}
+            <rect x="-85" y="55" width="170" height="20" fill="#dbeafe" stroke="#3b82f6" strokeWidth="1" rx="4"/>
+            <text x="-80" y="68" className="text-xs" fill="#1e40af">🤖 Code Quality AI Analysis</text>
+            
+            {/* Security AI Pre-scan */}
+            <rect x="-85" y="90" width="170" height="20" fill="#dbeafe" stroke="#3b82f6" strokeWidth="1" rx="4"/>
+            <text x="-80" y="103" className="text-xs" fill="#1e40af">🤖 Security AI Pre-scan</text>
+            
+            {/* Performance AI Check */}
+            <rect x="-85" y="125" width="170" height="20" fill="#dbeafe" stroke="#3b82f6" strokeWidth="1" rx="4"/>
+            <text x="-80" y="138" className="text-xs" fill="#1e40af">🤖 Performance AI Check</text>
+            
+            {/* Architecture AI Review */}
+            <rect x="-85" y="160" width="170" height="20" fill="#dbeafe" stroke="#3b82f6" strokeWidth="1" rx="4"/>
+            <text x="-80" y="173" className="text-xs" fill="#1e40af">🤖 Architecture AI Review</text>
+          </g>
+          
+          {/* Progress indicator (green bar) - positioned below AI items */}
           {node.progress !== undefined && (
             <rect
-              x="-50"
-              y="0"
-              width={100 * (node.progress / 100)}
-              height="4"
-              fill={getNodeColor(node)}
+              x="-90"
+              y="195"
+              width={180 * (node.progress / 100)}
+              height="10"
+              fill="#10b981"
+              rx="2"
             />
           )}
         </g>
@@ -414,16 +464,30 @@ const DevOpsPipelineFlow: React.FC<DevOpsPipelineFlowProps> = ({ isDarkMode = fa
     
     // Calculate edge endpoints
     const fromRadius = fromNode.type === 'external' ? 40 : 30;
-    const toRadius = toNode.type === 'external' ? 40 : 30;
+    let toRadius = toNode.type === 'external' ? 40 : 30;
     
-    const x1 = fromNode.position.x + fromRadius * Math.cos(angle);
-    const y1 = fromNode.position.y + fromRadius * Math.sin(angle);
-    const x2 = toNode.position.x - toRadius * Math.cos(angle);
-    const y2 = toNode.position.y - toRadius * Math.sin(angle);
+    // Special handling for CI/CD Tools to Build Artifact - point to the dashed box edge
+    let x1 = fromNode.position.x + fromRadius * Math.cos(angle);
+    let y1 = fromNode.position.y + fromRadius * Math.sin(angle);
+    let x2 = toNode.position.x - toRadius * Math.cos(angle);
+    let y2 = toNode.position.y - toRadius * Math.sin(angle);
+    
+    // Special handling for connections pointing to Build Artifact node (dashed box)
+    if (edge.to === 'build-artifact') {
+      if (edge.from === 'ci-cd-tools') {
+        // CI/CD Tools points to the green bar at bottom of the dashed artifact box
+        x2 = toNode.position.x;       // Center horizontally
+        y2 = toNode.position.y + 195; // Point to green bar area (progress indicator position y=195)
+      } else if (edge.type === 'failure') {
+        // All failure paths point to the right edge of the Build Artifact dashed box
+        x2 = toNode.position.x + 100; // Right edge of the 200px wide box
+        y2 = toNode.position.y + 170; // Bottom edge - this will be overridden by the failure path logic
+      }
+    }
 
     // Path for feedback loops - changed to dotted straight lines with different offsets
     if (edge.type === 'failure' || edge.type === 'feedback') {
-      // Calculate different Y offsets for each failure path to avoid overlap
+      // Calculate different Y offsets for each failure path to avoid overlap and ensure they reach Build Artifact box
       let yOffset = 100;
       const failureEdgeColors = {
         'build-decision': '#ef4444',    // Red
@@ -432,60 +496,58 @@ const DevOpsPipelineFlow: React.FC<DevOpsPipelineFlowProps> = ({ isDarkMode = fa
         'deploy-decision': '#6366f1'    // Indigo
       };
       
-      // Different Y offsets for each failure type
-      if (edge.from === 'build-decision') yOffset = 80;
-      else if (edge.from === 'test-decision') yOffset = 110;
-      else if (edge.from === 'security-decision') yOffset = 140;
-      else if (edge.from === 'deploy-decision') yOffset = 170;
+      // Different Y offsets for each failure type - staggered to avoid overlap
+      if (edge.from === 'build-decision') yOffset = 400;      // Closest to Build Artifact
+      else if (edge.from === 'test-decision') yOffset = 420;   // Slightly lower
+      else if (edge.from === 'security-decision') yOffset = 440; // Lower still
+      else if (edge.from === 'deploy-decision') yOffset = 460;   // Lowest
       
-      const midY = Math.max(y1, y2) + yOffset;
       const edgeColor = failureEdgeColors[edge.from as keyof typeof failureEdgeColors] || getEdgeColor(edge);
       
       return (
         <g key={`${edge.from}-${edge.to}`}>
-          {/* Vertical line down */}
+          {/* Vertical line down from decision node */}
           <line
             x1={x1}
             y1={y1}
             x2={x1}
-            y2={midY}
+            y2={yOffset}
             stroke={edgeColor}
             strokeWidth="2"
             strokeDasharray="5,5"
             className={edge.animated ? 'animate-pulse' : ''}
           />
-          {/* Horizontal line across */}
+          {/* Horizontal line across to Build Artifact area */}
           <line
             x1={x1}
-            y1={midY}
+            y1={yOffset}
             x2={x2}
-            y2={midY}
+            y2={yOffset}
             stroke={edgeColor}
             strokeWidth="2"
             strokeDasharray="5,5"
             className={edge.animated ? 'animate-pulse' : ''}
           />
-          {/* Vertical line up */}
+          {/* Vertical line up to Build Artifact box edge (stops at box boundary) - no arrowhead */}
           <line
             x1={x2}
-            y1={midY}
+            y1={yOffset}
             x2={x2}
-            y2={y2}
+            y2={toNode.position.y + 170}
             stroke={edgeColor}
             strokeWidth="2"
             strokeDasharray="5,5"
-            markerEnd={`url(#arrowhead-failure-${edge.from})`}
             className={edge.animated ? 'animate-pulse' : ''}
           />
           {edge.label && (
             <text
               x={(x1 + x2) / 2}
-              y={midY - 5}
+              y={yOffset - 5}
               textAnchor="middle"
               className="text-xs font-medium"
               fill={edgeColor}
             >
-              {edge.label} → {toNode.label}
+              {edge.label} → Build Artifact
             </text>
           )}
         </g>
@@ -528,7 +590,7 @@ const DevOpsPipelineFlow: React.FC<DevOpsPipelineFlowProps> = ({ isDarkMode = fa
       <svg
         ref={svgRef}
         className="w-full h-full"
-        viewBox="0 0 1400 600"
+        viewBox="0 0 1600 700"
         preserveAspectRatio="xMidYMid meet"
       >
         {/* Define arrow markers */}
@@ -595,12 +657,12 @@ const DevOpsPipelineFlow: React.FC<DevOpsPipelineFlowProps> = ({ isDarkMode = fa
         </defs>
 
         {/* Title */}
-        <text x="700" y="30" textAnchor="middle" className="text-2xl font-bold" fill="#1e293b">
+        <text x="800" y="30" textAnchor="middle" className="text-2xl font-bold" fill="#1e293b">
           DevOps CI/CD Pipeline Workflow
         </text>
 
         {/* Subtitle */}
-        <text x="700" y="55" textAnchor="middle" className="text-sm" fill="#6b7280">
+        <text x="800" y="55" textAnchor="middle" className="text-sm" fill="#6b7280">
           Real-time Pipeline Execution Monitor
         </text>
 
@@ -610,28 +672,28 @@ const DevOpsPipelineFlow: React.FC<DevOpsPipelineFlowProps> = ({ isDarkMode = fa
         {/* Render nodes */}
         {nodes.map(node => renderNode(node))}
 
-        {/* Stage labels */}
-        <text x="180" y="100" textAnchor="middle" className="text-sm font-semibold" fill="#3b82f6">
+        {/* Stage labels - adjusted to new node positions */}
+        <text x="350" y="100" textAnchor="middle" className="text-sm font-semibold" fill="#3b82f6">
           CI/CD Pipeline Stages
         </text>
-        <text x="310" y="120" textAnchor="middle" className="text-xs" fill="#6b7280">
+        <text x="350" y="120" textAnchor="middle" className="text-xs" fill="#6b7280">
           1. Source Control
         </text>
-        <text x="440" y="120" textAnchor="middle" className="text-xs" fill="#6b7280">
-          2. Build & Compile
+        <text x="500" y="120" textAnchor="middle" className="text-xs" fill="#6b7280">
+          2. Build & AI Verify
         </text>
-        <text x="620" y="120" textAnchor="middle" className="text-xs" fill="#6b7280">
+        <text x="830" y="120" textAnchor="middle" className="text-xs" fill="#6b7280">
           3. Automated Testing
         </text>
-        <text x="800" y="120" textAnchor="middle" className="text-xs" fill="#6b7280">
+        <text x="1010" y="120" textAnchor="middle" className="text-xs" fill="#6b7280">
           4. Security & Quality
         </text>
-        <text x="980" y="120" textAnchor="middle" className="text-xs" fill="#6b7280">
+        <text x="1190" y="120" textAnchor="middle" className="text-xs" fill="#6b7280">
           5. Deployment
         </text>
 
         {/* Feedback loop label */}
-        <text x="700" y="380" textAnchor="middle" className="text-xs" fill="#f59e0b">
+        <text x="850" y="520" textAnchor="middle" className="text-xs" fill="#f59e0b">
           Feedback loops for continuous improvement
         </text>
       </svg>
@@ -639,7 +701,7 @@ const DevOpsPipelineFlow: React.FC<DevOpsPipelineFlowProps> = ({ isDarkMode = fa
       {/* Tooltip */}
       {showTooltip && hoveredNodeData && (
         <div
-          className="absolute bg-gray-900 text-white p-3 rounded-lg shadow-xl text-sm z-20 pointer-events-none"
+          className="absolute bg-gray-900 text-white p-3 rounded-lg shadow-xl text-sm z-20 pointer-events-none max-w-sm"
           style={{
             left: tooltipPosition.x + 10,
             top: tooltipPosition.y
@@ -654,7 +716,29 @@ const DevOpsPipelineFlow: React.FC<DevOpsPipelineFlowProps> = ({ isDarkMode = fa
             {hoveredNodeData.duration && (
               <div>Duration: {hoveredNodeData.duration}</div>
             )}
-            {hoveredNodeData.details && (
+            
+            {/* AI Verification Details for Build Artifact */}
+            {hoveredNodeData.id === 'build-artifact' && (
+              <div className="mt-2 pt-2 border-t border-gray-700">
+                <div className="text-blue-300 font-medium mb-2">🤖 AI Verification Details:</div>
+                <div className="space-y-2 text-xs">
+                  <div>
+                    <span className="text-blue-200">Code Quality AI Analysis:</span> Automated code review using ML algorithms to detect code smells, maintainability issues, and best practice violations
+                  </div>
+                  <div>
+                    <span className="text-blue-200">Security AI Pre-scan:</span> AI-powered static analysis to identify potential security vulnerabilities before detailed security testing
+                  </div>
+                  <div>
+                    <span className="text-blue-200">Performance AI Check:</span> Machine learning-based performance prediction and optimization suggestions
+                  </div>
+                  <div>
+                    <span className="text-blue-200">Architecture AI Review:</span> AI analysis of code architecture patterns and structural integrity
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {hoveredNodeData.details && hoveredNodeData.id !== 'build-artifact' && (
               <div className="mt-2 pt-2 border-t border-gray-700">
                 {hoveredNodeData.details}
               </div>
@@ -664,10 +748,11 @@ const DevOpsPipelineFlow: React.FC<DevOpsPipelineFlowProps> = ({ isDarkMode = fa
       )}
 
       {/* Legend */}
-      <div className="absolute bottom-4 left-4 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-lg shadow-lg p-4 max-w-sm border border-gray-200 dark:border-gray-700">
+      <div className="absolute bottom-4 left-4 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-lg shadow-lg p-4 max-w-xs border border-gray-200 dark:border-gray-700">
         <h4 className="font-semibold text-sm mb-3">Legend</h4>
-        <div className="grid grid-cols-2 gap-3 text-xs">
+        <div className="grid grid-cols-1 gap-3 text-xs">
           <div className="space-y-2">
+            <div className="font-medium text-xs mb-1">Node Types:</div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 rounded-full bg-blue-500"></div>
               <span>Process Node</span>
@@ -678,13 +763,34 @@ const DevOpsPipelineFlow: React.FC<DevOpsPipelineFlowProps> = ({ isDarkMode = fa
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 border-2 border-dashed border-gray-500"></div>
-              <span>Artifact</span>
+              <span>Artifact with AI</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 rounded-full bg-gray-300"></div>
               <span>External Input</span>
             </div>
           </div>
+          
+          <div className="space-y-2">
+            <div className="font-medium text-xs mb-1">🤖 AI Verification:</div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-2 bg-blue-200 border border-blue-400 rounded-sm"></div>
+              <span>Quality AI</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-2 bg-blue-200 border border-blue-400 rounded-sm"></div>
+              <span>Security AI</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-2 bg-blue-200 border border-blue-400 rounded-sm"></div>
+              <span>Performance AI</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-2 bg-blue-200 border border-blue-400 rounded-sm"></div>
+              <span>Architecture AI</span>
+            </div>
+          </div>
+          
           <div className="space-y-2">
             <div className="font-medium text-xs mb-1">Failure Routes:</div>
             <div className="flex items-center gap-2">
