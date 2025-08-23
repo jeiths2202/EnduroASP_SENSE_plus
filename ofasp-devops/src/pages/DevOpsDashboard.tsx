@@ -11,7 +11,8 @@ import {
   ArrowPathIcon
 } from '@heroicons/react/24/outline';
 import { useI18n } from '../hooks/useI18n';
-import SimplePipelineMonitor from '../components/SimplePipelineMonitor';
+import DevOpsPipelineFlow from '../components/DevOpsPipelineFlow';
+import AbendTestFlow from '../components/AbendTestFlow';
 
 interface DevOpsDashboardProps {
   isDarkMode: boolean;
@@ -261,8 +262,35 @@ const DevOpsDashboard: React.FC<DevOpsDashboardProps> = ({ isDarkMode }) => {
         </div>
       </div>
 
-      {/* Real-time Pipeline Monitor */}
-      <SimplePipelineMonitor isDarkMode={isDarkMode} />
+      {/* DevOps Pipeline Flow Visualizer */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div className="flex items-center mb-4">
+          <RocketLaunchIcon className="w-6 h-6 text-blue-600 mr-2" />
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+            Pipeline Flow
+          </h2>
+        </div>
+        <div className="h-[600px]">
+          <DevOpsPipelineFlow isDarkMode={isDarkMode} />
+        </div>
+      </div>
+
+      {/* ABEND Auto-Fix Test Scenario */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div className="flex items-center mb-4">
+          <ExclamationTriangleIcon className="w-6 h-6 text-red-600 mr-2" />
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+            ABEND Auto-Fix Integration Test
+          </h2>
+          <span className="ml-3 px-2 py-1 bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100 text-xs font-medium rounded-full">
+            Live Testing
+          </span>
+        </div>
+        <div className="h-[450px]">
+          <AbendTestFlow isDarkMode={isDarkMode} />
+        </div>
+      </div>
+
 
       {/* System Architecture Overview */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 border border-gray-200 dark:border-gray-700">
