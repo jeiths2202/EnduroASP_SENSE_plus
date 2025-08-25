@@ -72,12 +72,24 @@ class CatalogManager:
             if library not in self.catalog_data[volume]:
                 self.catalog_data[volume][library] = {}
             
-            # Create dataset entry
+            # Create dataset entry - use japanese_encoding if available, otherwise target_encoding
+            japanese_encoding = conversion_info.get("japanese_encoding", "")
+            if japanese_encoding:
+                # Map japanese_encoding to proper encoding names
+                if japanese_encoding.lower() == "sjis":
+                    catalog_encoding = "shift_jis"
+                elif japanese_encoding.lower() == "utf-8":
+                    catalog_encoding = "utf-8"
+                else:
+                    catalog_encoding = japanese_encoding
+            else:
+                catalog_encoding = conversion_info.get("target_encoding", "ascii")
+            
             self.catalog_data[volume][library][dataset_name] = {
                 "TYPE": "DATASET",
                 "RECTYPE": "FB",
                 "RECLEN": conversion_info.get("record_length", 80),
-                "ENCODING": conversion_info.get("target_encoding", "ascii"),
+                "ENCODING": catalog_encoding,
                 "DESCRIPTION": f"Converted from EBCDIC ({conversion_info.get('source_encoding', 'JAK')})",
                 "UPDATED": datetime.now().isoformat() + 'Z',
                 "CONVERSION": conversion_info
@@ -487,7 +499,7 @@ class EBCDICConverter:
             for byte_val in data:
                 char = self.jak_table.get(byte_val, f'\\x{byte_val:02X}')
                 result.append(char)
-            return ''.join(result).rstrip()
+            return ''.join(result)
     
     def _convert_with_sosi(self, data: bytes, sosi_config: Dict) -> str:
         """Convert data with SOSI (Shift Out/Shift In) processing"""
@@ -503,7 +515,7 @@ class EBCDICConverter:
         while i < len(data):
             byte_val = data[i]
             
-            if byte_val == so_code:
+            if not dbcs_mode and byte_val == so_code:
                 # Shift Out - start DBCS mode
                 dbcs_mode = True
                 if sosi_handling == 'SOSI':
@@ -513,21 +525,38 @@ class EBCDICConverter:
                 # For REMOVE mode, add nothing
                 i += 1
                 
-            elif byte_val == si_code:
-                # Shift In - return to SBCS mode
-                dbcs_mode = False
-                if sosi_handling == 'SOSI':
-                    result.append(chr(si_code))
-                elif sosi_handling == 'SPACE':
-                    result.append(' ')
-                # For REMOVE mode, add nothing
-                i += 1
-                
-            elif dbcs_mode and i + 1 < len(data):
-                # DBCS mode - process 2-byte characters
-                dbcs_char = self._convert_dbcs_char(data[i], data[i + 1], japanese_encoding)
-                result.append(dbcs_char)
-                i += 2
+            elif dbcs_mode:
+                # In DBCS mode: check if current byte is SI code first
+                if byte_val == si_code:
+                    # Shift In - return to SBCS mode
+                    dbcs_mode = False
+                    if sosi_handling == 'SOSI':
+                        result.append(chr(si_code))
+                    elif sosi_handling == 'SPACE':
+                        result.append(' ')
+                    # For REMOVE mode, add nothing
+                    i += 1
+                else:
+                    # Not SI code - process as 2-byte DBCS character
+                    if i + 1 < len(data):
+                        # Check if next byte is also not SI code to form proper DBCS pair
+                        next_byte = data[i + 1]
+                        if next_byte == si_code:
+                            # Next byte is SI - current byte should be processed as single byte error case
+                            # This is an odd-byte situation in DBCS mode
+                            char = self.jak_table.get(byte_val, f'\\x{byte_val:02X}')
+                            result.append(char)
+                            i += 1
+                        else:
+                            # Both bytes are valid DBCS data
+                            dbcs_char = self._convert_dbcs_char(data[i], data[i + 1], japanese_encoding)
+                            result.append(dbcs_char)
+                            i += 2
+                    else:
+                        # Last byte in DBCS mode - treat as single byte
+                        char = self.jak_table.get(byte_val, f'\\x{byte_val:02X}')
+                        result.append(char)
+                        i += 1
                 
             else:
                 # SBCS mode - process 1-byte characters
@@ -535,7 +564,7 @@ class EBCDICConverter:
                 result.append(char)
                 i += 1
         
-        return ''.join(result).rstrip()
+        return ''.join(result)
     
     def _convert_dbcs_char(self, high_byte: int, low_byte: int, japanese_encoding: str = 'utf-8') -> str:
         """Convert 2-byte JAK EBCDIC DBCS character using code page table"""
@@ -790,6 +819,7 @@ class OpenASPDatasetConverter:
                 conversion_info = {
                     'source_encoding': 'JAK',
                     'target_encoding': target_encoding,
+                    'japanese_encoding': sosi_config.get('japanese_encoding', 'utf-8') if sosi_config else 'utf-8',
                     'SOURCE_FILE': input_file,
                     'LAYOUT_FILE': layout_file if not schema_file else schema_file,
                     'SCHEMA_FILE': schema_file,
@@ -885,14 +915,21 @@ class OpenASPDatasetConverter:
                                 if len(value_bytes) >= field_length:
                                     field_bytes = value_bytes[:field_length]
                                 else:
-                                    # Pad with space bytes
-                                    field_bytes = value_bytes + b' ' * (field_length - len(value_bytes))
+                                    # Pad with encoding-appropriate space bytes
+                                    space_char = ' '
+                                    space_bytes = space_char.encode(target_encoding, errors='replace')
+                                    padding_needed = field_length - len(value_bytes)
+                                    field_bytes = value_bytes + (space_bytes * (padding_needed // len(space_bytes))) + space_bytes[:padding_needed % len(space_bytes)]
                             
                             # Ensure field is exactly field_length bytes
                             if len(field_bytes) > field_length:
                                 field_bytes = field_bytes[:field_length]
                             elif len(field_bytes) < field_length:
-                                field_bytes += b' ' * (field_length - len(field_bytes))
+                                # Pad with encoding-appropriate space bytes
+                                space_char = ' '
+                                space_bytes = space_char.encode(target_encoding, errors='replace')
+                                padding_needed = field_length - len(field_bytes)
+                                field_bytes += (space_bytes * (padding_needed // len(space_bytes))) + space_bytes[:padding_needed % len(space_bytes)]
                             
                             record_bytes.extend(field_bytes)
                             
@@ -973,7 +1010,8 @@ def main():
     
     # Parse SOSI configuration
     sosi_config = None
-    if args.so_code or args.si_code or args.sosi_handling != 'SPACE' or args.japanese_encoding != 'utf-8':
+    # Always create sosi_config if any SOSI parameters are specified
+    if args.so_code != '0x0E' or args.si_code != '0x0F' or args.sosi_handling != 'SPACE' or args.japanese_encoding != 'utf-8':
         sosi_config = {
             'so_code': int(args.so_code, 16),
             'si_code': int(args.si_code, 16),
