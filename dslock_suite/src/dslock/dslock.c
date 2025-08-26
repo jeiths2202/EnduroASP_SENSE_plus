@@ -24,14 +24,8 @@ static char* get_config_db_path() {
     static char db_path[512] = {0};
     if(db_path[0]) return db_path; // Cache the result
     
-    // Try environment variable first
-    const char* env_path = getenv("DSLOCK_DB");
-    if(env_path && *env_path) { 
-        strncpy(db_path, env_path, sizeof(db_path)-1); 
-        return db_path; 
-    }
-    
-    // Read from config.json
+    // Read from config.json first (highest priority)
+    char config_found = 0;
     FILE* cfg = fopen("/home/aspuser/app/ofasp-refactor/dslock_suite/config/config.json", "r");
     if(cfg) {
         char line[1024], hostname[256];
@@ -43,12 +37,14 @@ static char* get_config_db_path() {
         
         while(fgets(line, sizeof(line), cfg)) {
             if(strstr(line, "DSLOCK_DATABASE_DIR") && strchr(line, ':')) {
-                char* start = strchr(line, '"'); if(!start) continue;
+                char* colon = strchr(line, ':'); if(!colon) continue;
+                char* start = strchr(colon, '"'); if(!start) continue;
                 start++; char* end = strchr(start, '"'); if(!end) continue;
                 *end = 0; strncpy(db_dir, start, sizeof(db_dir)-1);
             }
             if(strstr(line, "DSLOCK_DATABASE_FILE") && strchr(line, ':')) {
-                char* start = strchr(line, '"'); if(!start) continue;
+                char* colon = strchr(line, ':'); if(!colon) continue;
+                char* start = strchr(colon, '"'); if(!start) continue;
                 start++; char* end = strchr(start, '"'); if(!end) continue;
                 *end = 0; 
                 // Replace ${hostname} with actual hostname
@@ -63,8 +59,20 @@ static char* get_config_db_path() {
         
         if(!*db_file) strcpy(db_file, "dslock.dat");
         snprintf(db_path, sizeof(db_path), "%s/%s", db_dir, db_file);
-    } else {
-        // Fallback to default using same logic as config.json
+        config_found = 1;
+    }
+    
+    // Try environment variable second
+    if(!config_found) {
+        const char* env_path = getenv("DSLOCK_DB");
+        if(env_path && *env_path) { 
+            strncpy(db_path, env_path, sizeof(db_path)-1); 
+            return db_path; 
+        }
+    }
+    
+    // Fallback to default using same logic as config.json
+    if(!config_found) {
         char hostname[256];
         if(gethostname(hostname, sizeof(hostname)) != 0) strcpy(hostname, "localhost");
         snprintf(db_path, sizeof(db_path), "/home/aspuser/app/ofasp-refactor/dslock_suite/database/%s.dat", hostname);
