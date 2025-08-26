@@ -5292,17 +5292,13 @@ def dslock_query():
         filter_pid = request.args.get('pid')
         filter_dataset = request.args.get('dataset')
         
-        # Set environment with library path and database path
+        # Set environment with library path (let dslockctl use config.json)
         env = os.environ.copy()
         current_ld_path = env.get('LD_LIBRARY_PATH', '')
         build_path = '/home/aspuser/app/ofasp-refactor/dslock_suite/build'
         env['LD_LIBRARY_PATH'] = build_path + (':' + current_ld_path if current_ld_path else '')
         
-        # Set database path to use hostname-based file
-        import socket
-        hostname = socket.gethostname()
-        db_path = f'/home/aspuser/app/ofasp-refactor/dslock_suite/database/{hostname}.dat'
-        env['DSLOCK_DB'] = db_path
+        # Don't set DSLOCK_DB - let dslockctl use config.json settings
         
         # Build command
         cmd = [dslockctl_path, 'query']
@@ -5366,17 +5362,13 @@ def dslock_cleanup():
         if not target_pid and not target_dataset:
             return jsonify({'error': 'Either pid or dataset must be specified'}), 400
         
-        # Set environment with library path and database path
+        # Set environment with library path (let dslockctl use config.json)
         env = os.environ.copy()
         current_ld_path = env.get('LD_LIBRARY_PATH', '')
         build_path = '/home/aspuser/app/ofasp-refactor/dslock_suite/build'
         env['LD_LIBRARY_PATH'] = build_path + (':' + current_ld_path if current_ld_path else '')
         
-        # Set database path to use hostname-based file
-        import socket
-        hostname = socket.gethostname()
-        db_path = f'/home/aspuser/app/ofasp-refactor/dslock_suite/database/{hostname}.dat'
-        env['DSLOCK_DB'] = db_path
+        # Don't set DSLOCK_DB - let dslockctl use config.json settings
         
         # Build command
         cmd = [dslockctl_path, 'cleanup']
