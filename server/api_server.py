@@ -881,6 +881,16 @@ def handle_disconnect():
     
     logger.info(f"[WEBSOCKET] Client disconnected: {request.sid}")
     
+    # Clean up interactive EDTFILE sessions
+    try:
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        sys.path.append(os.path.join(script_dir, 'system-cmds', 'functions'))
+        from edtfile_interactive import end_interactive_session
+        # Try to end session with request.sid as session_id
+        end_interactive_session(request.sid)
+    except Exception as e:
+        logger.error(f"Error cleaning up interactive session: {e}")
+    
     # Clean up terminal registration
     if request.sid in active_terminals:
         terminal_info = active_terminals[request.sid]
@@ -4407,7 +4417,64 @@ def cleanup_processes():
         cleanup_details = []
         
         try:
-            # Find and terminate Java processes that match MAIN* patterns
+            # Get PID directory from environment or default
+            call_pid_dir = os.environ.get('ASP_PID_DIR', '/tmp/asp_call_pids')
+            
+            # First, try to clean up processes tracked by call.py PID files
+            if os.path.exists(call_pid_dir):
+                for pid_file in os.listdir(call_pid_dir):
+                    if not pid_file.endswith('.json'):
+                        continue
+                        
+                    pid_file_path = os.path.join(call_pid_dir, pid_file)
+                    try:
+                        with open(pid_file_path, 'r') as f:
+                            pid_data = json.load(f)
+                        
+                        pid = pid_data.get('pid')
+                        program = pid_data.get('program', 'UNKNOWN')
+                        
+                        # Check if process still exists
+                        try:
+                            proc = psutil.Process(pid)
+                            logger.info(f"Terminating tracked process PID {pid}: {program}")
+                            proc.terminate()
+                            
+                            # Wait for graceful termination
+                            try:
+                                proc.wait(timeout=5)
+                                logger.info(f"Process {pid} terminated gracefully")
+                            except psutil.TimeoutExpired:
+                                logger.warning(f"Process {pid} did not terminate gracefully, forcing kill")
+                                proc.kill()
+                                proc.wait(timeout=2)
+                            
+                            cleaned_processes += 1
+                            cleanup_details.append({
+                                'pid': pid,
+                                'program': program,
+                                'method': 'pid_tracking',
+                                'status': 'terminated'
+                            })
+                            
+                        except psutil.NoSuchProcess:
+                            logger.info(f"Process {pid} already terminated")
+                            cleanup_details.append({
+                                'pid': pid,
+                                'program': program,
+                                'method': 'pid_tracking', 
+                                'status': 'already_terminated'
+                            })
+                        
+                        # Remove PID file
+                        os.remove(pid_file_path)
+                        
+                    except Exception as e:
+                        logger.error(f"Error processing PID file {pid_file}: {e}")
+            
+            # Fallback: Find and terminate any remaining Java processes that match patterns from any ASP volume
+            volume_root = os.environ.get('ASP_VOLUME_ROOT', '/home/aspuser/app/volume')
+            
             for proc in psutil.process_iter(['pid', 'name', 'cmdline', 'create_time']):
                 try:
                     proc_info = proc.info
@@ -4416,10 +4483,10 @@ def cleanup_processes():
                     
                     cmdline_str = ' '.join(proc_info['cmdline'])
                     
-                    # Check if this is a Java process running a MAIN* program
+                    # Check if this is a Java process running a program from ASP volume structure
                     if ('java' in proc_info['name'].lower() and 
                         any('MAIN' in arg for arg in proc_info['cmdline']) and
-                        'volume/DISK01/JAVA' in cmdline_str):
+                        volume_root in cmdline_str):
                         
                         # Extract program name for logging
                         main_program = None
@@ -4445,7 +4512,8 @@ def cleanup_processes():
                         cleanup_details.append({
                             'pid': proc_info['pid'],
                             'program': main_program,
-                            'action': 'terminated'
+                            'method': 'fallback_scan',
+                            'status': 'terminated'
                         })
                         
                 except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
@@ -5377,7 +5445,8 @@ if __name__ == '__main__':
     
     logger.info("?? OpenASP SMED API Server ready!")
     logger.info("?? WebSocket support enabled for real-time terminal communication")
-    
+
+if __name__ == "__main__":
     # ?? ?? - Use socketio.run for WebSocket support
     socketio.run(
         app,
