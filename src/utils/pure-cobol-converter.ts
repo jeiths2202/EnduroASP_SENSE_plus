@@ -147,7 +147,7 @@ export class PureCobolConverter {
     let currentProcedure = '';
     let procedureBody: string[] = [];
     let mainLogic: string[] = [];
-    let inMainProcedure = false;
+    let isFirstProcedure = true;
     
     for (const line of lines) {
       if (line.includes('PROCEDURE DIVISION')) {
@@ -157,6 +157,7 @@ export class PureCobolConverter {
       
       if (inProcedure) {
         if (line.trim() && !line.startsWith('*')) {
+          // Check for procedure names (ending with period, no spaces in the name itself)
           if (line.match(/^[A-Z][A-Z0-9-]*\.$/) && !line.includes(' ')) {
             // Save previous procedure
             if (currentProcedure && procedureBody.length > 0) {
@@ -168,10 +169,15 @@ export class PureCobolConverter {
             // Start new procedure
             currentProcedure = line.replace('.', '');
             procedureBody = [];
-            inMainProcedure = currentProcedure === 'MAIN-PROCEDURE';
+            
+            // First procedure becomes main logic (MAIN-PARA, MAIN-PROCEDURE, etc.)
+            if (isFirstProcedure) {
+              isFirstProcedure = false;
+            }
           } else {
             procedureBody.push(line);
-            if (inMainProcedure) {
+            // If this is the first procedure, it's our main logic
+            if (isFirstProcedure) {
               mainLogic.push(line);
             }
           }
@@ -185,6 +191,11 @@ export class PureCobolConverter {
         name: currentProcedure,
         body: procedureBody
       });
+      
+      // If this was the first and only procedure, use it as main logic
+      if (program.procedures.length === 1) {
+        mainLogic = [...procedureBody];
+      }
     }
     
     program.mainLogic = mainLogic;
@@ -332,7 +343,6 @@ import java.text.DecimalFormat;
 
 public class ${className} {
     private static Scanner scanner = new Scanner(System.in);
-    private static DecimalFormat currencyFormat = new DecimalFormat("¥#,##0");
     
 `;
 
@@ -416,11 +426,18 @@ public class ${className} {
         try {
 `;
     
-    // Convert main logic
-    for (const stmt of program.mainLogic) {
-      const javaStmt = this.convertStatement(stmt, 3, program);
-      if (javaStmt) {
-        javaCode += javaStmt + '\n';
+    // If we have procedures, call the first one from main
+    if (program.procedures.length > 0) {
+      const firstProcedure = program.procedures[0];
+      const methodName = this.toCamelCase(firstProcedure.name);
+      javaCode += `            ${methodName}();\n`;
+    } else {
+      // Convert main logic directly
+      for (const stmt of program.mainLogic) {
+        const javaStmt = this.convertStatement(stmt, 3, program);
+        if (javaStmt) {
+          javaCode += javaStmt + '\n';
+        }
       }
     }
     
@@ -430,10 +447,8 @@ public class ${className} {
     }
 `;
     
-    // Generate other methods (excluding main)
+    // Generate procedure methods
     for (const procedure of program.procedures) {
-      if (procedure.name === 'MAIN-PROCEDURE') continue;
-      
       const methodName = this.toCamelCase(procedure.name);
       javaCode += `
     private static void ${methodName}() {
@@ -514,16 +529,17 @@ public class ${className} {
       const match = stmt.match(/ACCEPT\s+([\w-]+)(?:\s+FROM\s+CONSOLE)?/i);
       if (match) {
         const variable = this.toCamelCase(match[1]);
-        // Check if it's a numeric variable (contains -AMOUNT, -COUNT, -NUMBER, etc.)
-        const isNumeric = /-(AMOUNT|COUNT|NUMBER|RATE|TAX|INCOME|SIZE|LENGTH|QTY)/i.test(match[1]) ||
-                         this.variables.find(v => v.name === match[1] && (v.javaType === 'int' || v.javaType === 'double'));
+        const originalName = match[1];
+        
+        // Check if it's a numeric variable by looking at the actual variable definition
+        const variableInfo = this.variables.find(v => v.name === originalName);
+        const isNumeric = variableInfo && (variableInfo.javaType === 'int' || variableInfo.javaType === 'double');
         
         if (isNumeric) {
-          return `${indent}System.out.print("${this.getPromptText(match[1])}: ");
-${indent}${variable} = ${this.getInputMethod(match[1])};`;
+          return `${indent}System.out.print("${this.getPromptText(originalName)}: ");
+${indent}${variable} = ${this.getInputMethod(originalName)};`;
         } else {
-          return `${indent}System.out.print("${this.getPromptText(match[1])}: ");
-${indent}${variable} = scanner.nextLine();`;
+          return `${indent}${variable} = scanner.nextLine();`;
         }
       }
     }
@@ -598,10 +614,14 @@ ${indent}}`;
       const text = stmt.replace(/^DISPLAY\s+/, '').replace(/\.$/, '');
       if (text.startsWith('"') && text.endsWith('"')) {
         return `${indent}System.out.println(${text});`;
-      } else {
+      } else if (text.includes('"') || text.includes(' ')) {
         // Handle multiple parts including variables and literals
         const convertedText = this.convertDisplayText(text);
         return `${indent}System.out.println(${convertedText});`;
+      } else {
+        // Single variable
+        const variable = this.toCamelCase(text);
+        return `${indent}System.out.println("You entered: " + ${variable});`;
       }
     }
     
@@ -755,7 +775,7 @@ ${indent}}`;
             const variables = currentPart.trim().split(/\s+/);
             for (const variable of variables) {
               if (variable) {
-                parts.push(`currencyFormat.format(${this.toCamelCase(variable)})`);
+                parts.push(this.toCamelCase(variable));
               }
             }
             currentPart = '';
@@ -766,7 +786,7 @@ ${indent}}`;
       } else if (char === ' ' && !inQuotes) {
         if (currentPart.trim()) {
           // This is a variable name
-          parts.push(`currencyFormat.format(${this.toCamelCase(currentPart.trim())})`);
+          parts.push(this.toCamelCase(currentPart.trim()));
           currentPart = '';
         }
       } else {
@@ -779,7 +799,7 @@ ${indent}}`;
       if (inQuotes) {
         parts.push(currentPart);
       } else {
-        parts.push(`currencyFormat.format(${this.toCamelCase(currentPart.trim())})`);
+        parts.push(this.toCamelCase(currentPart.trim()));
       }
     }
     
