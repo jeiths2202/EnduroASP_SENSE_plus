@@ -615,7 +615,19 @@ public class ${programName.replace('.cob', '').replace('-', '_')} {
   };
 
   const handleExecute = async () => {
-    if (!transformedCode.trim()) return;
+    if (!transformedCode.trim()) {
+      alert('変換されたJavaコードがありません。まず変換を実行してください。');
+      return;
+    }
+    
+    // Check if Java code is valid (has class definition)
+    const classMatch = transformedCode.match(/public\s+class\s+(\w+)/);
+    if (!classMatch) {
+      alert('有効なJavaクラスが見つかりません。コードを確認してください。');
+      return;
+    }
+    
+    console.log('Opening terminal for Java execution...');
     setIsTerminalOpen(true);
   };
 
@@ -628,271 +640,142 @@ public class ${programName.replace('.cob', '').replace('-', '_')} {
   };
 
   const executeJavaCode = async (command: string): Promise<string> => {
-    // 실제 Java 컴파일 및 실행 시뮬레이션
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    const className = fileName.replace('.cob', '').replace('-', '_');
-    const programId = fileName.replace('.cob', '').toUpperCase();
-    
-    // 각 샘플별 실제 실행 결과 시뮬레이션
-    const baseOutput = `Compiling Java code...
+    try {
+      if (!transformedCode.trim()) {
+        return "Error: No Java code to execute";
+      }
+
+      // Extract class name from transformed code
+      const classMatch = transformedCode.match(/public\s+class\s+(\w+)/);
+      const className = classMatch ? classMatch[1] : fileName.replace('.cob', '').replace('-', '_');
+
+      console.log(`Executing Java code for class: ${className}`);
+
+      // Call the backend API to execute Java code with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 35000); // 35 second timeout
+      
+      const response = await fetch('http://localhost:8000/api/execute/java', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          java_code: transformedCode,
+          class_name: className,
+          input_data: '',
+          timeout: 30
+        }),
+        signal: controller.signal,
+      });
+      
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`HTTP ${response.status}: ${errorData.error || 'Unknown error'}`);
+      }
+
+      const result = await response.json();
+      
+      if (result.success) {
+        return result.output;
+      } else {
+        // Handle compilation or execution errors
+        let errorOutput = `Error during ${result.stage}:\n\n`;
+        errorOutput += result.details || result.error || 'Unknown error occurred';
+        
+        if (result.stderr) {
+          errorOutput += `\n\nStandard Error:\n${result.stderr}`;
+        }
+        
+        return errorOutput;
+      }
+
+    } catch (error) {
+      console.error('Java execution error:', error);
+      
+      const className = fileName.replace('.cob', '').replace('-', '_');
+      
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          return `Execution timeout (35 seconds exceeded)
+
+The Java program execution was cancelled due to timeout.
+This may happen if:
+- The program takes too long to execute
+- There's an infinite loop in the code
+- The program is waiting for user input
+
+Please review your code and try again.`;
+        }
+        
+        if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+          return `Network connection failed
+
+Could not connect to the execution server at localhost:8000.
+Please ensure:
+- The API server is running (python server/api_server.py)
+- No firewall is blocking the connection
+- The server is accessible
+
+Attempting simulation fallback...
+
+Compiling Java code...
 javac ${className}.java
 
 Running Java application...
 java ${className}
 
-`;
+${getSimulatedOutput()}
 
-    switch (programId) {
-      case 'HELLO01':
-        return baseOutput + `お名前を入力してください：
-田中太郎様
+Note: This is simulated output due to server connection issues.`;
+        }
+      }
+      
+      // General error fallback
+      return `Execution error: ${error instanceof Error ? error.message : 'Unknown error'}
 
-Execution completed successfully.`;
+An unexpected error occurred while trying to execute the Java code.
+Please check the console for more details.
 
-      case 'CUST01':
-        return baseOutput + `顧客マスタ照会プログラム
-========================
-顧客番号：100001
-顧客名　：田中太郎
-与信限度：1000000 円
-------------------------
-顧客番号：100002
-顧客名　：佐藤花子
-与信限度：1500000 円
-------------------------
-顧客番号：100003
-顧客名　：鈴木一郎
-与信限度：2000000 円
-------------------------
-顧客番号：100004
-顧客名　：高橋美咲
-与信限度：800000 円
-------------------------
-顧客番号：100005
-顧客名　：山田次郎
-与信限度：1200000 円
-------------------------
- 
-処理結果サマリー
-================
-総顧客数　　：6 件
-有効顧客数　：5 件
-与信限度総額：6500000 円
+Attempting simulation fallback...
 
-Execution completed successfully.`;
+Compiling Java code...
+javac ${className}.java
 
-      case 'BANK01':
-        return baseOutput + `銀行取引処理システム
-====================
+Running Java application...
+java ${className}
 
-口座番号を入力：
-1234567890
+${getSimulatedOutput()}
 
-口座名義：山田太郎
-現在残高：¥1,250,000 円
+Note: This is simulated output due to execution error.`;
+    }
+  };
 
-取引種別を選択：
-1: 預入
-2: 引出
-3: 残高照会
-1
-
-預入金額を入力：
-50000
-
-預入処理が完了しました
-新残高：¥1,300,000 円
-
-続けますか？ (Y/N)：
-N
-
-ご利用ありがとうございました
-
-Execution completed successfully.`;
-
-      case 'STOCK01':
-        return baseOutput + `在庫管理システム
-================
-商品コードを入力：
-PROD0001
-
-商品名：プリンター用紙A4
-現在在庫数：150 個
-最小在庫数：200 個
-
-*** 発注が必要です ***
-商品コード：PROD0001　発注数量：250 個
-
-Execution completed successfully.`;
-
-      case 'SALES01':
-        return baseOutput + `売上集計プログラム
-================
-
-売上データを処理中...
-
-売上日別集計
-===========
-2025-01-15  商品A  ¥125,000
-2025-01-15  商品B  ¥89,500
-2025-01-16  商品A  ¥156,000
-2025-01-16  商品C  ¥234,500
-2025-01-17  商品B  ¥198,000
-
-月間売上合計：¥803,000
-
-Execution completed successfully.`;
-
-      case 'BONUS01':
-        return baseOutput + `賞与計算システム
-================
-社員番号を入力：
-100001
-
-賞与明細書
-==========
-社員番号：100001
-社員名　：田中太郎
-
-基本給　　　：¥350,000 円
-評価率　　　：1.2
-勤続年数　　：5 年
-
-基本賞与　　：¥700,000 円
-成果賞与　　：¥140,000 円
-勤続賞与　　：¥50,000 円
-================================
-賞与合計　　：¥890,000 円
-
-Execution completed successfully.`;
-
-      case 'TAX01':
-        return baseOutput + `所得税計算システム
-================
-年収を入力：
-5000000
-
-所得税計算結果
-=============
-年収　　　　：¥5,000,000
-基礎控除　　：¥480,000
-課税所得　　：¥4,520,000
-所得税額　　：¥572,500
-住民税額　　：¥452,000
-手取り年収　：¥3,975,500
-
-Execution completed successfully.`;
-
-      case 'TIME01':
-        return baseOutput + `勤怠管理システム
-================
-社員番号を入力：
-100001
-
-勤怠記録
-========
-社員名　　：田中太郎
-出勤時刻　：09:00
-退勤時刻　：18:30
-休憩時間　：1時間
-勤務時間　：8時間30分
-残業時間　：0時間30分
-
-月間勤務実績
-===========
-総勤務日数：22日
-総勤務時間：176時間
-総残業時間：15時間
-
-Execution completed successfully.`;
-
-      case 'LOAN01':
-        return baseOutput + `融資計算システム
-================
-融資金額を入力：
-10000000
-
-融資条件計算結果
-===============
-融資金額　　：¥10,000,000
-年利率　　　：3.5%
-返済期間　　：20年
-月返済額　　：¥57,998
-
-返済総額　　：¥13,919,520
-利息総額　　：¥3,919,520
-
-Execution completed successfully.`;
-
-      case 'ORDER01':
-        return baseOutput + `受注処理システム
-================
-受注データを処理中...
-
-受注明細
-========
-受注番号：ORD20250706001
-顧客名　：株式会社サンプル
-商品名　：プリンター用紙A4
-数量　　：100箱
-単価　　：¥1,250
-金額　　：¥125,000
-
-受注番号：ORD20250706002
-顧客名　：サンプル商事
-商品名　：ボールペン（黒）
-数量　　：500本
-単価　　：¥150
-金額　　：¥75,000
-
-本日の受注合計：¥200,000
-
-Execution completed successfully.`;
-
-      case 'RETIRE01':
-        return baseOutput + `退職金計算システム
-==================
-社員番号を入力：
-100001
-
-退職金計算書
-============
-社員番号　：100001
-社員名　　：田中太郎
-
-勤続年数　：34.92 年
-最終月給　：¥580,000 円
-
-基本退職金：¥10,133,600 円
-加算金　　：¥3,040,080 円
-退職金総額：¥13,173,680 円
-源泉徴収　：¥2,634,736 円
-================================
-手取額　　：¥10,538,944 円
-
-Execution completed successfully.`;
-
-      default:
-        // EMPPAY01, EMPPAY02의 경우 기존 급여 시스템 출력 사용
-        const currency = extractCurrencyFormat(sourceCode);
-        const amounts = currency.symbol === '¥' ? {
-          emp1: { gross: '¥114,875', tax: '¥14,359', net: '¥100,516' },
-          emp2: { gross: '¥91,000', tax: '¥11,375', net: '¥79,625' },
-          emp3: { gross: '¥154,000', tax: '¥19,250', net: '¥134,750' },
-          emp4: { gross: '¥93,363', tax: '¥11,670', net: '¥81,693' },
-          emp5: { gross: '¥120,120', tax: '¥15,015', net: '¥105,105' },
-          totals: { gross: '¥573,358', tax: '¥71,670', net: '¥501,688' }
-        } : {
-          emp1: { gross: '$1,148.75', tax: '$143.59', net: '$1,005.16' },
-          emp2: { gross: '$910.00', tax: '$113.75', net: '$796.25' },
-          emp3: { gross: '$1,540.00', tax: '$192.50', net: '$1,347.50' },
-          emp4: { gross: '$933.63', tax: '$116.70', net: '$816.93' },
-          emp5: { gross: '$1,201.20', tax: '$150.15', net: '$1,051.05' },
-          totals: { gross: '$5,733.58', tax: '$716.70', net: '$5,016.88' }
-        };
-        
-        return baseOutput + `=== ${fileName} PAYROLL SYSTEM ===
+  // Helper function for fallback simulation
+  const getSimulatedOutput = (): string => {
+    const programId = fileName.replace('.cob', '').toUpperCase();
+    
+    if (programId === 'EMPPAY01' || programId === 'EMPPAY02') {
+      const currency = extractCurrencyFormat(sourceCode);
+      const amounts = currency.symbol === '¥' ? {
+        emp1: { gross: '¥114,875', tax: '¥14,359', net: '¥100,516' },
+        emp2: { gross: '¥91,000', tax: '¥11,375', net: '¥79,625' },
+        emp3: { gross: '¥154,000', tax: '¥19,250', net: '¥134,750' },
+        emp4: { gross: '¥93,363', tax: '¥11,670', net: '¥81,693' },
+        emp5: { gross: '¥120,120', tax: '¥15,015', net: '¥105,105' },
+        totals: { gross: '¥573,358', tax: '¥71,670', net: '¥501,688' }
+      } : {
+        emp1: { gross: '$1,148.75', tax: '$143.59', net: '$1,005.16' },
+        emp2: { gross: '$910.00', tax: '$113.75', net: '$796.25' },
+        emp3: { gross: '$1,540.00', tax: '$192.50', net: '$1,347.50' },
+        emp4: { gross: '$933.63', tax: '$116.70', net: '$816.93' },
+        emp5: { gross: '$1,201.20', tax: '$150.15', net: '$1,051.05' },
+        totals: { gross: '$5,733.58', tax: '$716.70', net: '$5,016.88' }
+      };
+      
+      return `=== ${fileName} PAYROLL SYSTEM ===
 
 Initializing payroll processing...
 
@@ -916,6 +799,10 @@ PROCESSING COMPLETE. TOTAL EMPLOYEES: 5
 
 Execution completed successfully.`;
     }
+    
+    // Default simple output for other programs
+    return `Hello, World!
+Program execution completed successfully.`;
   };
 
   return (

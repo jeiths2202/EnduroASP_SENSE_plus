@@ -2291,6 +2291,360 @@ def encoding_status():
         logger.error(f"Encoding status API error: {error_msg}")
         return jsonify({'error': error_msg}), 500
 
+@app.route('/api/catalog/dataset', methods=['POST'])
+def register_dataset():
+    """Register a new dataset in catalog.json"""
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'error': 'Request body required'}), 400
+        
+        volume = data.get('volume')
+        library = data.get('library')
+        dataset = data.get('dataset')
+        dataset_info = data.get('dataset_info', {})
+        
+        if not all([volume, library, dataset]):
+            return jsonify({'error': 'Volume, library, and dataset parameters required'}), 400
+        
+        # Security check: prevent path traversal
+        for param in [volume, library, dataset]:
+            if '..' in param or '/' in param or '\\' in param:
+                return jsonify({'error': 'Invalid parameter contains path traversal'}), 400
+        
+        catalog_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'catalog.json')
+        
+        # Load existing catalog or create new one
+        catalog = {}
+        if os.path.exists(catalog_path):
+            try:
+                with open(catalog_path, 'r', encoding='utf-8') as f:
+                    catalog = json.load(f)
+            except Exception as e:
+                logger.error(f"Failed to load existing catalog: {e}")
+        
+        # Initialize volume if it doesn't exist
+        if volume not in catalog:
+            catalog[volume] = {}
+        
+        # Initialize library if it doesn't exist
+        if library not in catalog[volume]:
+            catalog[volume][library] = {}
+        
+        # Set default dataset info
+        default_info = {
+            'TYPE': 'DATASET',
+            'RECFM': 'FB',
+            'LRECL': 80,
+            'ENCODING': 'JP',
+            'DESCRIPTION': f'Dataset registered from UI conversion: {dataset}',
+            'CREATED': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        }
+        
+        # Merge provided info with defaults
+        final_info = {**default_info, **dataset_info}
+        
+        # Register the dataset
+        catalog[volume][library][dataset] = final_info
+        
+        # Save updated catalog
+        try:
+            with open(catalog_path, 'w', encoding='utf-8') as f:
+                json.dump(catalog, f, indent=2, ensure_ascii=False)
+            
+            logger.info(f"Dataset registered successfully: {volume}/{library}/{dataset}")
+            
+            return jsonify({
+                'success': True,
+                'message': f'Dataset {volume}/{library}/{dataset} registered successfully',
+                'dataset_info': final_info
+            })
+            
+        except Exception as e:
+            logger.error(f"Failed to save catalog: {e}")
+            return jsonify({'error': f'Failed to save catalog: {str(e)}'}), 500
+        
+    except Exception as e:
+        logger.error(f"Dataset registration error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/catalog/datasets/<volume>/<library>', methods=['GET'])
+def get_catalog_datasets(volume, library):
+    """Get all datasets for a specific volume/library combination"""
+    try:
+        catalog_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'catalog.json')
+        
+        if not os.path.exists(catalog_path):
+            return jsonify({'error': 'Catalog file not found'}), 404
+        
+        with open(catalog_path, 'r', encoding='utf-8') as f:
+            catalog = json.load(f)
+        
+        if volume not in catalog:
+            return jsonify({'error': f'Volume {volume} not found'}), 404
+        
+        if library not in catalog[volume]:
+            return jsonify({'error': f'Library {library} not found in volume {volume}'}), 404
+        
+        datasets = catalog[volume][library]
+        
+        return jsonify({
+            'success': True,
+            'volume': volume,
+            'library': library,
+            'datasets': datasets,
+            'count': len(datasets)
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to get datasets: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/execute/java', methods=['POST'])
+def execute_java_from_cobol():
+    """Execute Java code converted from COBOL"""
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'error': 'Request body required'}), 400
+        
+        java_code = data.get('java_code')
+        class_name = data.get('class_name', 'CobolProgram')
+        input_data = data.get('input_data', '')
+        timeout = data.get('timeout', 30)
+        
+        if not java_code:
+            return jsonify({'error': 'java_code parameter required'}), 400
+        
+        logger.info(f"Java execution request for class: {class_name}")
+        add_log('INFO', 'JAVA_EXECUTE', f'Java execution started for class: {class_name}', {
+            'class_name': class_name,
+            'code_length': len(java_code),
+            'has_input': bool(input_data)
+        })
+        
+        # Create temporary directory for Java files
+        import tempfile
+        with tempfile.TemporaryDirectory() as temp_dir:
+            java_file_path = os.path.join(temp_dir, f"{class_name}.java")
+            
+            # Write Java code to file
+            with open(java_file_path, 'w', encoding='utf-8') as f:
+                f.write(java_code)
+            
+            logger.info(f"Java file created: {java_file_path}")
+            
+            try:
+                # Compile Java code
+                logger.info("Starting Java compilation...")
+                compile_process = subprocess.run(
+                    ['javac', java_file_path],
+                    cwd=temp_dir,
+                    capture_output=True,
+                    text=True,
+                    timeout=timeout
+                )
+                
+                if compile_process.returncode != 0:
+                    error_msg = f"Java compilation failed:\n{compile_process.stderr}"
+                    logger.error(error_msg)
+                    add_log('ERROR', 'JAVA_EXECUTE', 'Java compilation failed', {
+                        'class_name': class_name,
+                        'error': compile_process.stderr
+                    })
+                    return jsonify({
+                        'success': False,
+                        'error': 'Compilation failed',
+                        'details': compile_process.stderr,
+                        'stage': 'compilation'
+                    }), 400
+                
+                logger.info("Java compilation successful")
+                
+                # Execute Java program
+                logger.info("Starting Java execution...")
+                execution_start = time.time()
+                
+                execute_process = subprocess.run(
+                    ['java', class_name],
+                    cwd=temp_dir,
+                    input=input_data,
+                    capture_output=True,
+                    text=True,
+                    timeout=timeout
+                )
+                
+                execution_time = time.time() - execution_start
+                
+                # Prepare output
+                output_lines = []
+                output_lines.append("Compiling Java code...")
+                output_lines.append(f"javac {class_name}.java")
+                output_lines.append("")
+                output_lines.append("Running Java application...")
+                output_lines.append(f"java {class_name}")
+                output_lines.append("")
+                
+                if execute_process.stdout:
+                    output_lines.append(execute_process.stdout)
+                
+                if execute_process.stderr:
+                    output_lines.append("STDERR:")
+                    output_lines.append(execute_process.stderr)
+                
+                if execute_process.returncode == 0:
+                    output_lines.append("")
+                    output_lines.append("Execution completed successfully.")
+                else:
+                    output_lines.append("")
+                    output_lines.append(f"Execution failed with exit code: {execute_process.returncode}")
+                
+                output = "\n".join(output_lines)
+                
+                result = {
+                    'success': execute_process.returncode == 0,
+                    'output': output,
+                    'stdout': execute_process.stdout,
+                    'stderr': execute_process.stderr,
+                    'return_code': execute_process.returncode,
+                    'execution_time': round(execution_time, 2),
+                    'stage': 'execution'
+                }
+                
+                logger.info(f"Java execution completed - Return code: {execute_process.returncode}, Time: {execution_time:.2f}s")
+                add_log('INFO', 'JAVA_EXECUTE', f'Java execution completed for class: {class_name}', {
+                    'class_name': class_name,
+                    'return_code': execute_process.returncode,
+                    'execution_time': execution_time,
+                    'success': execute_process.returncode == 0
+                })
+                
+                return jsonify(result)
+                
+            except subprocess.TimeoutExpired:
+                error_msg = f"Java execution timeout after {timeout} seconds"
+                logger.error(error_msg)
+                add_log('ERROR', 'JAVA_EXECUTE', 'Java execution timeout', {
+                    'class_name': class_name,
+                    'timeout': timeout
+                })
+                return jsonify({
+                    'success': False,
+                    'error': 'Execution timeout',
+                    'details': error_msg,
+                    'stage': 'execution'
+                }), 408
+                
+            except Exception as exec_error:
+                error_msg = f"Java execution error: {str(exec_error)}"
+                logger.error(error_msg)
+                add_log('ERROR', 'JAVA_EXECUTE', 'Java execution error', {
+                    'class_name': class_name,
+                    'error': str(exec_error)
+                })
+                return jsonify({
+                    'success': False,
+                    'error': 'Execution error',
+                    'details': str(exec_error),
+                    'stage': 'execution'
+                }), 500
+        
+    except Exception as e:
+        error_msg = f"Java execution API error: {str(e)}"
+        logger.error(error_msg)
+        add_log('ERROR', 'JAVA_EXECUTE', 'Java execution API error', {'error': str(e)})
+        return jsonify({'error': error_msg}), 500
+
+@app.route('/api/convert/ebcdic-dataset', methods=['POST'])
+def convert_ebcdic_dataset():
+    """Convert EBCDIC dataset using the enhanced dataset converter"""
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'error': 'Request body required'}), 400
+        
+        input_data = data.get('input_data')
+        encoding = data.get('encoding', 'JP')
+        japanese_encoding = data.get('japanese_encoding', 'utf-8')
+        output_format = data.get('output_format', 'json')
+        sosi_handling = data.get('sosi_handling', 'remove')
+        
+        if not input_data:
+            return jsonify({'error': 'input_data parameter required'}), 400
+        
+        # Import the EBCDIC dataset converter
+        import sys
+        import os
+        converter_path = os.path.join(os.path.dirname(__file__), '..', '..', 'ebcdic_dataset_converter.py')
+        
+        if os.path.exists(converter_path):
+            # Add the directory to Python path
+            converter_dir = os.path.dirname(converter_path)
+            if converter_dir not in sys.path:
+                sys.path.insert(0, converter_dir)
+            
+            # Import the converter module
+            import importlib.util
+            spec = importlib.util.spec_from_file_location("ebcdic_dataset_converter", converter_path)
+            converter_module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(converter_module)
+            
+            # Create converter instance
+            converter = converter_module.EBCDICDatasetConverter()
+            
+            try:
+                # Convert hex string back to bytes
+                if len(input_data) % 2 != 0:
+                    return jsonify({'error': 'Invalid hex input data'}), 400
+                
+                byte_data = bytes.fromhex(input_data)
+                
+                # Convert using the enhanced converter
+                if encoding == 'JAK':
+                    # Use JAK conversion
+                    converted_data = converter._convert_jak_field(byte_data, japanese_encoding)
+                else:
+                    # Use standard EBCDIC conversion
+                    converted_data = converter._convert_standard_field(byte_data, encoding)
+                
+                # Handle SOSI codes if needed
+                if sosi_handling == 'remove':
+                    converted_data = converted_data.replace('\x0E', '').replace('\x0F', '')
+                elif sosi_handling == 'space':
+                    converted_data = converted_data.replace('\x0E', ' ').replace('\x0F', ' ')
+                
+                return jsonify({
+                    'success': True,
+                    'data': {
+                        'output': converted_data,
+                        'encoding': encoding,
+                        'japanese_encoding': japanese_encoding,
+                        'output_format': output_format,
+                        'sosi_handling': sosi_handling,
+                        'input_size': len(byte_data),
+                        'output_size': len(converted_data.encode('utf-8'))
+                    },
+                    'message': 'EBCDIC dataset conversion successful'
+                })
+                
+            except Exception as conv_error:
+                logger.error(f"Conversion error: {conv_error}")
+                return jsonify({
+                    'success': False,
+                    'error': f'Conversion failed: {str(conv_error)}',
+                    'message': 'EBCDIC dataset conversion failed'
+                }), 500
+                
+        else:
+            return jsonify({'error': 'EBCDIC dataset converter not found'}), 500
+            
+    except Exception as e:
+        logger.error(f"EBCDIC dataset conversion API error: {e}")
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
     logger.info("OpenASP API Server v0.5.1 starting...")
     logger.info("Enhanced with Multi-Type Program Support (JAVA, COBOL, SHELL)")
