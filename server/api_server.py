@@ -712,15 +712,18 @@ class MultiTypeExecutor:
 multi_executor = None
 
 def load_config():
-    """?? ??? ??"""
+    """Load configuration settings"""
     global SMED_DIR, ACCOUNT_FILE, SMED_PGM_FILE, MAP_PGM_FILE
     global accounts, smed_pgm_config, map_pgm_config, multi_executor
     
-    # ?? ?? ??
+    # Get base directories
     script_dir = os.path.dirname(os.path.abspath(__file__))
     app_dir = os.path.dirname(script_dir)
     
-    SMED_DIR = os.path.join(app_dir, 'public', 'SMED_FILES')
+    # Fix SMED_DIR to use volume/DISK01/SMED structure
+    SMED_DIR = os.path.join(app_dir, 'volume', 'DISK01', 'SMED')
+    
+    # Keep other paths as is for compatibility
     ACCOUNT_FILE = os.path.join(app_dir, 'src', 'account.json')
     SMED_PGM_FILE = os.path.join(app_dir, 'src', 'smed_pgm.json')
     MAP_PGM_FILE = os.path.join(app_dir, 'src', 'map_pgm.json')
