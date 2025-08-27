@@ -221,7 +221,7 @@ const ToolsPage: React.FC<ToolsPageProps> = ({ isDarkMode }) => {
           Tools
         </h1>
         <p className="text-gray-600 dark:text-gray-400">
-          Data conversion utilities for host migration
+          Code Page Validation: EBCDIC ↔ ASCII Mapping
         </p>
       </div>
 
