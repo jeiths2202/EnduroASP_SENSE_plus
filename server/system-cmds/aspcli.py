@@ -32,7 +32,10 @@ if __name__ == "__main__":
     parser.add_argument("params", nargs="*", help="Command parameters")
     args = parser.parse_args()
 
-    full_command = args.command + ' ' + ','.join(args.params)
+    if args.params:
+        full_command = args.command + ' ' + ','.join(args.params)
+    else:
+        full_command = args.command
 
     command_map = {
         "HELP": HELP,
@@ -62,7 +65,14 @@ if __name__ == "__main__":
 
     if args.command in command_map:
         try:
-            command_map[args.command](full_command)
+            if args.command == "HELP":
+                # HELP command special handling: pass parameters only, not full command
+                if args.params:
+                    command_map[args.command](' '.join(args.params))
+                else:
+                    command_map[args.command]()
+            else:
+                command_map[args.command](full_command)
         except Exception as e:
             import traceback
             import sys
