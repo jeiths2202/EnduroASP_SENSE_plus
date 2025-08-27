@@ -66,17 +66,17 @@ const ToolsPage: React.FC<ToolsPageProps> = ({ isDarkMode }) => {
       const input = conversionDirection === 'toAscii' ? ebcdicText : asciiText;
       
       // Debug logging
-      addConsoleLog(`=== 변환 시작 ===`);
-      addConsoleLog(`방향: ${conversionDirection === 'toAscii' ? 'EBCDIC → ASCII' : 'ASCII → EBCDIC'}`);
-      addConsoleLog(`인코딩: ${encoding}`);
-      addConsoleLog(`입력 데이터: ${input.substring(0, 100)}${input.length > 100 ? '...' : ''}`);
-      addConsoleLog(`입력 길이: ${input.length}`);
-      addConsoleLog(`SOSI 사용: ${useSOSI}`);
+      addConsoleLog(`=== Conversion Start ===`);
+      addConsoleLog(`Direction: ${conversionDirection === 'toAscii' ? 'EBCDIC → ASCII' : 'ASCII → EBCDIC'}`);
+      addConsoleLog(`Encoding: ${encoding}`);
+      addConsoleLog(`Input Data: ${input.substring(0, 100)}${input.length > 100 ? '...' : ''}`);
+      addConsoleLog(`Input Length: ${input.length}`);
+      addConsoleLog(`SOSI Usage: ${useSOSI}`);
       const actualSO = sosiType === 'custom' ? customSO : sosiType.substring(0,2);
       const actualSI = sosiType === 'custom' ? customSI : sosiType.substring(2,4);
-      addConsoleLog(`SOSI 타입: ${sosiType === 'custom' ? 'Custom' : sosiType} (SO/SI: 0x${actualSO}/0x${actualSI})`);
-      addConsoleLog(`SOSI 처리: ${sosiHandling === 'remove' ? '제거' : sosiHandling === 'keep' ? '유지' : '공백 변환'}`);
-      addConsoleLog(`오류 처리: ${errorHandling}`);
+      addConsoleLog(`SOSI Type: ${sosiType === 'custom' ? 'Custom' : sosiType} (SO/SI: 0x${actualSO}/0x${actualSI})`);
+      addConsoleLog(`SOSI Handling: ${sosiHandling === 'remove' ? 'Remove' : sosiHandling === 'keep' ? 'Keep' : 'Space Conversion'}`);
+      addConsoleLog(`Error Handling: ${errorHandling}`);
 
       const ebcdicOptions: EbcdicConversionOptions = {
         useSOSI,
@@ -89,37 +89,37 @@ const ToolsPage: React.FC<ToolsPageProps> = ({ isDarkMode }) => {
       let result;
       if (conversionDirection === 'toAscii') {
         result = convertEbcdicToAscii(input, ebcdicOptions);
-        addConsoleLog(`ASCII 출력: ${result.output.substring(0, 100)}${result.output.length > 100 ? '...' : ''}`);
-        addConsoleLog(`출력 길이: ${result.output.length}`);
+        addConsoleLog(`ASCII Output: ${result.output.substring(0, 100)}${result.output.length > 100 ? '...' : ''}`);
+        addConsoleLog(`Output Length: ${result.output.length}`);
         setAsciiText(result.output);
       } else {
         result = convertAsciiToEbcdic(input, ebcdicOptions);
-        addConsoleLog(`EBCDIC 출력: ${result.output.substring(0, 100)}${result.output.length > 100 ? '...' : ''}`);
-        addConsoleLog(`출력 길이: ${result.output.length}`);
+        addConsoleLog(`EBCDIC Output: ${result.output.substring(0, 100)}${result.output.length > 100 ? '...' : ''}`);
+        addConsoleLog(`Output Length: ${result.output.length}`);
         setEbcdicText(result.output);
       }
 
       if (result.errors.length > 0) {
-        addConsoleLog(`⚠️ 경고: ${result.errors.length}개의 변환 오류 발생`);
+        addConsoleLog(`⚠️ Warning: ${result.errors.length} conversion errors occurred`);
         result.errors.forEach((error, index) => {
           addConsoleLog(`  ${index + 1}. ${error}`);
         });
       } else {
-        addConsoleLog(`✅ 변환 완료 (오류 없음)`);
+        addConsoleLog(`✅ Conversion completed (no errors)`);
       }
 
       if (result.warnings && result.warnings.length > 0) {
-        addConsoleLog(`⚠️ 경고: ${result.warnings.length}개의 경고 발생`);
+        addConsoleLog(`⚠️ Warning: ${result.warnings.length} warnings occurred`);
         result.warnings.forEach((warning, index) => {
           addConsoleLog(`  ${index + 1}. ${warning}`);
         });
       }
 
       setConversionErrors(result.errors);
-      addConsoleLog(`=== 변환 종료 ===`);
+      addConsoleLog(`=== Conversion End ===`);
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Unknown conversion error';
-      addConsoleLog(`❌ 변환 실패: ${errorMsg}`);
+      addConsoleLog(`❌ Conversion failed: ${errorMsg}`);
       console.error('Conversion error:', error);
       setConversionErrors([errorMsg]);
     } finally {
@@ -140,7 +140,7 @@ const ToolsPage: React.FC<ToolsPageProps> = ({ isDarkMode }) => {
 
   const saveEbcdicFile = () => {
     if (!ebcdicText.trim()) {
-      alert('저장할 EBCDIC 데이터가 없습니다.');
+      alert('No EBCDIC data to save.');
       return;
     }
 
@@ -162,13 +162,13 @@ const ToolsPage: React.FC<ToolsPageProps> = ({ isDarkMode }) => {
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error('File save error:', error);
-      alert('파일 저장 중 오류가 발생했습니다.');
+      alert('An error occurred while saving the file.');
     }
   };
 
   const saveAsciiFile = () => {
     if (!asciiText.trim()) {
-      alert('저장할 ASCII 데이터가 없습니다.');
+      alert('No ASCII data to save.');
       return;
     }
 
@@ -221,7 +221,7 @@ const ToolsPage: React.FC<ToolsPageProps> = ({ isDarkMode }) => {
           Tools
         </h1>
         <p className="text-gray-600 dark:text-gray-400">
-          Data conversion utilities for mainframe migration
+          Data conversion utilities for host migration
         </p>
       </div>
 
@@ -403,7 +403,7 @@ const ToolsPage: React.FC<ToolsPageProps> = ({ isDarkMode }) => {
                         className="mr-2"
                       />
                       <span className="text-sm text-gray-700 dark:text-gray-300">
-                        Remove SOSI codes (출력에서 제거)
+                        Remove SOSI codes (remove from output)
                       </span>
                     </label>
                     <label className="flex items-center">
@@ -416,7 +416,7 @@ const ToolsPage: React.FC<ToolsPageProps> = ({ isDarkMode }) => {
                         className="mr-2"
                       />
                       <span className="text-sm text-gray-700 dark:text-gray-300">
-                        Keep SOSI codes (0x0E/0x0F 유지)
+                        Keep SOSI codes (keep 0x0E/0x0F)
                       </span>
                     </label>
                     <label className="flex items-center">
@@ -429,7 +429,7 @@ const ToolsPage: React.FC<ToolsPageProps> = ({ isDarkMode }) => {
                         className="mr-2"
                       />
                       <span className="text-sm text-gray-700 dark:text-gray-300">
-                        Convert to spaces (0x20으로 변환)
+                        Convert to spaces (convert to 0x20)
                       </span>
                     </label>
                   </div>
@@ -446,7 +446,7 @@ const ToolsPage: React.FC<ToolsPageProps> = ({ isDarkMode }) => {
                 setAsciiText('');
                 setConversionErrors([]);
                 setConsoleLog([]);
-                addConsoleLog('데이터 초기화 완료');
+                addConsoleLog('Data initialization completed');
               }}
               className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors flex items-center space-x-2"
             >
@@ -566,7 +566,7 @@ const ToolsPage: React.FC<ToolsPageProps> = ({ isDarkMode }) => {
                   onChange={(e) => {
                     setShowConsole(e.target.checked);
                     if (e.target.checked) {
-                      addConsoleLog('디버그 콘솔 활성화');
+                      addConsoleLog('Debug console activated');
                     } else {
                       setConsoleLog([]);
                     }
