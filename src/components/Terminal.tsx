@@ -211,6 +211,8 @@ const Terminal: React.FC<TerminalProps> = ({ isOpen, onClose, title, command, on
       await executeTaxProgram();
     } else if (className.toLowerCase().includes('hello')) {
       await executeHelloProgram();
+    } else if (className.toLowerCase().includes('accept')) {
+      await executeAcceptProgram();
     } else {
       // Generic interactive program
       await executeGenericProgram(className);
@@ -222,9 +224,9 @@ const Terminal: React.FC<TerminalProps> = ({ isOpen, onClose, title, command, on
     setOutput(prev => [...prev, '所得税計算システム', '==================']);
     
     // Wait for user input
-    await waitForUserInput('年収を入力（円）：');
+    const inputValue = await waitForUserInput('年収を入力（円）：');
     
-    const income = parseInt(currentInput) || 5000000;
+    const income = parseInt(inputValue) || 5000000;
     
     // Calculate tax based on income
     let taxRate = 0;
@@ -262,24 +264,36 @@ const Terminal: React.FC<TerminalProps> = ({ isOpen, onClose, title, command, on
   };
 
   const executeHelloProgram = async () => {
-    setOutput(prev => [...prev, 'お名前を入力してください：']);
-    await waitForUserInput('お名前を入力してください：');
+    const name = await waitForUserInput('お名前を入力してください：');
+    setOutput(prev => [...prev, `${name || '田中太郎'}様`, '', 'Execution completed successfully.']);
+  };
+
+  const executeAcceptProgram = async () => {
+    // Simulate Accept01 program execution exactly as the Java code
+    // This simulates the mainPara() method execution
     
-    const name = currentInput || '田中太郎';
-    setOutput(prev => [...prev, `${name}様`, '', 'Execution completed successfully.']);
+    // System.out.println("Enter your input: ");
+    setOutput(prev => [...prev, 'Enter your input: ']);
+    
+    // userInput = scanner.nextLine(); (waiting for user input)
+    const userInput = await waitForUserInput('');
+    
+    // System.out.println("You entered: " + userInput);
+    setOutput(prev => [...prev, `You entered: ${userInput}`, '', 'Execution completed successfully.']);
   };
 
   const executeGenericProgram = async (className: string) => {
-    setOutput(prev => [...prev, `${className} program started.`, '値を入力してください：']);
-    await waitForUserInput('値を入力してください：');
-    
-    const value = currentInput || 'default';
-    setOutput(prev => [...prev, `入力値: ${value}`, '', 'Execution completed successfully.']);
+    setOutput(prev => [...prev, `${className} program started.`]);
+    const value = await waitForUserInput('値を入力してください：');
+    setOutput(prev => [...prev, `入力値: ${value || 'default'}`, '', 'Execution completed successfully.']);
   };
 
-  const waitForUserInput = (prompt: string): Promise<void> => {
+  const waitForUserInput = (prompt: string): Promise<string> => {
     return new Promise((resolve) => {
-      setOutput(prev => [...prev, prompt]);
+      // Only add prompt to output if it's not empty
+      if (prompt.trim()) {
+        setOutput(prev => [...prev, prompt]);
+      }
       setInputPrompt(prompt);
       setWaitingForInput(true);
       setCurrentInput('');
@@ -296,13 +310,14 @@ const Terminal: React.FC<TerminalProps> = ({ isOpen, onClose, title, command, on
 
   const handleInputSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && waitingForInput) {
-      setOutput(prev => [...prev, currentInput]);
+      const inputValue = currentInput;
+      setOutput(prev => [...prev, inputValue]);
       setWaitingForInput(false);
       setInputPrompt('');
       
-      // Resolve the promise
+      // Resolve the promise with the input value
       if ((window as any).resolveInput) {
-        (window as any).resolveInput();
+        (window as any).resolveInput(inputValue);
         delete (window as any).resolveInput;
       }
     }
