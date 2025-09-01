@@ -2,7 +2,7 @@
 """
 DSPFD (Display File Description) Command Implementation for OpenASP
 
-Based on Fujitsu ASP DSPFD command specifications.
+Based on ASP DSPFD command specifications.
 Displays detailed file information including size, dates, and record attributes.
 """
 
@@ -18,7 +18,7 @@ def DSPFD(command: str) -> bool:
     """
     DSPFD command - Display File Description
     
-    Fujitsu ASP Format: DSPFD FILE=파일명,@LIB=라이브러리명[,VOL=볼륨명]
+    ASP Format: DSPFD FILE=filename,@LIB=library[,VOL=volume]
     Legacy Format: DSPFD FILE(LIB/FILENAME),VOL-VOLUME
     
     Args:
@@ -28,7 +28,7 @@ def DSPFD(command: str) -> bool:
         True if successful, False otherwise
     """
     try:
-        # Parse command with support for both Fujitsu and legacy formats
+        # Parse command with support for both ASP and legacy formats
         command_str = command.replace('DSPFD ', '').strip()
         
         # Initialize default values
@@ -79,7 +79,7 @@ def DSPFD(command: str) -> bool:
                 elif part.startswith('VOL='):
                     params['VOL'] = part[4:]
         else:
-            # Fujitsu format: DSPFD FILE=파일명,@LIB=라이브러리명[,VOL=볼륨명]
+            # ASP format: DSPFD FILE=filename,@LIB=library[,VOL=volume]
             for part in parts:
                 if '=' in part:
                     key, value = part.split('=', 1)
@@ -98,14 +98,14 @@ def DSPFD(command: str) -> bool:
         # Validate required parameters
         if not params['FILE']:
             print("[ERROR] FILE parameter is required.")
-            print("[FUJITSU] DSPFD FILE=파일명,@LIB=라이브러리명[,VOL=볼륨명]")
+            print("[USAGE] DSPFD FILE=filename,@LIB=library[,VOL=volume]")
             print("[LEGACY] DSPFD FILE(LIB/FILENAME),VOL-VOLUME")
             set_pgmec(999)
             return False
         
         if not params['LIB']:
             print("[ERROR] @LIB parameter is required.")
-            print("[FUJITSU] DSPFD FILE=파일명,@LIB=라이브러리명[,VOL=볼륨명]")
+            print("[USAGE] DSPFD FILE=filename,@LIB=library[,VOL=volume]")
             print("[LEGACY] DSPFD FILE(LIB/FILENAME),VOL-VOLUME")
             set_pgmec(999)
             return False

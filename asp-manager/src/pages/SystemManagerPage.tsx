@@ -597,9 +597,15 @@ const SystemManagerPage: React.FC = () => {
     setTotalRecords(0); // 레코드 수 리셋
     
     try {
-      const response = await fetch(`${APP_CONFIG.api.baseUrl}/api/datasets/${dataset.volume}/${dataset.library}/${dataset.name}/data`);
+      const response = await fetch(`${APP_CONFIG.api.baseUrl}/api/datasets/${dataset.volume}/${dataset.library}/${dataset.name}/data`, {
+        headers: {
+          'Accept': 'text/plain; charset=utf-8'
+        }
+      });
       if (response.ok) {
+        // 서버에서 이미 SJIS → UTF-8 변환된 데이터를 받음
         const data = await response.text();
+        console.log('Dataset data received:', data.substring(0, 100)); // 디버깅용
         setSelectedDataset({ ...dataset, data });
       } else {
         setSelectedDataset({ ...dataset, data: 'データが見つかりません。' });
@@ -1689,8 +1695,8 @@ const SystemManagerPage: React.FC = () => {
                     type: resource.TYPE,
                     library: libraryName,
                     volume: volumeName,
-                    rectype: resource.RECTYPE,
-                    reclen: resource.RECLEN,
+                    rectype: resource.RECTYPE || resource.RECFM,
+                    reclen: resource.RECLEN || resource.LRECL,
                     encoding: resource.ENCODING,
                     description: resource.DESCRIPTION || 'No description'
                   } as DatasetInfo);
@@ -1957,7 +1963,7 @@ const SystemManagerPage: React.FC = () => {
                       className="flex-1 p-4 overflow-auto"
                       onMouseLeave={() => setHoveredChar(null)}
                     >
-                      <div className="text-sm text-gray-300 font-mono whitespace-pre-wrap leading-relaxed select-text">
+                      <div className="text-sm text-gray-300 font-mono whitespace-pre-wrap leading-relaxed select-text" style={{fontFamily: "Monaco, Menlo, 'Ubuntu Mono', Consolas, 'source-code-pro', 'MS Gothic', 'MS Mincho', 'Noto Sans CJK JP', monospace"}}>
                         {selectedDataset.data ? 
                           (() => {
                             // 실제 dataset의 rectype, reclen, encoding 사용 (하드코딩 제거)

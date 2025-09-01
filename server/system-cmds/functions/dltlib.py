@@ -2,7 +2,7 @@
 """
 DLTLIB (Delete Library) Command Implementation for OpenASP
 
-Based on Fujitsu ASP DLTLIB command specifications.
+Based on ASP DLTLIB command specifications.
 Deletes library directories and all their contents from the volume structure.
 """
 

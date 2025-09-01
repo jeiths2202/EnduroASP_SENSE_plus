@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# -*- coding: shift_jis -*-
 """
 EDTFILE (Edit File) Command Implementation for OpenASP
 
@@ -16,6 +16,12 @@ from typing import Dict, List, Tuple, Optional, Any
 # Import from parent module
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from asp_commands import VOLUME_ROOT, get_catalog_info, set_pgmec
+import subprocess
+import atexit
+
+# dslock configuration
+DSLOCKCTL_PATH = "/home/aspuser/app/ofasp-refactor/dslock_suite/build/dslockctl"
+DSLOCK_AVAILABLE = os.path.exists(DSLOCKCTL_PATH)
 
 class EDTFILESession:
     """Main EDTFILE interactive session handler"""
@@ -51,8 +57,75 @@ class EDTFILESession:
         self.display_lines = max(10, self.vs * 3)  # Calculate based on VS
         self.page = 1
         
+        # dslock configuration
+        self.dataset_name = f"{volume}.{lib}.{filename}"
+        self.lock_level = self._determine_lock_level(mode)
+        self.lock_acquired = False
+        
+        # Acquire file lock based on mode
+        self._acquire_file_lock()
+        
         # Load file data
         self._load_file_data()
+    
+    def _determine_lock_level(self, mode: str) -> str:
+        """Determine lock level based on EDTFILE mode
+        
+        @DSP and @PRT modes: SHR (shared) lock
+        @EDT and @ALL modes: OLD (exclusive read) lock
+        """
+        if mode in ['@DSP', '@PRT']:
+            return 'SHR'  # Shared lock for display and print modes
+        elif mode in ['@EDT', '@ALL']:
+            return 'OLD'  # Exclusive read lock for edit and all modes
+        else:
+            return 'SHR'  # Default to shared lock
+    
+    def _acquire_file_lock(self):
+        """Acquire dslock for the file based on mode"""
+        if not DSLOCK_AVAILABLE:
+            print("[WARNING] dslock not available, proceeding without lock")
+            return
+        
+        try:
+            cmd = [DSLOCKCTL_PATH, "lock", self.dataset_name, self.lock_level]
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+            
+            if result.returncode == 0:
+                self.lock_acquired = True
+                print(f"[INFO] Acquired {self.lock_level} lock for {self.dataset_name}")
+                # Register cleanup function to release lock on exit
+                atexit.register(self._release_file_lock)
+            else:
+                print(f"[WARNING] Failed to acquire {self.lock_level} lock: {result.stderr.strip()}")
+                print("[INFO] Proceeding without lock")
+                
+        except subprocess.TimeoutExpired:
+            print(f"[WARNING] Lock request timed out for {self.dataset_name}")
+            print("[INFO] Proceeding without lock")
+        except Exception as e:
+            print(f"[WARNING] Lock acquisition error: {e}")
+            print("[INFO] Proceeding without lock")
+    
+    def _release_file_lock(self):
+        """Release dslock for the file"""
+        if not self.lock_acquired or not DSLOCK_AVAILABLE:
+            return
+        
+        try:
+            cmd = [DSLOCKCTL_PATH, "unlock", self.dataset_name, self.lock_level]
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+            
+            if result.returncode == 0:
+                print(f"[INFO] Released {self.lock_level} lock for {self.dataset_name}")
+                self.lock_acquired = False
+            else:
+                print(f"[WARNING] Failed to release {self.lock_level} lock: {result.stderr.strip()}")
+                
+        except subprocess.TimeoutExpired:
+            print(f"[WARNING] Lock release timed out for {self.dataset_name}")
+        except Exception as e:
+            print(f"[WARNING] Lock release error: {e}")
     
     def _load_file_data(self):
         """Load file data into memory based on record type"""
@@ -158,50 +231,50 @@ class EDTFILESession:
     def show_initial_menu(self):
         """Show initial EDTFILE menu screen with Fujitsu ASP format"""
         print("=" * 80)
-        print(f"EDTFILE (ファイルの編집: Edit File)")
+        print(f"EDTFILE (�t�@�C���̕�?: Edit File)")
         print()
         
         # Display current parameters in Fujitsu format
-        print(f"EDTFILE │MODE={self.mode}│ [,FILE={self.filename}] [@LIB={self.lib}]")
-        print(f"        │VS {self.vs:2d}│RS {self.rs:2d}│CP {self.cp:2d}│ [,EDIT={self.edit_format}]")
+        print(f"EDTFILE ��MODE={self.mode}�� [,FILE={self.filename}] [@LIB={self.lib}]")
+        print(f"        ��VS {self.vs:2d}��RS {self.rs:2d}��CP {self.cp:2d}�� [,EDIT={self.edit_format}]")
         print()
         
-        print("機能")
-        print("ディスクファイルの内容を編集、表示、印刷または修復する。")
-        print("また、ディスクファイルの作成、ファイルとファイル定義体の管理、及び編集機能がある。")
+        print("�@�\")
+        print("�f�B�X�N�t�@�C���̓��e��ҏW�A�\���A����܂��͏C������B")
+        print("�܂��A�f�B�X�N�t�@�C���̍쐬�A�t�@�C���ƃt�@�C����`�̂̊Ǘ��A�y�ѕҏW�@�\������B")
         
-        print("修復で実行されるコマンドは次のとおり。")
-        print("• 物理ファイルの修復 (CRFRP)")
-        print("修復で実行されるコマンドは次のとおり。")
-        print("• 順編成ファイル、あるいは順編成ファイルの作成 (CRTFILE)")
-        print("• 物理ファイルの作成 (CRTF)")
-        print("• 物理ファイルの作成 (CRTLF)")
-        print("• マルチボリューム物理ファイルの作成 (CRTMF)")
+        print("�C���Ŏ��s�����R�}���h�͎��̂Ƃ���B")
+        print("? �����t�@�C���̏C�� (CRFRP)")
+        print("�C���Ŏ��s�����R�}���h�͎��̂Ƃ���B")
+        print("? ���Ґ��t�@�C���A���邢�͏��Ґ��t�@�C���̍쐬 (CRTFILE)")
+        print("? �����t�@�C���̍쐬 (CRTF)")
+        print("? �����t�@�C���̍쐬 (CRTLF)")
+        print("? �}���`�{�����[�������t�@�C���̍쐬 (CRTMF)")
         
-        print("各種で実行されるコマンドは次のとおり。")
-        print("• 変更 (CHGFILE, CHGMBR)")
-        print("• 移動 (MOVFILE, MOVMBR)")
-        print("• 削除 (DLTFILE, DLTMBR)")
-        print("• 変名 (RNMFILE, RNMBR)")
-        print("• 印刷 (DMPFILE, DLTMBR)")
-        print("• 消去 (CLRFILE)")
+        print("�e��Ŏ��s�����R�}���h�͎��̂Ƃ���B")
+        print("? �ύX (CHGFILE, CHGMBR)")
+        print("? �ړ� (MOVFILE, MOVMBR)")
+        print("? �폜 (DLTFILE, DLTMBR)")
+        print("? �ϖ� (RNMFILE, RNMBR)")
+        print("? ��� (DMPFILE, DLTMBR)")
+        print("? ���� (CLRFILE)")
         
-        print("編集で実行されるコマンドは次のとおり。")
-        print("• ファイル定義体の生成 (PGO)")
-        print("• 一括処理ファイルの処理参照 (RMFRM)")
+        print("�ҏW�Ŏ��s�����R�}���h�͎��̂Ƃ���B")
+        print("? �t�@�C����`�̂̐��� (PGO)")
+        print("? �ꊇ�����t�@�C���̏����Q�� (RMFRM)")
         
         print()
-        print(f"現在のパラメータ:")
-        print(f"  VS: {self.vs} (画面表示行数)")
-        print(f"  RS: {self.rs} (レコード表示サイズ)")
-        print(f"  CP: {self.cp} (コピー パラメータ)")
+        print(f"���݂̃p�����[�^:")
+        print(f"  VS: {self.vs} (��ʕ\���s��)")
+        print(f"  RS: {self.rs} (���R�[�h�\���T�C�Y)")
+        print(f"  CP: {self.cp} (�R�s�[ �p�����[�^)")
         print()
-        print("PF10:終了")
+        print("PF10:�I��")
         print("-" * 80)
         
         while True:
             try:
-                print("\n機能番号を入力してください (0:表示, 1:編集, X:終了): ", end="")
+                print("\n�@�\�ԍ�����͂��Ă������� (0:�\��, 1:�ҏW, 2:�S���[�h X:�I��): ", end="")
                 choice = input().strip().upper()
                 
                 if choice == 'X' or choice == '':
@@ -212,8 +285,11 @@ class EDTFILESession:
                 elif choice == '1':
                     self.mode = '@EDT'
                     return True
+                elif choice == '2':
+                    self.mode = '@ALL'
+                    return True
                 else:
-                    print("無効な選択です。0, 1, またはXを入力してください。")
+                    print("�����ȑI���ł��B0, 1, 2, �܂���X����͂��Ă��������B")
                     
             except (EOFError, KeyboardInterrupt):
                 return False
@@ -246,20 +322,23 @@ class EDTFILESession:
         if self.modified:
             self._save_changes()
         
+        # Release file lock before ending session
+        self._release_file_lock()
+        
         print("[INFO] EDTFILE session ended.")
     
     def _display_mode(self):
         """Display mode - view records without editing"""
         print("=" * 80)
-        print(f"EDTFILE (Vuu-Laa)    ファイル名: {self.lib}.{self.filename}  ライブラリ名 {self.lib} (機番)")
-        print(f"(1) 演算編成モード                            新 XXXXX")
+        print(f"EDTFILE (Vuu-Laa)    �t�@�C����: {self.lib}.{self.filename}  ���C�u������ {self.lib} (�@��)")
+        print(f"(1) ���Z�Ґ����[�h                            �V XXXXX")
         print()
         
         # Show records
         start_rec = (self.page - 1) * self.display_lines + 1
         end_rec = min(start_rec + self.display_lines - 1, len(self.records))
         
-        print(f"REC-NO: レコード番号 {start_rec:08d} 〜 {end_rec:08d} xxxxxxxxxxxxxx")
+        print(f"REC-NO: ���R�[�h�ԍ� {start_rec:08d} �` {end_rec:08d} xxxxxxxxxxxxxx")
         print("nnnnnnnn cccccccccccc xxxxxxxxxx " + "." * 50)
         print()
         
@@ -281,13 +360,13 @@ class EDTFILESession:
                     print(f"{rec_no:08d} {display_data}")
         
         print("-" * 80)
-        print(f"レコード範囲: {start_rec:08d}  レコード長: {self.reclen:08d} キー位置: キー長: {self.reclen:08d}/{self.reclen:08d}")
+        print(f"���R�[�h�͈�: {start_rec:08d}  ���R�[�h��: {self.reclen:08d} �L�[�ʒu: �L�[��: {self.reclen:08d}/{self.reclen:08d}")
         print()
-        print("D:削除  C:複写  O:複写先  S:検索  P:印刷  R:読込し  T:タブ")
-        print("PF7:前画面  PF8:次画面  PF10:終了  PF14:タブ  PF19:検索  PF20:検索画面")
+        print("D:�폜  C:����  O:���ʐ�  S:����  P:���  R:�Ǎ���  T:�^�u")
+        print("PF7:�O���  PF8:�����  PF10:�I��  PF14:�^�u  PF19:����  PF20:�������")
         
         # Command input
-        print("\nコマンドを入力してください (P:次ページ, B:前ページ, S:検索, X:終了): ", end="")
+        print("\n�R�}���h����͂��Ă������� (P:���y�[�W, B:�O�y�[�W, S:����, X:�I��): ", end="")
         try:
             command = input().strip().upper()
             
@@ -308,7 +387,7 @@ class EDTFILESession:
             elif command.startswith('C'):
                 self.edit_format = '@CHAR'
             else:
-                print(f"未対応のコマンド: {command}")
+                print(f"���Ή��̃R�}���h: {command}")
             
             return True
             
@@ -318,15 +397,15 @@ class EDTFILESession:
     def _edit_mode(self):
         """Edit mode - modify records"""
         print("=" * 80)
-        print(f"EDTFILE (Vuu-Laa)    ファイル名: {self.lib}.{self.filename}  ライブラリ名 {self.lib} (機番)")
-        print("(1) 編集開始モード")
+        print(f"EDTFILE (Vuu-Laa)    �t�@�C����: {self.lib}.{self.filename}  ���C�u������ {self.lib} (�@��)")
+        print("(1) �ҏW�J�n���[�h")
         print()
         
         # Show current record for editing
         if self.current_record <= len(self.records):
             current_rec = self.records[self.current_record - 1]
             print(f"REC-NO: {self.current_record:08d}")
-            print(f"現在のレコード: {current_rec}")
+            print(f"���݂̃��R�[�h: {current_rec}")
             print()
             
             if self.edit_format == '@HEX':
@@ -336,12 +415,12 @@ class EDTFILESession:
                 print(f"HEX: {hex_display}")
         
         print("-" * 80)
-        print("編集コマンド:")
-        print("I: レコード挿入  D: レコード削除  C: レコード複写")
-        print("S: 検索  R: 置換  M: 移動  U: 復元")
-        print("PF9:取消  PF10:終了")
+        print("�ҏW�R�}���h:")
+        print("I: ���R�[�h�}��  D: ���R�[�h�폜  C: ���R�[�h����")
+        print("S: ����  R: �u��  M: �ړ�  U: ����")
+        print("PF9:���  PF10:�I��")
         
-        print("\n編集コマンドを入力してください (I/D/C/S/R/M/U/N/P/X): ", end="")
+        print("\n�ҏW�R�}���h����͂��Ă������� (I/D/C/S/R/M/U/N/P/X): ", end="")
         try:
             command = input().strip().upper()
             
@@ -366,7 +445,7 @@ class EDTFILESession:
             elif command == 'M':
                 self._modify_record()
             else:
-                print(f"未対応のコマンド: {command}")
+                print(f"���Ή��̃R�}���h: {command}")
             
             return True
             
@@ -376,19 +455,19 @@ class EDTFILESession:
     def _print_mode(self):
         """Print mode - output records to printer/file"""
         print("=" * 80)
-        print(f"EDTFILE (Vuu-Laa)    ファイル名: {self.lib}.{self.filename}  ライブラリ名 {self.lib} (機番)")
+        print(f"EDTFILE (Vuu-Laa)    �t�@�C����: {self.lib}.{self.filename}  ���C�u������ {self.lib} (�@��)")
         print()
-        print("印刷")
-        print("初期画面で '3. 印刷' を選択し、ファイル名等を入力するとデータ方法、機番手法およびファイル機器により印刷編成画面が")
-        print("表示される。そして、各専用コマンドによりファイルまたはセクタアクセスの印刷に応じて印刷してよい。")
+        print("���")
+        print("������ʂ� '3. ���' ��I�����A�t�@�C����������͂���ƃf�[�^���@�A�@�Ԏ�@����уt�@�C���@��ɂ�����Ґ���ʂ�")
+        print("�\�������B�����āA�e��p�R�}���h�ɂ��t�@�C���܂��̓Z�N�^�A�N�Z�X�̈���ɉ����Ĉ�����Ă悢�B")
         print()
         
-        print("(1) 印刷開始キー: _______")
-        print("(2) 印刷終了キー: _______")
+        print("(1) ����J�n�L�[: _______")
+        print("(2) ����I���L�[: _______")
         print()
-        print("(3) 不正データレコード印刷  N  (Y: 不正データレコードのみ, N:すべて)")
+        print("(3) �s���f�[�^���R�[�h���  N  (Y: �s���f�[�^���R�[�h�̂�, N:���ׂ�)")
         print()
-        print("PF9:取消  PF10:終了")
+        print("PF9:���  PF10:�I��")
         
         # For now, just return to display mode
         return False
@@ -396,28 +475,28 @@ class EDTFILESession:
     def _all_mode(self):
         """All mode - comprehensive view of file with all record details"""
         print("=" * 80)
-        print(f"EDTFILE (Vuu-Laa)    ファイル名: {self.lib}.{self.filename}  ライブラリ名 {self.lib} (機番)")
-        print(f"@ALL モード - 全レコード表示")
+        print(f"EDTFILE (Vuu-Laa)    �t�@�C����: {self.lib}.{self.filename}  ���C�u������ {self.lib} (�@��)")
+        print(f"@ALL ���[�h - �S���R�[�h�\��")
         print()
         
         # Display file statistics
         total_records = len(self.records)
         total_size = sum(len(record.encode(self.encoding, errors='replace')) for record in self.records)
         
-        print(f"ファイル統計:")
-        print(f"  総レコード数: {total_records}")
-        print(f"  総データサイズ: {total_size} バイト")
-        print(f"  レコード長: {self.reclen} バイト")
-        print(f"  レコード形式: {self.rectype}")
-        print(f"  エンコーディング: {self.encoding}")
+        print(f"�t�@�C�����v:")
+        print(f"  �����R�[�h��: {total_records}")
+        print(f"  ���f�[�^�T�C�Y: {total_size} �o�C�g")
+        print(f"  ���R�[�h��: {self.reclen} �o�C�g")
+        print(f"  ���R�[�h�`��: {self.rectype}")
+        print(f"  �G���R�[�f�B���O: {self.encoding}")
         print()
         
         # Display parameters
-        print(f"表示パラメータ:")
-        print(f"  VS (画面サイズ): {self.vs}")
-        print(f"  RS (レコードサイズ): {self.rs}")
-        print(f"  CP (コピーパラメータ): {self.cp}")
-        print(f"  編集形式: {self.edit_format}")
+        print(f"�\���p�����[�^:")
+        print(f"  VS (��ʃT�C�Y): {self.vs}")
+        print(f"  RS (���R�[�h�T�C�Y): {self.rs}")
+        print(f"  CP (�R�s�[�p�����[�^): {self.cp}")
+        print(f"  �ҏW�`��: {self.edit_format}")
         print()
         
         # Show all records with different formats based on edit_format
@@ -429,9 +508,9 @@ class EDTFILESession:
             self._display_all_item()
         
         print("-" * 80)
-        print("コマンド: N:次ページ P:前ページ S:検索 H:HEX表示 C:文字表示 I:項目表示 X:終了")
+        print("�R�}���h: N:���y�[�W P:�O�y�[�W S:���� H:HEX�\�� C:�����\�� I:���ڕ\�� X:�I��")
         
-        print("\nコマンドを入力してください: ", end="")
+        print("\n�R�}���h����͂��Ă�������: ", end="")
         try:
             command = input().strip().upper()
             
@@ -452,7 +531,7 @@ class EDTFILESession:
                 if self.page > 1:
                     self.page -= 1
             else:
-                print(f"未対応のコマンド: {command}")
+                print(f"���Ή��̃R�}���h: {command}")
             
             return True
             
@@ -461,7 +540,7 @@ class EDTFILESession:
     
     def _display_all_hex(self):
         """Display all records in hexadecimal format"""
-        print("HEX表示 (16進数表示):")
+        print("HEX�\�� (16�i���\��):")
         print("REC-NO   HEX DATA                                         CHARACTER")
         print("-" * 80)
         
@@ -485,7 +564,7 @@ class EDTFILESession:
     
     def _display_all_char(self):
         """Display all records in character format"""
-        print("文字表示:")
+        print("�����\��:")
         print("REC-NO   CHARACTER DATA")
         print("-" * 80)
         
@@ -510,7 +589,7 @@ class EDTFILESession:
     
     def _display_all_item(self):
         """Display all records in item format (structured view)"""
-        print("項目表示 (構造化表示):")
+        print("���ڕ\�� (�\�����\��):")
         print("REC-NO   LENGTH  TYPE  DATA")
         print("-" * 80)
         
@@ -542,7 +621,7 @@ class EDTFILESession:
     
     def _search_records(self):
         """Search for text in records"""
-        print("\n検索文字列を入力してください: ", end="")
+        print("\n�������������͂��Ă�������: ", end="")
         try:
             search_text = input().strip()
             if not search_text:
@@ -555,19 +634,19 @@ class EDTFILESession:
             for i in range(self.current_record - 1, len(self.records)):
                 if search_text.upper() in self.records[i].upper():
                     self.current_record = i + 1
-                    print(f"[INFO] 検索文字列が見つかりました。レコード {self.current_record}")
+                    print(f"[INFO] ���������񂪌�����܂����B���R�[�h {self.current_record}")
                     found = True
                     break
             
             if not found:
-                print("[INFO] 検索文字列が見つかりませんでした。")
+                print("[INFO] ���������񂪌�����܂���ł����B")
                 
         except (EOFError, KeyboardInterrupt):
             pass
     
     def _insert_record(self):
         """Insert a new record"""
-        print(f"\n新しいレコードを入力してください (最大 {self.reclen} 文字): ", end="")
+        print(f"\n�V�������R�[�h����͂��Ă������� (�ő� {self.reclen} ����): ", end="")
         try:
             new_content = input().strip()
             
@@ -590,7 +669,7 @@ class EDTFILESession:
             self.raw_records.insert(self.current_record - 1, raw_data)
             self.modified = True
             
-            print(f"[INFO] レコード {self.current_record} に挿入されました。")
+            print(f"[INFO] ���R�[�h {self.current_record} �ɑ}������܂����B")
             
         except (EOFError, KeyboardInterrupt):
             pass
@@ -602,13 +681,13 @@ class EDTFILESession:
             self.raw_records.pop(self.current_record - 1)
             self.modified = True
             
-            print(f"[INFO] レコード {self.current_record} が削除されました。")
+            print(f"[INFO] ���R�[�h {self.current_record} ���폜����܂����B")
             
             # Adjust current record if needed
             if self.current_record > len(self.records):
                 self.current_record = len(self.records)
         else:
-            print("[ERROR] 削除するレコードがありません。")
+            print("[ERROR] �폜���郌�R�[�h������܂���B")
     
     def _copy_record(self):
         """Copy current record"""
@@ -621,23 +700,23 @@ class EDTFILESession:
             self.raw_records.insert(self.current_record, raw_content)
             self.modified = True
             
-            print(f"[INFO] レコード {self.current_record} が複写されました。")
+            print(f"[INFO] ���R�[�h {self.current_record} �����ʂ���܂����B")
         else:
-            print("[ERROR] 複写するレコードがありません。")
+            print("[ERROR] ���ʂ��郌�R�[�h������܂���B")
     
     def _replace_in_record(self):
         """Replace text in current record"""
         if self.current_record > len(self.records):
-            print("[ERROR] 置換するレコードがありません。")
+            print("[ERROR] �u�����郌�R�[�h������܂���B")
             return
         
-        print("\n検索文字列: ", end="")
+        print("\n����������: ", end="")
         try:
             search_text = input().strip()
             if not search_text:
                 return
             
-            print("置換文字列: ", end="")
+            print("�u��������: ", end="")
             replace_text = input().strip()
             
             current_content = self.records[self.current_record - 1]
@@ -662,9 +741,9 @@ class EDTFILESession:
                 self.raw_records[self.current_record - 1] = raw_data
                 self.modified = True
                 
-                print(f"[INFO] レコード {self.current_record} で置換されました。")
+                print(f"[INFO] ���R�[�h {self.current_record} �Œu������܂����B")
             else:
-                print("[INFO] 検索文字列が見つかりませんでした。")
+                print("[INFO] ���������񂪌�����܂���ł����B")
                 
         except (EOFError, KeyboardInterrupt):
             pass
@@ -672,12 +751,12 @@ class EDTFILESession:
     def _modify_record(self):
         """Modify current record content"""
         if self.current_record > len(self.records):
-            print("[ERROR] 修正するレコードがありません。")
+            print("[ERROR] �C�����郌�R�[�h������܂���B")
             return
         
         current_content = self.records[self.current_record - 1]
-        print(f"\n現在の内容: {current_content}")
-        print(f"新しい内容を入力してください (最大 {self.reclen} 文字): ", end="")
+        print(f"\n���݂̓��e: {current_content}")
+        print(f"�V�������e����͂��Ă������� (�ő� {self.reclen} ����): ", end="")
         
         try:
             new_content = input().strip()
@@ -700,7 +779,7 @@ class EDTFILESession:
             self.raw_records[self.current_record - 1] = raw_data
             self.modified = True
             
-            print(f"[INFO] レコード {self.current_record} が修正されました。")
+            print(f"[INFO] ���R�[�h {self.current_record} ���C������܂����B")
             
         except (EOFError, KeyboardInterrupt):
             pass
@@ -708,7 +787,7 @@ class EDTFILESession:
     def _save_changes(self):
         """Save modified records back to file"""
         try:
-            print("\n変更を保存しますか？ (Y/N): ", end="")
+            print("\n�ύX��ۑ����܂����H (Y/N): ", end="")
             try:
                 choice = input().strip().upper()
             except EOFError:
@@ -733,18 +812,18 @@ class EDTFILESession:
                             f.write(raw_record)
                             f.write(b'\n')
                 
-                print(f"[INFO] ファイル {self.filename} に変更が保存されました。")
-                print(f"[INFO] {len(self.raw_records)} レコードが書き込まれました。")
+                print(f"[INFO] �t�@�C�� {self.filename} �ɕύX���ۑ�����܂����B")
+                print(f"[INFO] {len(self.raw_records)} ���R�[�h���������܂�܂����B")
                 
                 # Update catalog timestamp
                 self._update_catalog_timestamp()
                 return True
             else:
-                print("[INFO] 変更は保存されませんでした。")
+                print("[INFO] �ύX�͕ۑ�����܂���ł����B")
                 return False
                 
         except Exception as e:
-            print(f"[ERROR] ファイル保存エラー: {e}")
+            print(f"[ERROR] �t�@�C���ۑ��G���[: {e}")
             set_pgmec(999)
             return False
     
@@ -790,7 +869,7 @@ def EDTFILE(command: str) -> bool:
     """
     Main EDTFILE command entry point
     
-    Fujitsu ASP Format: EDTFILE [MODE={@ALL|@DSP|@PRT}] [,FILE=파일명] [@LIB=라이브러리명] [,EDIT={@ITEM|@CHAR|@HEX}] [,VS=n] [,RS=n] [,CP=n]
+    Fujitsu ASP Format: EDTFILE [MODE={@ALL|@DSP|@PRT}] [,FILE=�t�@�C����] [@LIB=���C�u������] [,EDIT={@ITEM|@CHAR|@HEX}] [,VS=n] [,RS=n] [,CP=n]
     Legacy Format: EDTFILE FILE(LIB/FILENAME),VOL-VOLUME[,MODE=@DSP|@EDT|@PRT]
     
     Args:
@@ -860,7 +939,7 @@ def EDTFILE(command: str) -> bool:
                     else:
                         params['MODE'] = mode_value
         else:
-            # Fujitsu format: EDTFILE [MODE={@ALL|@DSP|@PRT}] [,FILE=파일명] [@LIB=라이브러리명] [,EDIT={@ITEM|@CHAR|@HEX}] [,VS=n] [,RS=n] [,CP=n]
+            # Fujitsu format: EDTFILE [MODE={@ALL|@DSP|@PRT}] [,FILE=�t�@�C����] [@LIB=���C�u������] [,EDIT={@ITEM|@CHAR|@HEX}] [,VS=n] [,RS=n] [,CP=n]
             for part in parts:
                 if '=' in part:
                     key, value = part.split('=', 1)
@@ -885,14 +964,14 @@ def EDTFILE(command: str) -> bool:
         # Validate required parameters
         if not params['FILE']:
             print("[ERROR] FILE parameter is required.")
-            print("[USAGE] EDTFILE [MODE={@ALL|@DSP|@PRT}] [,FILE=파일명] [@LIB=라이브러리명] [,EDIT={@ITEM|@CHAR|@HEX}]")
+            print("[USAGE] EDTFILE [MODE={@ALL|@DSP|@PRT}] [,FILE=�t�@�C����] [@LIB=���C�u������] [,EDIT={@ITEM|@CHAR|@HEX}]")
             print("[LEGACY] EDTFILE FILE(LIB/FILENAME),VOL-VOLUME[,MODE=@DSP|@EDT|@PRT]")
             set_pgmec(999)
             return False
         
         if not params['LIB']:
             print("[ERROR] LIB parameter is required.")
-            print("[USAGE] EDTFILE [MODE={@ALL|@DSP|@PRT}] [,FILE=파일명] [@LIB=라이브러리명] [,EDIT={@ITEM|@CHAR|@HEX}]")
+            print("[USAGE] EDTFILE [MODE={@ALL|@DSP|@PRT}] [,FILE=�t�@�C����] [@LIB=���C�u������] [,EDIT={@ITEM|@CHAR|@HEX}]")
             print("[LEGACY] EDTFILE FILE(LIB/FILENAME),VOL-VOLUME[,MODE=@DSP|@EDT|@PRT]")
             set_pgmec(999)
             return False

@@ -2,7 +2,7 @@
 """
 DLTFILE (Delete File) Command Implementation for OpenASP
 
-Based on Fujitsu ASP DLTFILE command specifications.
+Based on ASP DLTFILE command specifications.
 Deletes dataset files and removes them from the catalog system.
 """
 

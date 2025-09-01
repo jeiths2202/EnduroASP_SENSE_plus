@@ -362,7 +362,7 @@ def RSTLIB(command):
         with tarfile.open(backup_path, "r:gz") as tar:
             tar.extractall(path=VOLUME_ROOT)
         print(f"[INFO] Restore completed: {backup_path}")
-        log_message("INFO", f"RSTLIB → {backup_file} restore successful")
+        log_message("INFO", f"RSTLIB -> {backup_file} restore successful")
     except Exception as e:
         print(f"[ERROR] Restore failed: {e}")
         log_message("ERROR", f"RSTLIB failed: {e}")
@@ -390,7 +390,7 @@ def SAVLIB(command):
         tar.add(lib_path, arcname=f"{lib}")
 
     print(f"[INFO] Library '{lib}'has been backed up: {backup_path}")
-    log_message("INFO", f"SAVLIB {lib} → {backup_name}")
+    log_message("INFO", f"SAVLIB {lib} -> {backup_name}")
 def DSPJOB(command=None):
     """Enhanced DSPJOB - Display Job Information and System Variables"""
     print("[INFO] DSPJOB - Display Job Information and System Variables")
@@ -1555,7 +1555,7 @@ def HELP(command=None):
 ================================================================================
 
 OVERVIEW:
-The ASP (Application System Platform) Command Terminal provides a comprehensive
+The ASP (Advanced System Products) Command Terminal provides a comprehensive
 set of commands for managing libraries, files, programs, and system resources.
 All commands follow Fujitsu ASP standard syntax and conventions.
 

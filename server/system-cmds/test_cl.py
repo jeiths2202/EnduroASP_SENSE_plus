@@ -15,7 +15,7 @@ from cl_executor import execute_cl_script
 
 # Test CL script based on the provided sample
 test_script = """
-* Fujitsu ASP Control Language Example
+* ASP Control Language Example
 CHGLIBL LIBL=TESTLIB
 CRTFILE FILE=CUSTOMERS,RECSIZE=128
 CALL PGM=CUINP001,PARA='001,ABC'

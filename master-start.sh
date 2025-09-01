@@ -207,7 +207,27 @@ echo -e "${YELLOW}[SKIP] System API Server - aspmgr_web.py not found, skipping.$
 SYSTEM_API_PID=""
 # fi
 
-# 8. Zabbix Monitoring System startup
+# 8. pgAdmin 4 Web Server startup (Port 3009)
+echo -e "\n${YELLOW}[PGADMIN] Starting pgAdmin 4 web server...${NC}"
+
+# Check if we're running as root for Apache service
+if [ "$EUID" -eq 0 ]; then
+    service apache2 start 2>/dev/null && echo -e "${GREEN}[OK] pgAdmin 4 Web Server started - http://localhost:3009/pgadmin4/${NC}" || echo -e "${RED}[NG] pgAdmin 4 Web Server start failed${NC}"
+    
+    # Test pgAdmin web interface
+    sleep 3
+    if curl -s http://localhost:3009/pgadmin4/ >/dev/null 2>&1; then
+        echo -e "${GREEN}[OK] pgAdmin 4 Web Interface accessible - http://localhost:3009/pgadmin4/${NC}"
+        echo -e "${GREEN}     Login: admin@enduroax.co.jp / admin123${NC}"
+    else
+        echo -e "${RED}[NG] pgAdmin 4 Web Interface not accessible${NC}"
+    fi
+else
+    echo -e "${YELLOW}[SKIP] pgAdmin 4 - root privileges required${NC}"
+    echo -e "${YELLOW}       Run 'su - root' and execute: service apache2 start${NC}"
+fi
+
+# 9. Zabbix Monitoring System startup
 echo -e "\n${YELLOW}[MONITOR] Starting Zabbix monitoring system...${NC}"
 
 # Check if we're running as root for Zabbix services
@@ -291,6 +311,7 @@ echo "   - OpenASP DevOps: http://localhost:3016"
 echo "   - ASP Manager: http://localhost:3007"
 echo "   - ASP Manager Backend: http://localhost:3008"
 echo "   - API Server: http://localhost:8000"
+echo "   - pgAdmin 4 Database Manager: http://localhost:3009/pgadmin4/ (admin@enduroax.co.jp/admin123)"
 echo "   - Zabbix Monitoring: http://localhost:3015 (Admin/zabbix)"
 echo ""
 echo "[LIST] Log files:"

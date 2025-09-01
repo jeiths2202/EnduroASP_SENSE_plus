@@ -2,7 +2,7 @@
 """
 CRTLIB (Create Library) Command Implementation for OpenASP
 
-Based on Fujitsu ASP CRTLIB command specifications.
+Based on ASP CRTLIB command specifications.
 Creates library directories in the volume structure.
 """
 

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 CL (Control Language) Parser for OpenASP
-Parses Fujitsu ASP CL scripts and converts them to executable instructions
+Parses ASP CL scripts and converts them to executable instructions
 """
 
 import re
@@ -168,7 +168,7 @@ def parse_cl_file(filename: str) -> List[Dict[str, Union[str, Dict[str, str]]]]:
 # Test the parser with example CL script
 if __name__ == "__main__":
     test_script = """
-* Fujitsu ASP Control Language Example
+* ASP Control Language Example
 CHGLIBL LIBL=TESTLIB
 CRTFILE FILE=CUSTOMERS,RECSIZE=128
 CRTFILE FILE=CUSTOMER.SAM001,RECSIZE=128

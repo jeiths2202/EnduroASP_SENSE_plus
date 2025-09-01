@@ -247,7 +247,7 @@ const AbendTestFlow: React.FC<AbendTestFlowProps> = ({ isDarkMode = false }) => 
     <div className="relative w-full h-full">
       {/* Control Panel */}
       <div className="absolute top-4 right-4 z-10 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 space-y-3">
-        <h3 className="font-semibold text-sm mb-2">ABEND Test Control</h3>
+        <h3 className={`font-semibold text-sm mb-2 ${isDarkMode ? 'text-white' : 'text-black'}`}>ABEND Test Control</h3>
         <div className="space-y-2">
           <button
             onClick={startTestScenario}
@@ -406,23 +406,23 @@ const AbendTestFlow: React.FC<AbendTestFlowProps> = ({ isDarkMode = false }) => 
 
       {/* Legend */}
       <div className="absolute bottom-4 left-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-3">
-        <h4 className="font-semibold text-sm mb-2">Status Legend</h4>
+        <h4 className={`font-semibold text-sm mb-2 ${isDarkMode ? 'text-white' : 'text-black'}`}>Status Legend</h4>
         <div className="space-y-1 text-xs">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full bg-gray-500"></div>
-            <span>Pending</span>
+            <span className={isDarkMode ? 'text-white' : 'text-black'}>Pending</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full bg-blue-500 animate-pulse"></div>
-            <span>Running</span>
+            <span className={isDarkMode ? 'text-white' : 'text-black'}>Running</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full bg-green-500"></div>
-            <span>Success</span>
+            <span className={isDarkMode ? 'text-white' : 'text-black'}>Success</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full bg-red-500"></div>
-            <span>Failed</span>
+            <span className={isDarkMode ? 'text-white' : 'text-black'}>Failed</span>
           </div>
         </div>
       </div>

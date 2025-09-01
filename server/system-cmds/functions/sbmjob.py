@@ -2,7 +2,7 @@
 """
 SBMJOB (Submit Job) Command Implementation for OpenASP
 
-Based on Fujitsu ASP SMBJOB command specifications from the manual.
+Based on ASP SMBJOB command specifications from the manual.
 Provides job submission and background execution capabilities.
 """
 
@@ -16,6 +16,7 @@ import uuid
 import time
 from datetime import datetime
 from typing import Dict, List, Tuple, Optional, Any
+from .config_manager import config
 
 # Import from parent module
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -62,7 +63,7 @@ def SBMJOB(command: str) -> bool:
     """
     SBMJOB command - Submit Job
     
-    Fujitsu ASP Format: SBMJOB JOB=jobname,PARA=parameters,JOBQ=queue,@LIB=library[,VOL=volume]
+    ASP Format: SBMJOB JOB=jobname,PARA=parameters,JOBQ=queue,@LIB=library[,VOL=volume]
     Enhanced format: SBMJOB JOB=jobname,PGM=program[,PARA=parameters][,JOBQ=queue][,JOBK=keyword][,HLDJOB=hold]
     
     Args:
@@ -77,7 +78,7 @@ def SBMJOB(command: str) -> bool:
         # Parse command with support for both formats
         command_str = command.replace('SBMJOB ', '').strip()
         
-        # Initialize default values based on Fujitsu ASP manual
+        # Initialize default values based on ASP manual
         params = {
             'JOB': '',
             'PGM': '',
@@ -134,13 +135,13 @@ def SBMJOB(command: str) -> bool:
         # Validate required parameters
         if not params['JOB']:
             print("[ERROR] JOB parameter is required.")
-            print("[FUJITSU] SBMJOB JOB=jobname,PGM=program[,PARA=parameters][,@LIB=library][,VOL=volume]")
+            print("[USAGE] SBMJOB JOB=jobname,PGM=program[,PARA=parameters][,@LIB=library][,VOL=volume]")
             set_pgmec(999)
             return False
         
         if not params['PGM']:
             print("[ERROR] PGM parameter is required.")
-            print("[FUJITSU] SBMJOB JOB=jobname,PGM=program[,PARA=parameters][,@LIB=library][,VOL=volume]")
+            print("[USAGE] SBMJOB JOB=jobname,PGM=program[,PARA=parameters][,@LIB=library][,VOL=volume]")
             set_pgmec(999)
             return False
         
@@ -267,18 +268,22 @@ def _job_processor_worker():
     while True:
         try:
             # Check for pending jobs in database
-            print("[DEBUG] Checking for pending jobs in database...")
+            if config.is_debug_enabled():
+                print("[DEBUG] Checking for pending jobs in database...")
             db_jobs = get_active_jobs()
-            print(f"[DEBUG] Total jobs in database: {len(db_jobs)}")
+            if config.is_debug_enabled():
+                print(f"[DEBUG] Total jobs in database: {len(db_jobs)}")
             
             pending_jobs = [job for job in db_jobs.values() if job.status == "PENDING"]
-            print(f"[DEBUG] Found {len(pending_jobs)} pending jobs")
+            if config.is_debug_enabled():
+                print(f"[DEBUG] Found {len(pending_jobs)} pending jobs")
             
             if pending_jobs:
                 # Process the oldest pending job
                 job_info = min(pending_jobs, key=lambda j: j.submitted_time)
                 print(f"[INFO] Processing pending job {job_info.job_id} ({job_info.job_name})")
-                print(f"[DEBUG] Job details - Status: {job_info.status}, Program: {job_info.program}, Library: {job_info.library}")
+                if config.is_debug_enabled():
+                    print(f"[DEBUG] Job details - Status: {job_info.status}, Program: {job_info.program}, Library: {job_info.library}")
                 
                 # Update ACTIVE_JOBS with current job
                 ACTIVE_JOBS[job_info.job_id] = job_info
@@ -297,7 +302,8 @@ def _job_processor_worker():
                     _write_job_log(job_info, "JOB_ERROR", f"Critical job execution error: {e}")
             else:
                 # No pending jobs, wait before checking again
-                print("[DEBUG] No pending jobs found, waiting 5 seconds...")
+                if config.is_debug_enabled():
+                    print("[DEBUG] No pending jobs found, waiting 5 seconds...")
                 time.sleep(5)
             
         except Exception as e:
@@ -309,13 +315,16 @@ def _job_processor_worker():
 def _execute_job(job_info: JobInfo):
     """Execute a submitted job"""
     try:
-        print(f"[DEBUG] Starting execution of job {job_info.job_id}")
-        print(f"[DEBUG] Current job status: {job_info.status}")
+        if config.is_debug_enabled():
+            print(f"[DEBUG] Starting execution of job {job_info.job_id}")
+        if config.is_debug_enabled():
+            print(f"[DEBUG] Current job status: {job_info.status}")
         
         job_info.status = "RUNNING"
         job_info.start_time = datetime.now()
         
-        print(f"[DEBUG] Updated job status to RUNNING, updating database...")
+        if config.is_debug_enabled():
+            print(f"[DEBUG] Updated job status to RUNNING, updating database...")
         
         # Update database
         db_update_job_status(job_info.job_id, "RUNNING", start_time=job_info.start_time)
@@ -325,7 +334,8 @@ def _execute_job(job_info: JobInfo):
         print(f"[INFO] Executing job {job_info.job_id}: {job_info.job_name}")
         
         # Get program information
-        print(f"[DEBUG] Looking up program info for {job_info.program} in catalog...")
+        if config.is_debug_enabled():
+            print(f"[DEBUG] Looking up program info for {job_info.program} in catalog...")
         catalog = get_catalog_info()
         
         if job_info.volume not in catalog:
@@ -344,19 +354,24 @@ def _execute_job(job_info: JobInfo):
         # Execute based on program type
         success = False
         if pgm_type == 'JAVA':
-            print("[DEBUG] Executing Java job...")
+            if config.is_debug_enabled():
+                print("[DEBUG] Executing Java job...")
             success = _execute_java_job(job_info, program_info)
         elif pgm_type == 'COBOL':
-            print("[DEBUG] Executing COBOL job...")
+            if config.is_debug_enabled():
+                print("[DEBUG] Executing COBOL job...")
             success = _execute_cobol_job(job_info, program_info)
         elif pgm_type == 'SHELL':
-            print("[DEBUG] Executing Shell job...")
+            if config.is_debug_enabled():
+                print("[DEBUG] Executing Shell job...")
             success = _execute_shell_job(job_info, program_info)
         elif pgm_type == 'PYTHON':
-            print("[DEBUG] Executing Python job...")
+            if config.is_debug_enabled():
+                print("[DEBUG] Executing Python job...")
             success = _execute_python_job(job_info, program_info)
         elif pgm_type == 'CL':
-            print("[DEBUG] Executing CL job...")
+            if config.is_debug_enabled():
+                print("[DEBUG] Executing CL job...")
             success = _execute_cl_job(job_info, program_info)
         else:
             print(f"[DEBUG] Unsupported program type: {pgm_type}")
@@ -369,12 +384,14 @@ def _execute_job(job_info: JobInfo):
         job_info.end_time = datetime.now()
         if success:
             job_info.status = "COMPLETED"
-            print(f"[DEBUG] Updating job {job_info.job_id} status to COMPLETED")
+            if config.is_debug_enabled():
+                print(f"[DEBUG] Updating job {job_info.job_id} status to COMPLETED")
             db_update_job_status(job_info.job_id, "COMPLETED", end_time=job_info.end_time)
             _write_job_log(job_info, "JOB_COMPLETED", f"Job {job_info.job_name} completed successfully")
         else:
             job_info.status = "ERROR"
-            print(f"[DEBUG] Updating job {job_info.job_id} status to ERROR")
+            if config.is_debug_enabled():
+                print(f"[DEBUG] Updating job {job_info.job_id} status to ERROR")
             db_update_job_status(job_info.job_id, "ERROR", end_time=job_info.end_time)
             _write_job_log(job_info, "JOB_ERROR", f"Job {job_info.job_name} failed")
         

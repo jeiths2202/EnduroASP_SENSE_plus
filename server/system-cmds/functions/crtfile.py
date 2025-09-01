@@ -2,7 +2,7 @@
 """
 CRTFILE (Create File) Command Implementation for OpenASP
 
-Based on Fujitsu ASP CRTFILE command specifications.
+Based on ASP CRTFILE command specifications.
 Creates dataset files with specified attributes and registers them in the catalog system.
 """
 

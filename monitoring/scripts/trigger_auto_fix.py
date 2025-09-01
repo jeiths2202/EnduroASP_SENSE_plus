@@ -60,8 +60,8 @@ class AutoFixTrigger:
                 if not line:
                     continue
                 
-                # Parse ABEND entry
-                if 'ABEND CEE3204S' in line and 'handleF3Key' in line:
+                # Parse ABEND entry - Only detect F9 key ABENDs
+                if 'ABEND CEE3204S' in line and ('F9' in line or 'handleF9' in line or 'triggerF9Abend' in line):
                     # Extract timestamp
                     if line.startswith('['):
                         timestamp_str = line.split(']')[0][1:]
@@ -71,8 +71,8 @@ class AutoFixTrigger:
                             new_abends.append({
                                 'timestamp': timestamp_str,
                                 'abend_code': 'CEE3204S',
-                                'location': 'MAIN001.handleF3Key',
-                                'fix_type': 'f3_key_fix',
+                                'location': 'F9 key handler',
+                                'fix_type': 'f9_key_fix',
                                 'raw_line': line
                             })
         
@@ -117,20 +117,20 @@ class AutoFixTrigger:
             
             # Step 1: Create backup
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            backup_dir = "/home/aspuser/app/volume/DISK01/JAVA/backups"
+            backup_dir = "/home/aspuser/app/volume/DISK01/TESTLIB/backups"
             os.makedirs(backup_dir, exist_ok=True)
             
             backup_file = f"{backup_dir}/MAIN001_autofix_{timestamp}.java"
             subprocess.run([
                 "cp", 
-                "/home/aspuser/app/volume/DISK01/JAVA/MAIN001.java", 
+                "/home/aspuser/app/volume/DISK01/TESTLIB/MAIN001.java", 
                 backup_file
             ], check=True)
             print(f"[BACKUP] Backup created: {backup_file}")
             
             # Step 2: Apply fix
             print("[APPLY] Step 2: Applying auto-fix...")
-            if not self.apply_f3_fix():
+            if not self.apply_f9_fix():
                 return False
             
             # Step 3: Compile
@@ -157,32 +157,69 @@ class AutoFixTrigger:
             self.log_fix_result(False, abend_info)
             return False
     
-    def apply_f3_fix(self):
-        """Apply the F3 key fix to MAIN001.java"""
+    def apply_f9_fix(self):
+        """Apply the F9 key fix to MAIN001.java in TESTLIB"""
         try:
-            main001_file = "/home/aspuser/app/volume/DISK01/JAVA/MAIN001.java"
+            main001_file = "/home/aspuser/app/volume/DISK01/TESTLIB/MAIN001.java"
             
             # Read current file
             with open(main001_file, 'r', encoding='utf-8') as f:
                 content = f.read()
             
-            # Apply the fix
+            # Apply the fix - Change handleF9KeyAbend to handleF9InvalidKey
             fixed_content = content.replace(
-                'triggerAbendOnF3();',
-                'returnToLogo();'
+                'handleF9KeyAbend();',
+                'handleF9InvalidKey();'
             )
             
-            # Update comment
+            # Update method name
             fixed_content = fixed_content.replace(
-                '// CRITICAL: This is the test scenario - F3 triggers ABEND\n        // After DevOps fixes, this should be changed to returnToLogo()',
-                '// FIXED: F3 now returns to LOGO screen as intended\n        // Auto-fixed by DevOps pipeline'
+                'private static void handleF9KeyAbend()',
+                'private static void handleF9InvalidKey()'
             )
+            
+            # Add the handleF9InvalidKey method
+            if 'private static void handleF9InvalidKey()' not in fixed_content:
+                # Find where to insert the new method (after handleF9KeyAbend)
+                insert_pos = fixed_content.find('private static void handleF9KeyAbend()')
+                if insert_pos == -1:
+                    # Insert before the last closing brace
+                    insert_pos = fixed_content.rfind('}')
+                    
+                new_method = '''
+    /**
+     * Handle F9 key press - Invalid Key
+     * Auto-fixed by DevOps pipeline
+     */
+    private static void handleF9InvalidKey() {
+        System.out.println("[ERROR] INVALID KEY - F9 is not supported in this menu");
+        System.out.println("[MAIN001] Press ENTER to continue...");
+        
+        // Log invalid key
+        try {
+            String logFile = "/home/aspuser/app/logs/invalid_key.log";
+            String timestamp = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date());
+            String logEntry = String.format("[%s] INVALID_KEY F9 in MAIN001%n", timestamp);
+            
+            Files.write(
+                Paths.get(logFile), 
+                logEntry.getBytes(), 
+                StandardOpenOption.CREATE, 
+                StandardOpenOption.APPEND
+            );
+        } catch (Exception e) {
+            // Ignore logging errors
+        }
+    }
+
+'''
+                fixed_content = fixed_content[:insert_pos] + new_method + fixed_content[insert_pos:]
             
             # Write fixed file
             with open(main001_file, 'w', encoding='utf-8') as f:
                 f.write(fixed_content)
             
-            print("[SUCCESS] F3 key fix applied successfully")
+            print("[SUCCESS] F9 key fix applied successfully")
             return True
             
         except Exception as e:
@@ -192,7 +229,7 @@ class AutoFixTrigger:
     def compile_fixed_code(self):
         """Compile the fixed MAIN001.java"""
         try:
-            os.chdir("/home/aspuser/app/volume/DISK01/JAVA")
+            os.chdir("/home/aspuser/app/volume/DISK01/TESTLIB")
             
             result = subprocess.run([
                 "javac", "-encoding", "UTF-8", 
@@ -215,12 +252,12 @@ class AutoFixTrigger:
         """Test the fixed code"""
         try:
             # Simple test - check if the fix was applied
-            main001_file = "/home/aspuser/app/volume/DISK01/JAVA/MAIN001.java"
+            main001_file = "/home/aspuser/app/volume/DISK01/TESTLIB/MAIN001.java"
             
             with open(main001_file, 'r', encoding='utf-8') as f:
                 content = f.read()
             
-            if 'returnToLogo();' in content and 'Auto-fixed by DevOps pipeline' in content:
+            if 'handleF9InvalidKey' in content and 'INVALID KEY - F9 is not supported' in content:
                 print("[SUCCESS] Fix verification passed")
                 return True
             else:
@@ -308,8 +345,8 @@ def main():
         test_abend = {
             'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             'abend_code': 'CEE3204S',
-            'location': 'MAIN001.handleF3Key',
-            'fix_type': 'f3_key_fix',
+            'location': 'F9 key handler',
+            'fix_type': 'f9_key_fix',
             'raw_line': f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] ABEND CEE3204S in MAIN001.handleF3Key(): Test auto-fix trigger"
         }
         

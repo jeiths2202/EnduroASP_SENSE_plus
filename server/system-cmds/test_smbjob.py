@@ -112,9 +112,9 @@ def test_job_management():
     return True
 
 def test_fujitsu_formats():
-    """Test various Fujitsu ASP parameter formats"""
+    """Test various ASP parameter formats"""
     print("\n" + "="*60)
-    print("TESTING: Fujitsu ASP parameter formats")
+    print("TESTING: ASP parameter formats")
     print("="*60)
     
     # Test different parameter combinations

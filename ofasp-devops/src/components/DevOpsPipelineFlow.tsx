@@ -34,8 +34,6 @@ const DevOpsPipelineFlow: React.FC<DevOpsPipelineFlowProps> = ({ isDarkMode = fa
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const [showTooltip, setShowTooltip] = useState(false);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
-  const [simulationRunning, setSimulationRunning] = useState(false);
-  const [currentSimulationStep, setCurrentSimulationStep] = useState(0);
 
   // Initialize pipeline structure
   useEffect(() => {
@@ -96,16 +94,51 @@ const DevOpsPipelineFlow: React.FC<DevOpsPipelineFlowProps> = ({ isDarkMode = fa
         const response = await fetch('/api/pipeline-flow-status');
         if (response.ok) {
           const data = await response.json();
+          
+          // Check if there's an active pipeline
+          if (data.error || !data._metadata) {
+            console.log('[PIPELINE-UI] No active pipeline, showing idle state');
+            return;
+          }
+
+          const metadata = data._metadata;
+          const steps = data;
+
           // Update nodes with real-time status
           setNodes(prevNodes => 
-            prevNodes.map(node => ({
-              ...node,
-              status: data[node.id]?.status || node.status,
-              progress: data[node.id]?.progress,
-              duration: data[node.id]?.duration,
-              details: data[node.id]?.details
-            }))
+            prevNodes.map(node => {
+              const stepData = steps[node.id];
+              if (!stepData) return node;
+
+              return {
+                ...node,
+                status: stepData.status || 'idle',
+                progress: stepData.progress || 0,
+                duration: stepData.duration,
+                details: stepData.details || node.details
+              };
+            })
           );
+
+          // Update edges with animation for current step
+          if (metadata.currentStep) {
+            setEdges(prevEdges =>
+              prevEdges.map(edge => ({
+                ...edge,
+                animated: edge.from === metadata.currentStep || edge.to === metadata.currentStep
+              }))
+            );
+          } else {
+            // Clear all animations when pipeline is complete/failed
+            setEdges(prevEdges =>
+              prevEdges.map(edge => ({
+                ...edge,
+                animated: false
+              }))
+            );
+          }
+
+          console.log(`[PIPELINE-UI] Updated status - Pipeline: ${metadata.pipelineId}, Current Step: ${metadata.currentStep}, Status: ${metadata.status}`);
         }
       } catch (error) {
         console.error('Failed to fetch pipeline status:', error);
@@ -115,84 +148,12 @@ const DevOpsPipelineFlow: React.FC<DevOpsPipelineFlowProps> = ({ isDarkMode = fa
     // Initial fetch
     fetchPipelineStatus();
 
-    // Set up polling every 5 seconds
-    const interval = setInterval(fetchPipelineStatus, 5000);
+    // Set up polling every 2 seconds for more responsive UI
+    const interval = setInterval(fetchPipelineStatus, 2000);
 
     return () => clearInterval(interval);
   }, []);
 
-  // Pipeline simulation
-  const runSimulation = () => {
-    setSimulationRunning(true);
-    setCurrentSimulationStep(0);
-    
-    const steps = [
-      'commit', 'build-artifact', 'build', 'build-decision',
-      'test', 'test-decision', 'security', 'security-decision',
-      'deploy', 'deploy-decision', 'production'
-    ];
-
-    let stepIndex = 0;
-    const simulationInterval = setInterval(() => {
-      if (stepIndex < steps.length) {
-        const currentNodeId = steps[stepIndex];
-        
-        // Update node status
-        setNodes(prevNodes =>
-          prevNodes.map(node => {
-            if (node.id === currentNodeId) {
-              return { ...node, status: 'running', progress: 50 };
-            } else if (steps.indexOf(node.id) < stepIndex && steps.includes(node.id)) {
-              return { ...node, status: 'success', progress: 100 };
-            }
-            return node;
-          })
-        );
-
-        // Animate edges
-        setEdges(prevEdges =>
-          prevEdges.map(edge => ({
-            ...edge,
-            animated: edge.from === currentNodeId || edge.to === currentNodeId
-          }))
-        );
-
-        stepIndex++;
-      } else {
-        // Complete simulation
-        clearInterval(simulationInterval);
-        setSimulationRunning(false);
-        
-        // Mark all as success
-        setNodes(prevNodes =>
-          prevNodes.map(node => ({
-            ...node,
-            status: steps.includes(node.id) ? 'success' : node.status,
-            progress: steps.includes(node.id) ? 100 : node.progress
-          }))
-        );
-      }
-    }, 1000);
-  };
-
-  // Reset simulation
-  const resetSimulation = () => {
-    setSimulationRunning(false);
-    setCurrentSimulationStep(0);
-    setNodes(prevNodes =>
-      prevNodes.map(node => ({
-        ...node,
-        status: 'idle',
-        progress: undefined
-      }))
-    );
-    setEdges(prevEdges =>
-      prevEdges.map(edge => ({
-        ...edge,
-        animated: false
-      }))
-    );
-  };
 
   const handleNodeClick = (nodeId: string) => {
     setSelectedNode(nodeId);
@@ -338,15 +299,15 @@ const DevOpsPipelineFlow: React.FC<DevOpsPipelineFlowProps> = ({ isDarkMode = fa
             y="-64"
             textAnchor="middle"
             className="text-sm font-semibold"
-            fill={isDarkMode ? "#f3f4f6" : "#374151"}
+            fill="#000000"
           >
             {node.label}
           </text>
           
           {/* Standard build items with better spacing */}
-          <text x="-85" y="-42" className="text-xs" fill={isDarkMode ? "#d1d5db" : "#6b7280"}>• Dependencies</text>
-          <text x="-85" y="-30" className="text-xs" fill={isDarkMode ? "#d1d5db" : "#6b7280"}>• Compiled Code</text>
-          <text x="-85" y="-18" className="text-xs" fill={isDarkMode ? "#d1d5db" : "#6b7280"}>• Build Output</text>
+          <text x="-85" y="-42" className="text-xs" fill={isDarkMode ? "#ffffff" : "#000000"}>• Dependencies</text>
+          <text x="-85" y="-30" className="text-xs" fill={isDarkMode ? "#ffffff" : "#000000"}>• Compiled Code</text>
+          <text x="-85" y="-18" className="text-xs" fill={isDarkMode ? "#ffffff" : "#000000"}>• Build Output</text>
           
           {/* AI Verification separator line - moved down */}
           <line
@@ -364,7 +325,7 @@ const DevOpsPipelineFlow: React.FC<DevOpsPipelineFlowProps> = ({ isDarkMode = fa
             y="30"
             textAnchor="middle"
             className="text-sm font-semibold"
-            fill={isDarkMode ? "#60a5fa" : "#1e40af"}
+            fill={isDarkMode ? "#ffffff" : "#000000"}
           >
             🤖 AI Verification
           </text>
@@ -373,19 +334,19 @@ const DevOpsPipelineFlow: React.FC<DevOpsPipelineFlowProps> = ({ isDarkMode = fa
           <g className={node.status === 'running' ? 'animate-pulse' : ''}>
             {/* Code Quality AI Analysis */}
             <rect x="-85" y="55" width="170" height="20" fill="#dbeafe" stroke="#3b82f6" strokeWidth="1" rx="4"/>
-            <text x="-80" y="68" className="text-xs" fill={isDarkMode ? "#60a5fa" : "#1e40af"}>🤖 Code Quality AI Analysis</text>
+            <text x="-80" y="68" className="text-xs" fill="#000000">🤖 Code Quality AI Analysis</text>
             
             {/* Security AI Pre-scan */}
             <rect x="-85" y="90" width="170" height="20" fill="#dbeafe" stroke="#3b82f6" strokeWidth="1" rx="4"/>
-            <text x="-80" y="103" className="text-xs" fill={isDarkMode ? "#60a5fa" : "#1e40af"}>🤖 Security AI Pre-scan</text>
+            <text x="-80" y="103" className="text-xs" fill="#000000">🤖 Security AI Pre-scan</text>
             
             {/* Performance AI Check */}
             <rect x="-85" y="125" width="170" height="20" fill="#dbeafe" stroke="#3b82f6" strokeWidth="1" rx="4"/>
-            <text x="-80" y="138" className="text-xs" fill={isDarkMode ? "#60a5fa" : "#1e40af"}>🤖 Performance AI Check</text>
+            <text x="-80" y="138" className="text-xs" fill="#000000">🤖 Performance AI Check</text>
             
             {/* Architecture AI Review */}
             <rect x="-85" y="160" width="170" height="20" fill="#dbeafe" stroke="#3b82f6" strokeWidth="1" rx="4"/>
-            <text x="-80" y="173" className="text-xs" fill={isDarkMode ? "#60a5fa" : "#1e40af"}>🤖 Architecture AI Review</text>
+            <text x="-80" y="173" className="text-xs" fill="#000000">🤖 Architecture AI Review</text>
           </g>
           
           {/* Progress indicator (green bar) - positioned below AI items */}
@@ -420,13 +381,39 @@ const DevOpsPipelineFlow: React.FC<DevOpsPipelineFlowProps> = ({ isDarkMode = fa
               strokeWidth={isSelected ? 3 : 2}
               className={node.status === 'running' ? 'animate-pulse' : ''}
             />
-            <text
-              y="5"
-              textAnchor="middle"
-              className={`text-xs font-semibold ${node.type === 'external' ? (isDarkMode ? 'text-white' : 'text-gray-700') : 'text-white'}`}
-            >
-              {node.label}
-            </text>
+            {(() => {
+              const words = node.label.split(' ');
+              if (words.length === 2) {
+                return (
+                  <>
+                    <text
+                      y="-2"
+                      textAnchor="middle"
+                      className={`text-xs font-semibold ${node.type === 'external' ? (isDarkMode ? 'text-white' : 'text-gray-700') : 'text-white'}`}
+                    >
+                      {words[0]}
+                    </text>
+                    <text
+                      y="12"
+                      textAnchor="middle"
+                      className={`text-xs font-semibold ${node.type === 'external' ? (isDarkMode ? 'text-white' : 'text-gray-700') : 'text-white'}`}
+                    >
+                      {words[1]}
+                    </text>
+                  </>
+                );
+              } else {
+                return (
+                  <text
+                    y="5"
+                    textAnchor="middle"
+                    className={`text-xs font-semibold ${node.type === 'external' ? (isDarkMode ? 'text-white' : 'text-gray-700') : 'text-white'}`}
+                  >
+                    {node.label}
+                  </text>
+                );
+              }
+            })()}
             {node.progress !== undefined && node.type !== 'external' && (
               <>
                 <circle

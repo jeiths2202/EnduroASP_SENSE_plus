@@ -3,6 +3,9 @@
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
   "/": "pages/index.js",
+  "/api/abend-test-scenario": "pages/api/abend-test-scenario.js",
   "/api/pipeline-flow-status": "pages/api/pipeline-flow-status.js",
-  "/api/abend-test-scenario": "pages/api/abend-test-scenario.js"
+  "/api/monitoring/system-metrics": "pages/api/monitoring/system-metrics.js",
+  "/api/monitoring/alerts": "pages/api/monitoring/alerts.js",
+  "/api/monitoring/logs": "pages/api/monitoring/logs.js"
 }

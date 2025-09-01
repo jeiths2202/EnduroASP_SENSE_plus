@@ -141,6 +141,20 @@ force_kill_by_port "3007" "ASP Manager"
 force_kill_by_port "3008" "ASP Manager Backend"
 force_kill_by_port "8000" "API Server"
 
+# pgAdmin 4 Web Server shutdown (Port 3009)
+echo -e "\n${YELLOW}Shutting down pgAdmin 4 web server...${NC}"
+
+# Check if we're running as root for Apache service
+if [ "$EUID" -eq 0 ]; then
+    service apache2 stop 2>/dev/null && echo -e "${GREEN}[OK] pgAdmin 4 Web Server stopped${NC}" || echo -e "${YELLOW}[SKIP] pgAdmin 4 Web Server stop failed or not running${NC}"
+else
+    echo -e "${YELLOW}[SKIP] pgAdmin 4 - root privileges required${NC}"
+    echo -e "${YELLOW}       Run 'su - root' and execute: service apache2 stop${NC}"
+fi
+
+# Force kill pgAdmin related processes and port
+force_kill_by_port "3009" "pgAdmin 4 Web Interface"
+
 # Zabbix Monitoring System shutdown
 echo -e "\n${YELLOW}Shutting down Zabbix monitoring system...${NC}"
 
@@ -180,7 +194,7 @@ sleep 3
 echo -e "\n${YELLOW}Final port status check...${NC}"
 all_clear=true
 
-for port in 3000 3003 3004 3005 3016 3007 3008 8000 3015 10050 10051; do
+for port in 3000 3003 3004 3005 3016 3007 3008 8000 3009 3015 10050 10051; do
     if lsof -i :$port > /dev/null 2>&1; then
         echo -e "${RED}[WARN] Port $port still in use${NC}"
         all_clear=false

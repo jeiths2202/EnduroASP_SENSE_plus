@@ -10,6 +10,7 @@ import json
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 from contextlib import contextmanager
+from .config_manager import config
 
 # Database file location
 JOB_DATABASE_FILE = "/home/aspuser/app/database/openasp_jobs.db"
@@ -197,7 +198,8 @@ def get_active_jobs() -> Dict:
         from functions.sbmjob import JobInfo
         active_jobs = {}
         
-        print("[DEBUG] Connecting to database to get active jobs...")
+        if config.is_debug_enabled():
+            print("[DEBUG] Connecting to database to get active jobs...")
         
         with get_db_connection() as conn:
             cursor = conn.cursor()
@@ -210,14 +212,17 @@ def get_active_jobs() -> Dict:
                        AND datetime(end_time) > datetime('now', '-1 hour'))
                 ORDER BY submitted_time DESC
             '''
-            print(f"[DEBUG] Executing query: {query}")
+            if config.is_debug_enabled():
+                print(f"[DEBUG] Executing query: {query}")
             cursor.execute(query)
             
             rows = cursor.fetchall()
-            print(f"[DEBUG] Found {len(rows)} jobs in database")
+            if config.is_debug_enabled():
+                print(f"[DEBUG] Found {len(rows)} jobs in database")
             
             for row in rows:
-                print(f"[DEBUG] Processing job {row['job_id']}: {row['job_name']} (status: {row['status']})")
+                if config.is_debug_enabled():
+                    print(f"[DEBUG] Processing job {row['job_id']}: {row['job_name']} (status: {row['status']})")
                 
                 # Create JobInfo object
                 job_info = JobInfo(
@@ -242,9 +247,11 @@ def get_active_jobs() -> Dict:
                 job_info.log_file = row['log_file']
                 
                 active_jobs[row['job_id']] = job_info
-                print(f"[DEBUG] Added job {row['job_id']} to active_jobs (status: {job_info.status})")
+                if config.is_debug_enabled():
+                    print(f"[DEBUG] Added job {row['job_id']} to active_jobs (status: {job_info.status})")
                 
-        print(f"[DEBUG] Returning {len(active_jobs)} active jobs")
+        if config.is_debug_enabled():
+            print(f"[DEBUG] Returning {len(active_jobs)} active jobs")
         return active_jobs
         
     except Exception as e:

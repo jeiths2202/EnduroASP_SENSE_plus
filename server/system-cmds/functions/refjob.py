@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 REFJOB - Job Status Reference Command
-Fujitsu ASP compatible job monitoring and library listing functionality
+ASP compatible job monitoring and library listing functionality
 """
 
 import os
@@ -16,7 +16,7 @@ def REFJOB(command: str) -> bool:
     """
     Main REFJOB command entry point
     
-    Fujitsu ASP Format: REFJOB [STS={@ALL|@EDT|@STS}] [,VS=n] [,RS=n] [,CP=n]
+    ASP Format: REFJOB [STS={@ALL|@EDT|@STS}] [,VS=n] [,RS=n] [,CP=n]
     
     Args:
         command (str): REFJOB command string
@@ -85,7 +85,7 @@ def _parse_refjob_command(command: str) -> Dict[str, str]:
 
 def _display_library_list(vs: int, rs: int, cp: int) -> bool:
     """
-    Display job library list (like Fujitsu ASP library list)
+    Display job library list (like ASP library list)
     
     Args:
         vs (int): View start position
@@ -212,7 +212,7 @@ def _display_status_mode(vs: int, rs: int, cp: int) -> bool:
             print("現在実行中のジョブはありません。")
             return True
             
-        # Display detailed job status table (like Fujitsu manual example)
+        # Display detailed job status table (like ASP manual example)
         print("実行者/実行名                実行名    型  実行時間  実行時間")
         print("(1)                        (2)      (3)   (4)       (5)")
         print("-" * 65)

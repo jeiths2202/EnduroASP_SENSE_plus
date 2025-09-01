@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import TerminalComponent from './components/TerminalComponent';
 import './map_layout.css';
 // SJIS encoding utilities are handled by the API server
 
@@ -48,6 +49,7 @@ const MapLayout: React.FC = () => {
     program: ''
   });
   const [loginAttempting, setLoginAttempting] = useState<boolean>(false);
+  const [showTerminal, setShowTerminal] = useState<boolean>(false);
   const firstInputRef = useRef<HTMLInputElement>(null);
 
   // Parse SMED content from text format to map data structure
@@ -390,7 +392,8 @@ const MapLayout: React.FC = () => {
     }
   };
 
-  // Execute Java program
+  // Execute Java program (unused - for future use)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const executeProgram = async (userId: string, program: string, inputData: any) => {
     console.log(`[INFO] Executing program: ${program} for user: ${userId}`);
     
@@ -606,6 +609,13 @@ const MapLayout: React.FC = () => {
     if (functionKey === 'F1') {
       console.log(`[INFO] F1 pressed - Help requested`);
       // Future: Show help screen
+      return;
+    }
+    
+    // F5 = Terminal
+    if (functionKey === 'F5') {
+      console.log(`[INFO] F5 pressed - Terminal toggle requested`);
+      setShowTerminal(prev => !prev);
       return;
     }
     
@@ -952,6 +962,11 @@ const MapLayout: React.FC = () => {
         Mouse wheel or Ctrl + +/- to zoom | Ctrl + 0 to reset
         {!userSession.authenticated && " | Enter to login"}
       </div>
+      
+      <TerminalComponent 
+        isVisible={showTerminal} 
+        onClose={() => setShowTerminal(false)} 
+      />
     </div>
   );
 };
