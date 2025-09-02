@@ -74,8 +74,6 @@ const DatasetConversionPage: React.FC<DatasetConversionPageProps> = ({ isDarkMod
   const [layoutContent, setLayoutContent] = useState<string>('');
   const [loadingLayout, setLoadingLayout] = useState<boolean>(false);
   const [conversionResults, setConversionResults] = useState<ConversionResult[]>([]);
-  const [showDatasetViewer, setShowDatasetViewer] = useState(false);
-  const [selectedDatasetResult, setSelectedDatasetResult] = useState<ConversionResult | null>(null);
   const [encodingType, setEncodingType] = useState<string>('JP'); // EBCDIC encoding type
   const [catalogData, setCatalogData] = useState<any>(null); // Catalog data for dataset types
   
@@ -598,9 +596,14 @@ const DatasetConversionPage: React.FC<DatasetConversionPageProps> = ({ isDarkMod
             `volume/DISK01/LAYOUT/${selectedLayout}.LAYOUT`
           ];
           
-          // Add options (no --dataset-name needed since output path contains it)
+          // Add options with --catalog-name
           commandParts.push(`--format ${outputFormat}`);
           commandParts.push(`--japanese-encoding ${japaneseEncoding}`);
+          
+          // Add catalog name option if specified
+          if (datasetName) {
+            commandParts.push(`--catalog-name ${datasetName}`);
+          }
           
           // SOSI handling options
           if (customSO !== '0E') {
@@ -671,7 +674,7 @@ const DatasetConversionPage: React.FC<DatasetConversionPageProps> = ({ isDarkMod
               layout_name: selectedLayout,
               volume_name: volumeName,
               library_name: libraryName,
-              dataset_name: datasetName,
+              catalog_name: datasetName,
               output_format: outputFormat,
               japanese_encoding: japaneseEncoding,
               so_code: `0x${customSO}`,
@@ -738,10 +741,9 @@ const DatasetConversionPage: React.FC<DatasetConversionPageProps> = ({ isDarkMod
                     TYPE: 'DATASET',
                     RECFM: outputFormat === 'flat' ? 'FB' : 'VB',
                     LRECL: 80,
-                    ENCODING: fileEncodingType,
+                    ENCODING: japaneseEncoding === 'sjis' ? 'shift_jis' : japaneseEncoding,
                     DESCRIPTION: `Dataset converted from ${fileInfo.name} via UI`,
                     OUTPUT_FORMAT: outputFormat,
-                    JAPANESE_ENCODING: japaneseEncoding,
                     RECORDS_COUNT: convertedRecords.length,
                     ORIGINAL_FILE: fileInfo.name,
                     LAYOUT_USED: selectedLayout,
@@ -929,7 +931,7 @@ const DatasetConversionPage: React.FC<DatasetConversionPageProps> = ({ isDarkMod
               >
                 <option value="JP">JP - 日本語 (Shift-JIS)</option>
                 <option value="US">US - 英語 (ASCII)</option>
-                <option value="JAK">JAK - 日本語 (IBM-931)</option>
+                <option value="JAK">JAK - 日本語 (Shift-JIS)</option>
                 <option value="KEIS">KEIS - 韓国語</option>
                 <option value="KR">KR - 韓国語 (KS X 1001)</option>
               </select>
@@ -1057,10 +1059,10 @@ const DatasetConversionPage: React.FC<DatasetConversionPageProps> = ({ isDarkMod
               />
             </div>
 
-            {/* Dataset Name */}
+            {/* Catalog Name */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                データセット名
+                カタログ名
               </label>
               <input
                 type="text"
@@ -1361,38 +1363,6 @@ const DatasetConversionPage: React.FC<DatasetConversionPageProps> = ({ isDarkMod
                     </button>
                   )}
                   
-                  {conversionResults.length > 0 && (
-                    <div className="space-y-2">
-                      <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Dataset View
-                      </h4>
-                      {conversionResults.map((result, index) => (
-                        <button
-                          key={index}
-                          onClick={() => {
-                            setSelectedDatasetResult(result);
-                            setShowDatasetViewer(true);
-                          }}
-                          disabled={!result.success || result.records.length === 0}
-                          className="w-full flex items-center justify-center px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors text-sm"
-                        >
-                          <DocumentIcon className="w-4 h-4 mr-2" />
-                          {result.fileName} ({result.records.length} records)
-                        </button>
-                      ))}
-                      
-                      <button
-                        onClick={() => {
-                          loadServerCatalogData();
-                          setShowDatasetBrowser(true);
-                        }}
-                        className="w-full flex items-center justify-center px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-sm"
-                      >
-                        <FolderOpenIcon className="w-4 h-4 mr-2" />
-                        サーバー上のデータセット参照
-                      </button>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
@@ -1412,159 +1382,6 @@ const DatasetConversionPage: React.FC<DatasetConversionPageProps> = ({ isDarkMod
         </div>
       )}
 
-      {/* Dataset Viewer Modal */}
-      {showDatasetViewer && selectedDatasetResult && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Dataset Viewer: {selectedDatasetResult.fileName}
-              </h3>
-              <button
-                onClick={() => setShowDatasetViewer(false)}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-              >
-                <span className="sr-only">Close</span>
-                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            
-            <div className="p-4 space-y-4">
-              {/* Dataset Info */}
-              <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                  <div>
-                    <span className="font-medium text-gray-700 dark:text-gray-300">Records:</span>
-                    <span className="ml-2 text-gray-900 dark:text-white">{selectedDatasetResult.records.length}</span>
-                  </div>
-                  <div>
-                    <span className="font-medium text-gray-700 dark:text-gray-300">Original Size:</span>
-                    <span className="ml-2 text-gray-900 dark:text-white">{formatFileSize(selectedDatasetResult.originalSize)}</span>
-                  </div>
-                  <div>
-                    <span className="font-medium text-gray-700 dark:text-gray-300">Encoding:</span>
-                    <span className="ml-2 text-gray-900 dark:text-white">{encodingType}</span>
-                  </div>
-                  <div>
-                    <span className="font-medium text-gray-700 dark:text-gray-300">Layout:</span>
-                    <span className="ml-2 text-gray-900 dark:text-white">{selectedLayout}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Records Table */}
-              <div className="overflow-auto max-h-[60vh]">
-                <table className="w-full border border-gray-200 dark:border-gray-700">
-                  <thead className="bg-gray-50 dark:bg-gray-900 sticky top-0">
-                    <tr>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">
-                        #
-                      </th>
-                      {selectedDatasetResult.records[0]?.fields.map((field, index) => (
-                        <th
-                          key={index}
-                          className="px-4 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700"
-                        >
-                          {field.name}
-                          <br />
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            {field.type}({field.length})
-                          </span>
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {selectedDatasetResult.records.slice(0, 100).map((record, recordIndex) => (
-                      <tr
-                        key={recordIndex}
-                        className={recordIndex % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-900'}
-                      >
-                        <td className="px-4 py-2 text-sm text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700">
-                          {record.recordNumber}
-                        </td>
-                        {record.fields.map((field, fieldIndex) => (
-                          <td
-                            key={fieldIndex}
-                            className="px-4 py-2 text-sm border-b border-gray-200 dark:border-gray-700"
-                          >
-                            {field.isBinary ? (
-                              <div className="space-y-1">
-                                <div className="font-mono text-xs text-red-600 dark:text-red-400">
-                                  {field.value}
-                                </div>
-                                {field.hexValue && (
-                                  <div className="font-mono text-xs text-gray-500 dark:text-gray-400">
-                                    {field.hexValue}
-                                  </div>
-                                )}
-                              </div>
-                            ) : (
-                              <span className="text-gray-900 dark:text-white font-mono text-xs">
-                                {field.value}
-                              </span>
-                            )}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                
-                {selectedDatasetResult.records.length > 100 && (
-                  <div className="p-4 text-center text-sm text-gray-600 dark:text-gray-400">
-                    最初の100レコードのみ表示しています (全{selectedDatasetResult.records.length}レコード)
-                  </div>
-                )}
-              </div>
-
-              {/* Raw Data Sample */}
-              {selectedDatasetResult.records[0] && (
-                <div>
-                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Raw Data Sample (Record 1)
-                  </h4>
-                  <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 overflow-auto">
-                    <pre className="font-mono text-xs text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
-                      {selectedDatasetResult.records[0].rawData}
-                    </pre>
-                  </div>
-                </div>
-              )}
-
-              {/* Conversion Command and Options */}
-              {selectedDatasetResult.executedCommand && (
-                <div>
-                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    実行コマンド (Executed Command)
-                  </h4>
-                  <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 overflow-auto">
-                    <pre className="font-mono text-xs text-blue-800 dark:text-blue-200 whitespace-pre-wrap">
-                      {selectedDatasetResult.executedCommand}
-                    </pre>
-                  </div>
-                </div>
-              )}
-
-              {/* Conversion Options */}
-              {selectedDatasetResult.conversionOptions && (
-                <div>
-                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    変換オプション (Conversion Options)
-                  </h4>
-                  <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 overflow-auto">
-                    <pre className="font-mono text-xs text-green-800 dark:text-green-200 whitespace-pre-wrap">
-                      {JSON.stringify(selectedDatasetResult.conversionOptions, null, 2)}
-                    </pre>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Dataset Browser Modal */}
       {showDatasetBrowser && (
@@ -1737,43 +1554,6 @@ const DatasetConversionPage: React.FC<DatasetConversionPageProps> = ({ isDarkMod
                       className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                     >
                       このデータセットを選択
-                    </button>
-                    <button
-                      onClick={async () => {
-                        // Load and display dataset from server
-                        try {
-                          const datasetInfo = serverDatasets[`${selectedServerVolume}/${selectedServerLibrary}`][selectedServerDataset];
-                          
-                          // Create a mock conversion result for viewing
-                          const mockResult: ConversionResult = {
-                            success: true,
-                            fileName: `${selectedServerVolume}/${selectedServerLibrary}/${selectedServerDataset}`,
-                            originalSize: 0,
-                            convertedSize: 0,
-                            records: [],
-                            log: [
-                              `サーバー上のデータセット: ${selectedServerVolume}/${selectedServerLibrary}/${selectedServerDataset}`,
-                              `TYPE: ${datasetInfo.TYPE}`,
-                              `ENCODING: ${datasetInfo.ENCODING}`,
-                              `DESCRIPTION: ${datasetInfo.DESCRIPTION}`,
-                              `作成日時: ${datasetInfo.CREATED || datasetInfo.CONVERTED_AT || 'Unknown'}`,
-                              '',
-                              '注意: これはカタログ情報の表示です。',
-                              '実際のデータ表示には追加の実装が必要です。'
-                            ],
-                            timestamp: new Date().toISOString()
-                          };
-                          
-                          setSelectedDatasetResult(mockResult);
-                          setShowDatasetBrowser(false);
-                          setShowDatasetViewer(true);
-                        } catch (error) {
-                          console.error('Failed to load dataset:', error);
-                        }
-                      }}
-                      className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-                    >
-                      データセット詳細表示
                     </button>
                   </>
                 )}
