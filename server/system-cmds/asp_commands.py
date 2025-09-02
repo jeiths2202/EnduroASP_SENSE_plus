@@ -31,6 +31,19 @@ import sys
 sys.path.append('/home/aspuser/app/config')
 from catalog_config import get_catalog_path
 CATALOG_FILE = get_catalog_path()
+
+# DBIO Integration for PostgreSQL migration
+sys.path.append('/home/aspuser/app')
+try:
+    from config.catalog_backend_config import (
+        get_catalog_backend_config, 
+        get_active_dbio_manager,
+        create_hybrid_manager
+    )
+    DBIO_AVAILABLE = True
+except ImportError as e:
+    print(f"[INFO] DBIO not available, using JSON fallback: {e}")
+    DBIO_AVAILABLE = False
 JOB_LOG_DIR = os.path.join(VOLUME_ROOT, "JOBLOG")
 
 # Initialize configuration directories
@@ -56,73 +69,265 @@ def reset_pgmec():
     _PGMEC = 0
 
 def get_catalog_info():
-    """Get file information from centralized catalog.json"""
+    """
+    Get file information from catalog (JSON or Database backend).
+    
+    Backward compatible function that works with both legacy JSON files
+    and new DBIO PostgreSQL backend.
+    
+    Returns:
+        Complete catalog structure as dictionary
+    """
+    if DBIO_AVAILABLE:
+        try:
+            # Check if migration mode is active
+            config = get_catalog_backend_config()
+            if config.is_migration_mode():
+                # Use hybrid manager during migration
+                hybrid_manager = create_hybrid_manager()
+                return hybrid_manager.get_catalog_info()
+            else:
+                # Use active backend - direct PostgreSQL access for fresh data
+                dbio_manager = get_active_dbio_manager()
+                try:
+                    # Get fresh data directly from PostgreSQL
+                    conn = dbio_manager.backend._get_connection()
+                    cursor = conn.cursor()
+                    
+                    cursor.execute('''
+                        SELECT volume, library, object_name, object_type, pgmtype, maptype, 
+                               jobtype, copybooktype, encoding, reclen, rectype, created, updated, layoutdata
+                        FROM catalog_objects 
+                        ORDER BY volume, library, object_name
+                    ''')
+                    
+                    catalog_data = {}
+                    for row in cursor.fetchall():
+                        volume, library, object_name, object_type, pgmtype, maptype, jobtype, copybooktype, encoding, reclen, rectype, created, updated, layoutdata = row
+                        
+                        # Create nested structure
+                        if volume not in catalog_data:
+                            catalog_data[volume] = {}
+                        if library not in catalog_data[volume]:
+                            catalog_data[volume][library] = {}
+                        
+                        # Build object metadata
+                        obj_data = {
+                            'TYPE': object_type,
+                            'CREATED': created.isoformat() if created else None,
+                            'UPDATED': updated.isoformat() if updated else None
+                        }
+                        
+                        # Add type-specific fields
+                        if pgmtype:
+                            obj_data['PGMTYPE'] = pgmtype
+                        if maptype:
+                            obj_data['MAPTYPE'] = maptype
+                        if jobtype:
+                            obj_data['JOBTYPE'] = jobtype
+                        if copybooktype:
+                            obj_data['COPYBOOKTYPE'] = copybooktype
+                        if encoding:
+                            obj_data['ENCODING'] = encoding
+                        if reclen:
+                            obj_data['RECLEN'] = reclen
+                        if rectype:
+                            obj_data['RECTYPE'] = rectype
+                        if layoutdata:
+                            import json
+                            obj_data['LAYOUTDATA'] = json.loads(layoutdata) if isinstance(layoutdata, str) else layoutdata
+                        
+                        catalog_data[volume][library][object_name] = obj_data
+                    
+                    cursor.close()
+                    dbio_manager.backend._put_connection(conn)
+                    dbio_manager.close()
+                    
+                    return catalog_data
+                    
+                except Exception as e:
+                    print(f"[ERROR] Direct PostgreSQL access failed: {e}")
+                    # Fallback to DBIO manager method
+                    catalog_data = dbio_manager.get_catalog_info()
+                    dbio_manager.close()
+                    return catalog_data
+                
+        except Exception as e:
+            print(f"[WARNING] DBIO backend failed, falling back to JSON: {e}")
+            # Fall through to JSON fallback
+    
+    # JSON fallback (original implementation)
     if os.path.exists(CATALOG_FILE):
         try:
             with open(CATALOG_FILE, 'r', encoding='utf-8') as f:
                 return json.load(f)
-        except:
-            pass
+        except Exception as e:
+            print(f"[WARNING] JSON catalog read failed: {e}")
+    
     return {}
 
 def update_catalog_info(volume, library, object_name, object_type="DATASET", **kwargs):
-    """Update object information in catalog.json with new hierarchical structure"""
-    catalog = get_catalog_info()
+    """
+    Update object information in catalog (JSON or Database backend).
     
-    # Ensure volume exists
-    if volume not in catalog:
-        catalog[volume] = {}
+    Backward compatible function that maintains existing behavior while
+    supporting new DBIO backends for PostgreSQL migration.
     
-    # Ensure library exists in volume
-    if library not in catalog[volume]:
-        catalog[volume][library] = {}
+    Args:
+        volume: Volume name
+        library: Library name  
+        object_name: Object name
+        object_type: Type of object (DATASET, PGM, MAP, JOB, etc.)
+        **kwargs: Additional object attributes
+        
+    Returns:
+        True if successful (for new code), None for backward compatibility
+    """
+    success = False
     
-    # Ensure object exists in library
-    if object_name not in catalog[volume][library]:
-        catalog[volume][library][object_name] = {}
+    if DBIO_AVAILABLE:
+        try:
+            config = get_catalog_backend_config()
+            
+            if config.is_migration_mode():
+                # Migration mode: use hybrid manager for dual-write
+                hybrid_manager = create_hybrid_manager()
+                success = hybrid_manager.update_catalog_info(
+                    volume, library, object_name, object_type, **kwargs
+                )
+                
+                # Check for write errors
+                write_errors = hybrid_manager.get_write_errors()
+                if write_errors:
+                    for error in write_errors:
+                        print(f"[WARNING] Migration write error: {error}")
+                        
+            else:
+                # Normal mode: use active backend
+                dbio_manager = get_active_dbio_manager()
+                success = dbio_manager.update_catalog_info(
+                    volume, library, object_name, object_type, **kwargs
+                )
+                dbio_manager.close()
+                
+            if success:
+                return  # Success, maintain backward compatibility (no return value)
+                
+        except Exception as e:
+            print(f"[WARNING] DBIO backend failed, falling back to JSON: {e}")
+            # Fall through to JSON fallback
     
-    # Set object type
-    catalog[volume][library][object_name]["TYPE"] = object_type
-    
-    # Add timestamp information
-    current_time = datetime.now().isoformat() + "Z"
-    if "CREATED" not in catalog[volume][library][object_name]:
-        catalog[volume][library][object_name]["CREATED"] = current_time
-    catalog[volume][library][object_name]["UPDATED"] = current_time
-    
-    # Handle different object types with appropriate attributes
-    if object_type == "DATASET":
-        # Set dataset-specific defaults
-        catalog[volume][library][object_name]["RECTYPE"] = kwargs.get("RECTYPE", "FB")
-        catalog[volume][library][object_name]["RECLEN"] = kwargs.get("RECLEN", 80)
-        catalog[volume][library][object_name]["ENCODING"] = kwargs.get("ENCODING", "utf-8")
-    elif object_type == "PGM":
-        # Set program-specific defaults
-        catalog[volume][library][object_name]["PGMTYPE"] = kwargs.get("PGMTYPE", "COBOL")
-        catalog[volume][library][object_name]["VERSION"] = kwargs.get("VERSION", "1.0")
-    elif object_type == "MAP":
-        # Set map-specific defaults
-        catalog[volume][library][object_name]["MAPTYPE"] = kwargs.get("MAPTYPE", "SMED")
-        catalog[volume][library][object_name]["ROWS"] = kwargs.get("ROWS", 24)
-        catalog[volume][library][object_name]["COLS"] = kwargs.get("COLS", 80)
-    elif object_type == "JOB":
-        # Set job-specific defaults
-        catalog[volume][library][object_name]["JOBTYPE"] = kwargs.get("JOBTYPE", "BATCH")
-        catalog[volume][library][object_name]["SCHEDULE"] = kwargs.get("SCHEDULE", "MANUAL")
-    
-    # Update additional attributes
-    for key, value in kwargs.items():
-        catalog[volume][library][object_name][key] = value
-    
+    # JSON fallback (original implementation)
     try:
+        catalog = _get_catalog_info_json_direct()
+        
+        # Ensure volume exists
+        if volume not in catalog:
+            catalog[volume] = {}
+        
+        # Ensure library exists in volume
+        if library not in catalog[volume]:
+            catalog[volume][library] = {}
+        
+        # Ensure object exists in library
+        if object_name not in catalog[volume][library]:
+            catalog[volume][library][object_name] = {}
+        
+        # Set object type
+        catalog[volume][library][object_name]["TYPE"] = object_type
+        
+        # Add timestamp information
+        current_time = datetime.now().isoformat() + "Z"
+        if "CREATED" not in catalog[volume][library][object_name]:
+            catalog[volume][library][object_name]["CREATED"] = current_time
+        catalog[volume][library][object_name]["UPDATED"] = current_time
+        
+        # Handle different object types with appropriate attributes
+        if object_type == "DATASET":
+            # Set dataset-specific defaults
+            catalog[volume][library][object_name]["RECTYPE"] = kwargs.get("RECTYPE", "FB")
+            catalog[volume][library][object_name]["RECLEN"] = kwargs.get("RECLEN", 80)
+            catalog[volume][library][object_name]["ENCODING"] = kwargs.get("ENCODING", "utf-8")
+        elif object_type == "PGM":
+            # Set program-specific defaults
+            catalog[volume][library][object_name]["PGMTYPE"] = kwargs.get("PGMTYPE", "COBOL")
+            catalog[volume][library][object_name]["VERSION"] = kwargs.get("VERSION", "1.0")
+        elif object_type == "MAP":
+            # Set map-specific defaults
+            catalog[volume][library][object_name]["MAPTYPE"] = kwargs.get("MAPTYPE", "SMED")
+            catalog[volume][library][object_name]["ROWS"] = kwargs.get("ROWS", 24)
+            catalog[volume][library][object_name]["COLS"] = kwargs.get("COLS", 80)
+        elif object_type == "JOB":
+            # Set job-specific defaults
+            catalog[volume][library][object_name]["JOBTYPE"] = kwargs.get("JOBTYPE", "BATCH")
+            catalog[volume][library][object_name]["SCHEDULE"] = kwargs.get("SCHEDULE", "MANUAL")
+        
+        # Update additional attributes
+        for key, value in kwargs.items():
+            catalog[volume][library][object_name][key] = value
+        
+        # Save to JSON file
         with open(CATALOG_FILE, 'w', encoding='utf-8') as f:
             json.dump(catalog, f, indent=2, ensure_ascii=False)
+            
     except Exception as e:
         print(f"[WARNING] catalog.json update failed: {e}")
 
+
+def _get_catalog_info_json_direct():
+    """Direct JSON catalog access (bypasses DBIO for fallback scenarios)."""
+    if os.path.exists(CATALOG_FILE):
+        try:
+            with open(CATALOG_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"[WARNING] Direct JSON read failed: {e}")
+    return {}
+
 def get_object_info(volume, library, object_name):
-    """Get catalog information for a specific object"""
-    catalog = get_catalog_info()
+    """
+    Get catalog information for a specific object.
+    
+    Backward compatible function that works with both JSON and DBIO backends.
+    
+    Args:
+        volume: Volume name
+        library: Library name
+        object_name: Object name
+        
+    Returns:
+        Object attributes dictionary or empty dict if not found
+    """
+    if DBIO_AVAILABLE:
+        try:
+            config = get_catalog_backend_config()
+            
+            if config.is_migration_mode():
+                # Use hybrid manager during migration
+                hybrid_manager = create_hybrid_manager()
+                catalog = hybrid_manager.get_catalog_info()
+                return catalog.get(volume, {}).get(library, {}).get(object_name, {})
+            else:
+                # Use active backend
+                dbio_manager = get_active_dbio_manager()
+                
+                # Try direct object get for efficiency
+                try:
+                    object_info = dbio_manager.backend.get_object(volume, library, object_name)
+                    dbio_manager.close()
+                    return object_info or {}
+                except:
+                    # Fall back to full catalog if direct access fails
+                    catalog = dbio_manager.get_catalog_info()
+                    dbio_manager.close()
+                    return catalog.get(volume, {}).get(library, {}).get(object_name, {})
+                    
+        except Exception as e:
+            print(f"[WARNING] DBIO object lookup failed, falling back to JSON: {e}")
+            # Fall through to JSON fallback
+    
+    # JSON fallback (original implementation)
+    catalog = _get_catalog_info_json_direct()
     return catalog.get(volume, {}).get(library, {}).get(object_name, {})
 
 def get_file_info(volume, filename):
@@ -2080,4 +2285,194 @@ def _remove_libraries_from_list(current_list, library_names, errmode, list_type)
         
     except Exception as e:
         print(f"[ERROR] Error removing libraries from {list_type}: {e}")
+        return False
+
+def delete_catalog_object(volume, library, object_name):
+    """
+    DBIO対応のカタログオブジェクト削除機能
+    
+    PostgreSQLバックエンドまたはJSONフォールバック使用して
+    カタログからオブジェクトを削除します。
+    
+    Args:
+        volume: ボリューム名
+        library: ライブラリ名  
+        object_name: オブジェクト名
+        
+    Returns:
+        True if successful, False otherwise
+    """
+    # 現在の実装では、PostgreSQL delete_object メソッドが未実装のため
+    # 直接SQLを実行してカタログから削除を行います
+    if DBIO_AVAILABLE:
+        try:
+            # アクティブなDBIOマネージャーを取得
+            dbio_manager = get_active_dbio_manager()
+            
+            # 直接PostgreSQL削除クエリ実行
+            conn = dbio_manager.backend._get_connection()
+            try:
+                cursor = conn.cursor()
+                
+                # オブジェクトをDBから削除
+                cursor.execute("""
+                    DELETE FROM catalog_objects 
+                    WHERE volume = %s AND library = %s AND object_name = %s
+                """, (volume, library, object_name))
+                
+                affected_rows = cursor.rowcount
+                conn.commit()
+                cursor.close()
+                
+                if affected_rows > 0:
+                    print(f"[INFO] Deleted {affected_rows} object(s) from PostgreSQL: {volume}/{library}/{object_name}")
+                    return True
+                else:
+                    print(f"[WARNING] No objects found to delete in PostgreSQL: {volume}/{library}/{object_name}")
+                    # レコードが見つからない場合でもTrueを返す（既に削除済みと見なす）
+                    return True
+            finally:
+                dbio_manager.backend._put_connection(conn)
+                    
+        except Exception as e:
+            print(f"[ERROR] PostgreSQL delete failed: {e}")
+            print(f"[DEBUG] Exception type: {type(e)}")
+            import traceback
+            print(f"[DEBUG] Traceback: {traceback.format_exc()}")
+            return False
+    
+    # DBIO가 사용 불가능한 경우에만 JSON 사용
+    print(f"[WARNING] DBIO not available, using JSON fallback for delete")
+    return _delete_catalog_object_json_fallback(volume, library, object_name)
+
+def delete_catalog_library(volume, library):
+    """
+    DBIO対応のカタログライブラリ削除機能
+    
+    PostgreSQLバックエンドまたはJSONフォールバック使用して
+    カタログからライブラリ全体を削除します。
+    
+    Args:
+        volume: ボリューム名
+        library: ライブラリ名
+        
+    Returns:
+        True if successful, False otherwise
+    """
+    # 現在の実装では、PostgreSQL delete_library メソッドが未実装のため
+    # 直接SQLを実行してカタログから削除を行います
+    if DBIO_AVAILABLE:
+        try:
+            # アクティブなDBIOマネージャーを取得
+            dbio_manager = get_active_dbio_manager()
+            
+            # 直接PostgreSQL削除クエリ実行
+            conn = dbio_manager.backend._get_connection()
+            try:
+                cursor = conn.cursor()
+                
+                # ライブラリに含まれる全オブジェクトをDBから削除
+                cursor.execute("""
+                    DELETE FROM catalog_objects 
+                    WHERE volume = %s AND library = %s
+                """, (volume, library))
+                
+                affected_rows = cursor.rowcount
+                conn.commit()
+                cursor.close()
+                
+                if affected_rows > 0:
+                    print(f"[INFO] Deleted {affected_rows} object(s) from PostgreSQL library: {volume}/{library}")
+                    return True
+                else:
+                    print(f"[WARNING] No objects found to delete in PostgreSQL library: {volume}/{library}")
+                    # レコードが見つからない場合でもTrueを返す（既に削除済みと見なす）
+                    return True
+            finally:
+                dbio_manager.backend._put_connection(conn)
+                    
+        except Exception as e:
+            print(f"[ERROR] PostgreSQL library delete failed: {e}")
+            print(f"[DEBUG] Exception type: {type(e)}")
+            import traceback
+            print(f"[DEBUG] Traceback: {traceback.format_exc()}")
+            return False
+    
+    # DBIO가 사용 불가능한 경우에만 JSON 사용
+    print(f"[WARNING] DBIO not available, using JSON fallback for library delete")
+    return _delete_catalog_library_json_fallback(volume, library)
+
+def _delete_catalog_object_json_fallback(volume, library, object_name):
+    """JSONファイル直接アクセスでオブジェクトを削除（フォールバック用）"""
+    try:
+        if not os.path.exists(CATALOG_FILE):
+            print(f"[WARNING] Catalog file does not exist: {CATALOG_FILE}")
+            return False
+            
+        with open(CATALOG_FILE, 'r', encoding='utf-8') as f:
+            catalog = json.load(f)
+        
+        # オブジェクトが存在するかチェック
+        if (volume not in catalog or 
+            library not in catalog[volume] or 
+            object_name not in catalog[volume][library]):
+            print(f"[WARNING] Object {volume}/{library}/{object_name} not found in catalog")
+            return False
+        
+        # オブジェクト削除
+        del catalog[volume][library][object_name]
+        print(f"[INFO] Deleted object {volume}/{library}/{object_name} from catalog")
+        
+        # 空のライブラリ削除
+        if not catalog[volume][library]:
+            del catalog[volume][library]
+            print(f"[INFO] Deleted empty library {volume}/{library} from catalog")
+        
+        # 空のボリューム削除
+        if not catalog[volume]:
+            del catalog[volume]
+            print(f"[INFO] Deleted empty volume {volume} from catalog")
+        
+        # カタログファイル保存
+        with open(CATALOG_FILE, 'w', encoding='utf-8') as f:
+            json.dump(catalog, f, indent=2, ensure_ascii=False)
+        
+        return True
+        
+    except Exception as e:
+        print(f"[ERROR] JSON fallback delete failed: {e}")
+        return False
+
+def _delete_catalog_library_json_fallback(volume, library):
+    """JSONファイル直接アクセスでライブラリを削除（フォールバック用）"""
+    try:
+        if not os.path.exists(CATALOG_FILE):
+            print(f"[WARNING] Catalog file does not exist: {CATALOG_FILE}")
+            return False
+            
+        with open(CATALOG_FILE, 'r', encoding='utf-8') as f:
+            catalog = json.load(f)
+        
+        # ライブラリが存在するかチェック
+        if volume not in catalog or library not in catalog[volume]:
+            print(f"[WARNING] Library {volume}/{library} not found in catalog")
+            return False
+        
+        # ライブラリ削除
+        del catalog[volume][library]
+        print(f"[INFO] Deleted library {volume}/{library} from catalog")
+        
+        # 空のボリューム削除
+        if not catalog[volume]:
+            del catalog[volume]
+            print(f"[INFO] Deleted empty volume {volume} from catalog")
+        
+        # カタログファイル保存
+        with open(CATALOG_FILE, 'w', encoding='utf-8') as f:
+            json.dump(catalog, f, indent=2, ensure_ascii=False)
+        
+        return True
+        
+    except Exception as e:
+        print(f"[ERROR] JSON fallback library delete failed: {e}")
         return False
