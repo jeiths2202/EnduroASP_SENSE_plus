@@ -27,6 +27,18 @@ try:
     SMART_ENCODING_AVAILABLE = True
 except ImportError:
     SMART_ENCODING_AVAILABLE = False
+
+# Import DBIO system for PostgreSQL catalog integration
+sys.path.append('/home/aspuser/app/server/system-cmds')
+try:
+    from asp_commands import get_catalog_info, get_object_info, update_catalog_info
+    from functions.dltlib import DLTLIB
+    from functions.dltfile import DLTFILE
+    DBIO_AVAILABLE = True
+    print("[API_SERVER] DBIO system loaded successfully")
+except ImportError as e:
+    DBIO_AVAILABLE = False
+    print(f"[API_SERVER] DBIO system not available, using JSON fallback: {e}")
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit, join_room, leave_room
@@ -840,6 +852,32 @@ def fix_corrupted_japanese_text(content):
         content = content.replace(corrupted, fixed)
     
     return content
+
+# DBIO Catalog Helper Functions
+def get_catalog_data_with_fallback():
+    """Get catalog data using DBIO with JSON fallback"""
+    if DBIO_AVAILABLE:
+        try:
+            catalog = get_catalog_info()
+            if catalog:
+                logger.info("[API_SERVER] Catalog retrieved via DBIO")
+                return catalog
+            else:
+                logger.warning("[API_SERVER] DBIO returned empty catalog, falling back to JSON")
+        except Exception as e:
+            logger.warning(f"[API_SERVER] DBIO failed, falling back to JSON: {e}")
+    
+    # JSON fallback
+    catalog_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'catalog.json')
+    
+    if not os.path.exists(catalog_path):
+        raise FileNotFoundError('Catalog file not found')
+    
+    with open(catalog_path, 'r', encoding='utf-8') as f:
+        catalog = json.load(f)
+    
+    logger.info("[API_SERVER] Catalog retrieved via JSON fallback")
+    return catalog
 
 # WebSocket Event Handlers
 @socketio.event
@@ -3893,16 +3931,9 @@ def handle_position_smed_error(session_id, event_type, error, emit_func):
 
 @app.route('/api/catalog', methods=['GET'])
 def get_catalog():
-    """Get complete catalog.json data"""
+    """Get complete catalog data (DBIO-enabled with JSON fallback)"""
     try:
-        catalog_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'catalog.json')
-        
-        if not os.path.exists(catalog_path):
-            return jsonify({'error': 'Catalog file not found'}), 404
-        
-        with open(catalog_path, 'r', encoding='utf-8') as f:
-            catalog = json.load(f)
-        
+        catalog = get_catalog_data_with_fallback()
         return jsonify(catalog)
         
     except Exception as e:
@@ -3911,16 +3942,9 @@ def get_catalog():
 
 @app.route('/api/catalog/maps', methods=['GET'])
 def get_catalog_maps():
-    """Get all MAP type resources from catalog.json"""
+    """Get all MAP type resources (DBIO-enabled with JSON fallback)"""
     try:
-        catalog_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'catalog.json')
-        
-        if not os.path.exists(catalog_path):
-            return jsonify({'error': 'Catalog file not found'}), 404
-        
-        with open(catalog_path, 'r', encoding='utf-8') as f:
-            catalog = json.load(f)
-        
+        catalog = get_catalog_data_with_fallback()
         maps = []
         
         # Iterate through volumes and libraries to find MAP resources
@@ -3951,16 +3975,9 @@ def get_catalog_maps():
 
 @app.route('/api/catalog/volumes', methods=['GET'])
 def get_catalog_volumes():
-    """Get all volumes from catalog.json"""
+    """Get all volumes (DBIO-enabled with JSON fallback)"""
     try:
-        catalog_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'catalog.json')
-        
-        if not os.path.exists(catalog_path):
-            return jsonify({'error': 'Catalog file not found'}), 404
-        
-        with open(catalog_path, 'r', encoding='utf-8') as f:
-            catalog = json.load(f)
-        
+        catalog = get_catalog_data_with_fallback()
         volumes = list(catalog.keys())
         
         return jsonify({
@@ -3974,15 +3991,9 @@ def get_catalog_volumes():
 
 @app.route('/api/catalog/libraries/<volume_name>', methods=['GET'])
 def get_catalog_libraries(volume_name):
-    """Get all libraries for a specific volume"""
+    """Get all libraries for a specific volume (DBIO-enabled with JSON fallback)"""
     try:
-        catalog_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'catalog.json')
-        
-        if not os.path.exists(catalog_path):
-            return jsonify({'error': 'Catalog file not found'}), 404
-        
-        with open(catalog_path, 'r', encoding='utf-8') as f:
-            catalog = json.load(f)
+        catalog = get_catalog_data_with_fallback()
         
         if volume_name not in catalog:
             return jsonify({'error': f'Volume {volume_name} not found'}), 404
@@ -4955,6 +4966,7 @@ def convert_ebcdic_dataset():
             # Save converted dataset to filesystem if volume/library/dataset info provided
             volume_name = data.get('volume_name')
             library_name = data.get('library_name') 
+            catalog_name = data.get('catalog_name')  # Get catalog_name from request
             dataset_name = data.get('dataset_name')
             
             saved_file_path = None
@@ -4986,9 +4998,13 @@ def convert_ebcdic_dataset():
                 'volume/DISK01/LAYOUT/<layout_name>.LAYOUT'
             ]
             
-            # Add options in correct format (no --dataset-name needed since output path contains it)
+            # Add options in correct format
             command_parts.append(f'--format {output_format}')
             command_parts.append(f'--japanese-encoding {japanese_encoding}')
+            
+            # Add catalog name option if specified
+            if catalog_name:
+                command_parts.append(f'--catalog-name {catalog_name}')
             
             # SOSI options
             so_code = data.get('so_code', '0x0E')
@@ -5029,6 +5045,7 @@ def convert_ebcdic_dataset():
                         'record_length': rlen,
                         'volume_name': volume_name,
                         'library_name': library_name,
+                        'catalog_name': catalog_name,
                         'dataset_name': dataset_name
                     }
                 }
@@ -5105,15 +5122,9 @@ def register_catalog_dataset():
 
 @app.route('/api/catalog/datasets/<volume>/<library>', methods=['GET'])
 def get_catalog_datasets(volume, library):
-    """Get all datasets in a library from catalog.json"""
+    """Get all datasets in a library (DBIO-enabled with JSON fallback)"""
     try:
-        catalog_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'catalog.json')
-        
-        if not os.path.exists(catalog_path):
-            return jsonify({'success': True, 'datasets': {}})
-        
-        with open(catalog_path, 'r', encoding='utf-8') as f:
-            catalog = json.load(f)
+        catalog = get_catalog_data_with_fallback()
         
         if volume not in catalog or library not in catalog[volume]:
             return jsonify({'success': True, 'datasets': {}})
@@ -5134,18 +5145,84 @@ def get_catalog_datasets(volume, library):
 
 @app.route('/config/catalog.json', methods=['GET'])
 def serve_catalog_json():
-    """Serve catalog.json file for frontend"""
+    """Serve catalog data in JSON format (DBIO-enabled with JSON fallback)"""
     try:
-        catalog_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'catalog.json')
-        if os.path.exists(catalog_path):
-            with open(catalog_path, 'r', encoding='utf-8') as f:
-                catalog_data = json.load(f)
-            return jsonify(catalog_data)
-        else:
-            return jsonify({'volumes': {}}), 404
+        catalog_data = get_catalog_data_with_fallback()
+        return jsonify(catalog_data)
     except Exception as e:
-        logger.error(f"Failed to serve catalog.json: {e}")
+        logger.error(f"Failed to serve catalog data: {e}")
         return jsonify({'error': str(e)}), 500
+
+@app.route('/api/catalog/delete', methods=['DELETE'])
+def delete_catalog_item():
+    """
+    カタログアイテム削除エンドポイント
+    PostgreSQL DBIOシステム使用してカタログと物理ファイル両方削除
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'リクエストデータが不足しています'}), 400
+        
+        volume = data.get('volume')
+        library = data.get('library') 
+        resource_name = data.get('resource_name')
+        resource_type = data.get('type', '').upper()
+        
+        # 必須パラメータチェック
+        if not all([volume, library, resource_name]):
+            return jsonify({'error': 'volume、library、resource_nameが必須です'}), 400
+        
+        if not DBIO_AVAILABLE:
+            return jsonify({'error': 'DBIO system is not available'}), 503
+        
+        logger.info(f"[DELETE] Attempting to delete {resource_type} '{resource_name}' from {volume}/{library}")
+        
+        # タイプに基づいて適切な削除コマンド実行
+        if resource_type == 'LIBRARY':
+            # ライブラリ削除（DLTLIB使用）
+            command = f"DLTLIB LIB-{library},VOL-{volume}"
+            success = DLTLIB(command)
+            
+            if success:
+                logger.info(f"[DELETE] Library {volume}/{library} deleted successfully")
+                return jsonify({
+                    'success': True,
+                    'message': f"ライブラリ '{library}' が正常に削除されました",
+                    'deleted_item': {
+                        'type': 'LIBRARY',
+                        'volume': volume,
+                        'library': library
+                    }
+                })
+            else:
+                logger.error(f"[DELETE] Failed to delete library {volume}/{library}")
+                return jsonify({'error': f"ライブラリ '{library}' の削除に失敗しました"}), 500
+                
+        else:
+            # ファイル/データセット削除（DLTFILE使用）
+            command = f"DLTFILE FILE({library}/{resource_name}),VOL-{volume}"
+            success = DLTFILE(command)
+            
+            if success:
+                logger.info(f"[DELETE] Resource {volume}/{library}/{resource_name} deleted successfully")
+                return jsonify({
+                    'success': True,
+                    'message': f"リソース '{resource_name}' が正常に削除されました",
+                    'deleted_item': {
+                        'type': resource_type or 'RESOURCE',
+                        'volume': volume,
+                        'library': library,
+                        'resource_name': resource_name
+                    }
+                })
+            else:
+                logger.error(f"[DELETE] Failed to delete resource {volume}/{library}/{resource_name}")
+                return jsonify({'error': f"リソース '{resource_name}' の削除に失敗しました"}), 500
+        
+    except Exception as e:
+        logger.error(f"[DELETE] Delete operation failed: {e}")
+        return jsonify({'error': f'削除処理でエラーが発生しました: {str(e)}'}), 500
 
 @app.route('/api/convert/ebcdic-dataset-cli', methods=['POST'])
 def convert_ebcdic_dataset_cli():
@@ -5165,12 +5242,32 @@ def convert_ebcdic_dataset_cli():
         layout_name = data.get('layout_name', 'SAM001')
         volume_name = data.get('volume_name', 'DISK01')
         library_name = data.get('library_name', 'TESTLIB')
-        dataset_name = data.get('dataset_name', 'converted.out')
+        catalog_name = data.get('catalog_name')  # Use catalog_name instead of dataset_name
+        dataset_name = data.get('dataset_name', 'converted.out')  # Keep for compatibility
         output_format = data.get('output_format', 'flat')
         japanese_encoding = data.get('japanese_encoding', 'sjis')
         so_code = data.get('so_code', '0x28')
         si_code = data.get('si_code', '0x29')
         sosi_handling = data.get('sosi_handling', 'SPACE')
+        
+        # Log all incoming parameters from WebUI client (using both logger and print)
+        log_message = f"""
+=== WebUI Client Request Parameters ===
+file_name: {file_name}
+layout_name: {layout_name}
+volume_name: {volume_name}
+library_name: {library_name}
+catalog_name: '{catalog_name}' (type: {type(catalog_name)})
+dataset_name: '{dataset_name}' (type: {type(dataset_name)})
+output_format: {output_format}
+japanese_encoding: {japanese_encoding}
+so_code: {so_code}
+si_code: {si_code}
+sosi_handling: {sosi_handling}
+==========================================="""
+        
+        print(log_message)  # Print to console for immediate visibility
+        logger.info(log_message)  # Also log to file
         
         if not file_data:
             return jsonify({'error': 'File data is required'}), 400
@@ -5188,8 +5285,17 @@ def convert_ebcdic_dataset_cli():
         except Exception as e:
             return jsonify({'error': f'Failed to save uploaded file: {str(e)}'}), 500
             
-        # Prepare output file path
-        output_file_path = f"volume/{volume_name}/{library_name}/{dataset_name}"
+        # Prepare output file path - use catalog_name if provided and not empty
+        if catalog_name and catalog_name.strip():
+            output_filename = catalog_name.strip()
+            logger.info(f"Using catalog_name as output filename: {output_filename}")
+        else:
+            # Use layout_name as fallback instead of 'converted.out'
+            output_filename = layout_name
+            logger.info(f"Using layout_name as fallback output filename: {output_filename} (catalog_name was empty)")
+            
+        logger.info(f"Final output filename: {output_filename}")
+        output_file_path = f"volume/{volume_name}/{library_name}/{output_filename}"
         
         # Ensure output directory exists
         output_dir = os.path.dirname(output_file_path)
@@ -5208,6 +5314,14 @@ def convert_ebcdic_dataset_cli():
             '--japanese-encoding', japanese_encoding
         ]
         
+        # Add catalog name option if specified (use the actual output filename)
+        if catalog_name and catalog_name.strip():
+            command.extend(['--catalog-name', catalog_name.strip()])
+            logger.info(f"Added --catalog-name {catalog_name.strip()} to command")
+        elif output_filename != layout_name:  # If we're using a different output filename
+            command.extend(['--catalog-name', output_filename])
+            logger.info(f"Added --catalog-name {output_filename} to command (derived from output filename)")
+            
         # Add SOSI options if different from defaults
         if so_code != '0x0E':
             command.extend(['--so-code', so_code])
@@ -5220,6 +5334,17 @@ def convert_ebcdic_dataset_cli():
         if library_name != 'TESTLIB':
             command.extend(['--library', library_name])
             
+        # Log final CLI command before execution
+        final_command_str = ' '.join(command)
+        cmd_log = f"""
+=== Final CLI Command to Execute ===
+Command: {final_command_str}
+Working Directory: /home/aspuser/app
+===================================="""
+        
+        print(cmd_log)  # Print to console
+        logger.info(cmd_log)  # Log to file
+            
         # Execute CLI command
         try:
             result = subprocess.run(
@@ -5231,6 +5356,19 @@ def convert_ebcdic_dataset_cli():
             )
             
             executed_command = ' '.join(command)
+            
+            # Log execution results
+            result_log = f"""
+=== CLI Command Execution Results ===
+Return Code: {result.returncode}
+STDOUT: {result.stdout}
+STDERR: {result.stderr}
+Output File Path: {output_file_path}
+Output File Exists: {os.path.exists(output_file_path)}
+====================================="""
+            
+            print(result_log)  # Print to console
+            logger.info(result_log)  # Log to file
             
             if result.returncode == 0:
                 # Success - read output file if exists
@@ -5255,6 +5393,7 @@ def convert_ebcdic_dataset_cli():
                             'sosi_handling': sosi_handling,
                             'volume_name': volume_name,
                             'library_name': library_name,
+                            'catalog_name': catalog_name,
                             'dataset_name': dataset_name
                         }
                     }
