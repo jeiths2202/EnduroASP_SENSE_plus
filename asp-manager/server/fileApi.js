@@ -375,71 +375,79 @@ app.post('/api/jobs/submit', async (req, res) => {
 });
 
 /**
- * Get job list using REFJOB
+ * Get job list from PostgreSQL JOBINFO table
  */
 app.get('/api/jobs', async (req, res) => {
   try {
-    // Try to read from the SQLite database directly
-    let sqlite3;
-    try {
-      sqlite3 = require('sqlite3').verbose();
-    } catch (e) {
-      console.error('SQLite3 module not found:', e.message);
-      fallbackToRefjob(res);
-      return;
-    }
+    // Get jobs from PostgreSQL JOBINFO table
+    const fetchProcess = spawn('python3', ['-c', `
+import sys
+sys.path.append('${ASP_SYSTEM_CMDS_DIR}/functions')
+from jobinfo_db import get_all_jobs
+import json
+jobs = get_all_jobs()
+print(json.dumps({"success": True, "jobs": jobs}))
+    `], {
+      cwd: ASP_SYSTEM_CMDS_DIR,
+      stdio: ['pipe', 'pipe', 'pipe']
+    });
     
-    const dbPath = '/home/aspuser/app/database/openasp_jobs.db';
+    let output = '';
+    let errorOutput = '';
     
-    // Check if database exists
-    const fs = require('fs');
-    if (fs.existsSync(dbPath)) {
-      const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READONLY);
-      
-      db.all(`
-        SELECT job_id, job_name, program, library, volume, status, 
-               submitted_time, start_time, end_time, priority, jobq, pid, log_file
-        FROM jobs 
-        WHERE status IN ('PENDING', 'RUNNING', 'HELD', 'COMPLETED', 'ERROR', 'CANCELLED')
-        ORDER BY submitted_time DESC
-        LIMIT 100
-      `, [], (err, rows) => {
-        if (err) {
-          console.error('Database error:', err);
-          // Fallback to REFJOB command
+    fetchProcess.stdout.on('data', (data) => {
+      output += data.toString();
+    });
+    
+    fetchProcess.stderr.on('data', (data) => {
+      errorOutput += data.toString();
+    });
+    
+    fetchProcess.on('close', (code) => {
+      if (code === 0) {
+        try {
+          const result = JSON.parse(output.trim());
+          if (result.success && result.jobs) {
+            // Transform PostgreSQL job data to match UI format
+            const transformedJobs = result.jobs.map(job => ({
+              id: job.jobid,
+              name: job.jobname,
+              status: job.status.toLowerCase().trim(),
+              user: job.user.trim(),
+              start_time: job.sbmdt,
+              cpu_time: '00:00:00',
+              priority: 5,
+              queue: '@SAME',
+              program: job.jobname,
+              library: 'TESTLIB',
+              volume: 'DISK01',
+              pid: null,
+              log_file: `${job.jobid}.log`
+            }));
+            
+            res.json({
+              success: true,
+              jobs: transformedJobs
+            });
+          } else {
+            console.error('PostgreSQL jobs fetch failed:', result);
+            fallbackToRefjob(res);
+          }
+        } catch (parseError) {
+          console.error('Error parsing PostgreSQL response:', parseError);
+          console.error('Raw output:', output);
+          console.error('Error output:', errorOutput);
           fallbackToRefjob(res);
-        } else {
-          const jobs = rows.map(row => ({
-            id: row.job_id,
-            name: row.job_name,
-            status: row.status.toLowerCase(), // Normalize status to lowercase
-            user: 'system',
-            start_time: row.start_time || row.submitted_time,
-            cpu_time: '00:00:00',
-            priority: row.priority || 5,
-            queue: row.jobq || '@SAME',
-            program: row.program,
-            library: row.library,
-            volume: row.volume,
-            pid: row.pid || null,
-            log_file: row.log_file || null
-          }));
-          
-          res.json({
-            success: true,
-            jobs: jobs
-          });
         }
-        db.close();
-      });
-    } else {
-      // Database doesn't exist, fallback to REFJOB
-      fallbackToRefjob(res);
-    }
+      } else {
+        console.error('PostgreSQL jobs fetch process failed with code:', code);
+        console.error('Error output:', errorOutput);
+        fallbackToRefjob(res);
+      }
+    });
     
   } catch (error) {
-    console.error('Error fetching jobs:', error);
-    // Fallback to REFJOB command
+    console.error('Error fetching jobs from PostgreSQL:', error);
     fallbackToRefjob(res);
   }
 });
@@ -468,160 +476,118 @@ function fallbackToRefjob(res) {
 }
 
 /**
- * Get job status with PID information
+ * Get job status from PostgreSQL JOBINFO table
  */
 app.get('/api/jobs/:jobId/status', async (req, res) => {
   const { jobId } = req.params;
   
   try {
-    // Try to read from SQLite database
-    const sqlite3 = require('sqlite3').verbose();
-    const dbPath = '/home/aspuser/app/database/openasp_jobs.db';
-    const fs = require('fs');
+    // Get job status from PostgreSQL JOBINFO table
+    const statusProcess = spawn('python3', ['-c', `
+import sys
+sys.path.append('${ASP_SYSTEM_CMDS_DIR}/functions')
+from jobinfo_db import get_jobinfo
+import json
+job = get_jobinfo('${jobId}')
+print(json.dumps({"success": True, "job": job}))
+    `], {
+      cwd: ASP_SYSTEM_CMDS_DIR,
+      stdio: ['pipe', 'pipe', 'pipe']
+    });
     
-    if (fs.existsSync(dbPath)) {
-      const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READONLY);
-      
-      db.get(`
-        SELECT job_id, job_name, program, library, volume, status, 
-               submitted_time, start_time, end_time, priority, jobq, pid, log_file
-        FROM jobs 
-        WHERE job_id = ?
-      `, [jobId], (err, row) => {
-        if (err) {
-          res.status(500).json({ success: false, error: 'Database error' });
-        } else if (row) {
-          // Check if process is actually running if status is RUNNING
-          let actuallyRunning = false;
-          if (row.status === 'RUNNING' && row.pid) {
-            try {
-              // Check if PID exists
-              process.kill(row.pid, 0);
-              actuallyRunning = true;
-            } catch (e) {
-              // Process doesn't exist
-              actuallyRunning = false;
-            }
+    let output = '';
+    let errorOutput = '';
+    
+    statusProcess.stdout.on('data', (data) => {
+      output += data.toString();
+    });
+    
+    statusProcess.stderr.on('data', (data) => {
+      errorOutput += data.toString();
+    });
+    
+    statusProcess.on('close', (code) => {
+      if (code === 0) {
+        try {
+          const result = JSON.parse(output.trim());
+          if (result.success && result.job) {
+            const job = result.job;
+            res.json({
+              success: true,
+              job: {
+                id: job.jobid,
+                name: job.jobname,
+                status: job.status.toLowerCase().trim(),
+                pid: null,
+                actuallyRunning: false,
+                program: job.jobname,
+                library: 'TESTLIB',
+                volume: 'DISK01',
+                start_time: job.sbmdt,
+                end_time: null,
+                log_file: `${job.jobid}.log`
+              }
+            });
+          } else {
+            res.status(404).json({ success: false, error: 'Job not found' });
           }
-          
-          res.json({
-            success: true,
-            job: {
-              id: row.job_id,
-              name: row.job_name,
-              status: row.status.toLowerCase(),
-              pid: row.pid,
-              actuallyRunning: actuallyRunning,
-              program: row.program,
-              library: row.library,
-              volume: row.volume,
-              start_time: row.start_time,
-              end_time: row.end_time,
-              log_file: row.log_file
-            }
-          });
-        } else {
-          res.status(404).json({ success: false, error: 'Job not found' });
+        } catch (parseError) {
+          console.error('Error parsing PostgreSQL job status response:', parseError);
+          console.error('Raw output:', output);
+          console.error('Error output:', errorOutput);
+          res.status(500).json({ success: false, error: 'Internal error' });
         }
-        db.close();
-      });
-    } else {
-      res.status(500).json({ success: false, error: 'Database not found' });
-    }
+      } else {
+        console.error('PostgreSQL job status fetch process failed with code:', code);
+        console.error('Error output:', errorOutput);
+        res.status(500).json({ success: false, error: 'Database error' });
+      }
+    });
+    
   } catch (error) {
-    console.error('Error fetching job status:', error);
+    console.error('Error fetching job status from PostgreSQL:', error);
     res.status(500).json({ success: false, error: 'Internal error' });
   }
 });
 
 /**
- * Get job log
+ * Get job log (JOBID-only log files from PostgreSQL)
  */
 app.get('/api/jobs/:jobId/log', async (req, res) => {
   const { jobId } = req.params;
   
   try {
-    // Get job information from database first
-    const sqlite3 = require('sqlite3').verbose();
-    const dbPath = '/home/aspuser/app/database/openasp_jobs.db';
+    // Use JOBID-only log file path (new PostgreSQL system uses JOBID.log format)
+    const logPath = path.join('/home/aspuser/app/volume/JOBLOG', `${jobId}.log`);
     
-    if (require('fs').existsSync(dbPath)) {
-      const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READONLY);
+    try {
+      // Read log file as buffer to handle SJIS encoding
+      const logBuffer = await fs.readFile(logPath);
       
-      db.get(`
-        SELECT job_id, job_name, log_file 
-        FROM jobs 
-        WHERE job_id = ?
-      `, [jobId], async (err, job) => {
-        if (err) {
-          console.error('Error querying job:', err);
-          res.status(500).set('Content-Type', 'text/plain');
-          res.send(`Error fetching job information: ${err.message}`);
-          db.close();
-          return;
-        }
-        
-        if (!job) {
-          res.status(404).set('Content-Type', 'text/plain');
-          res.send(`Job ${jobId} not found in database.`);
-          db.close();
-          return;
-        }
-        
-        // Use log_file from database if available, otherwise construct path
-        const logPath = job.log_file || path.join('/home/aspuser/app/volume/JOBLOG', `${jobId}_${job.job_name}.log`);
-        
-        try {
-          // Read log file as buffer to handle SJIS encoding
-          const logBuffer = await fs.readFile(logPath);
-          
-          // Try to decode as SJIS first, fallback to UTF-8
-          let logContent;
-          try {
-            // Attempt to decode as SJIS
-            logContent = iconv.decode(logBuffer, 'SHIFT_JIS');
-          } catch (sjisError) {
-            // If SJIS fails, try UTF-8
-            logContent = logBuffer.toString('utf-8');
-          }
-          
-          res.set('Content-Type', 'text/plain; charset=utf-8');
-          res.send(logContent);
-        } catch (error) {
-          if (error.code === 'ENOENT') {
-            res.set('Content-Type', 'text/plain; charset=utf-8');
-            res.send(`Job log for ${jobId} not found.\n\nLog file expected at: ${logPath}\n\nThis could mean:\n- Job is still pending or has not started\n- Job completed without generating log output\n- Log file was deleted or moved\n\nCheck job status with REFJOB command.`);
-          } else {
-            throw error;
-          }
-        }
-        
-        db.close();
-      });
-    } else {
-      // Database not found, try direct file access
-      const logPath = path.join('/home/aspuser/app/volume/JOBLOG', `${jobId}.log`);
-      
+      // Try to decode as SJIS first, fallback to UTF-8
+      let logContent;
       try {
-        const logBuffer = await fs.readFile(logPath);
-        let logContent;
-        try {
-          logContent = iconv.decode(logBuffer, 'SHIFT_JIS');
-        } catch (sjisError) {
-          logContent = logBuffer.toString('utf-8');
-        }
-        
+        // Attempt to decode as SJIS
+        logContent = iconv.decode(logBuffer, 'SHIFT_JIS');
+      } catch (sjisError) {
+        // If SJIS fails, try UTF-8
+        logContent = logBuffer.toString('utf-8');
+      }
+      
+      res.set('Content-Type', 'text/plain; charset=utf-8');
+      res.send(logContent);
+      
+    } catch (error) {
+      if (error.code === 'ENOENT') {
         res.set('Content-Type', 'text/plain; charset=utf-8');
-        res.send(logContent);
-      } catch (error) {
-        if (error.code === 'ENOENT') {
-          res.set('Content-Type', 'text/plain; charset=utf-8');
-          res.send(`Job log for ${jobId} not found or job has not generated log output yet.\n\nThis could mean:\n- Job is still pending or running\n- Job completed without generating log output\n- Log file location is different\n\nCheck job status with REFJOB command.`);
-        } else {
-          throw error;
-        }
+        res.send(`Job log for ${jobId} not found.\n\nLog file expected at: ${logPath}\n\nThis could mean:\n- Job is still pending or has not started\n- Job completed without generating log output\n- Log file was deleted or moved\n\nCheck job status in ジョブ管理.`);
+      } else {
+        console.error('Error reading log file:', error);
+        res.status(500).set('Content-Type', 'text/plain; charset=utf-8');
+        res.send(`Error reading job log: ${error.message}`);
       }
     }
+    
   } catch (error) {
     console.error('Error fetching job log:', error);
     res.status(500).set('Content-Type', 'text/plain; charset=utf-8');
@@ -1196,63 +1162,294 @@ app.post('/api/cl/execute', async (req, res) => {
 });
 
 /**
- * Delete job from database
+ * Get JOBINFO from PostgreSQL database
+ */
+app.get('/api/jobinfo/:jobId', async (req, res) => {
+  const { jobId } = req.params;
+  
+  try {
+    const { spawn } = require('child_process');
+    const process = spawn('python3', ['-c', `
+import sys
+sys.path.append('${ASP_SYSTEM_CMDS_DIR}/functions')
+from jobinfo_db import get_jobinfo
+import json
+result = get_jobinfo('${jobId}')
+print(json.dumps(result) if result else 'null')
+    `], {
+      cwd: ASP_SYSTEM_CMDS_DIR,
+      stdio: ['pipe', 'pipe', 'pipe']
+    });
+    
+    let output = '';
+    let errorOutput = '';
+    
+    process.stdout.on('data', (data) => {
+      output += data.toString();
+    });
+    
+    process.stderr.on('data', (data) => {
+      errorOutput += data.toString();
+    });
+    
+    process.on('close', (code) => {
+      if (code === 0) {
+        try {
+          const jobInfo = JSON.parse(output.trim());
+          if (jobInfo) {
+            res.json({
+              success: true,
+              jobInfo: jobInfo
+            });
+          } else {
+            res.status(404).json({
+              success: false,
+              error: 'Job not found'
+            });
+          }
+        } catch (parseError) {
+          res.status(500).json({
+            success: false,
+            error: 'Failed to parse job info',
+            details: parseError.message
+          });
+        }
+      } else {
+        res.status(500).json({
+          success: false,
+          error: 'Failed to get job info',
+          details: errorOutput
+        });
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error getting job info:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Server error',
+      message: error.message
+    });
+  }
+});
+
+/**
+ * Get job log file content
+ */
+app.get('/api/joblog/:jobId', async (req, res) => {
+  const { jobId } = req.params;
+  
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const logPath = path.join('/home/aspuser/app/volume/JOBLOG', `${jobId}.log`);
+    
+    if (!fs.existsSync(logPath)) {
+      return res.status(404).json({
+        success: false,
+        error: 'Job log file not found',
+        logPath: logPath
+      });
+    }
+    
+    const logContent = fs.readFileSync(logPath, 'utf8');
+    
+    res.json({
+      success: true,
+      jobId: jobId,
+      logContent: logContent,
+      logPath: logPath
+    });
+    
+  } catch (error) {
+    console.error('Error reading job log:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to read job log',
+      message: error.message
+    });
+  }
+});
+
+/**
+ * Delete JOBINFO and job log file
+ */
+app.delete('/api/jobinfo/:jobId', async (req, res) => {
+  const { jobId } = req.params;
+  
+  try {
+    const { spawn } = require('child_process');
+    const fs = require('fs');
+    const path = require('path');
+    
+    // Delete from PostgreSQL JOBINFO table
+    const deleteProcess = spawn('python3', ['-c', `
+import sys
+sys.path.append('${ASP_SYSTEM_CMDS_DIR}/functions')
+from jobinfo_db import delete_jobinfo
+import json
+result = delete_jobinfo('${jobId}')
+print(json.dumps({"success": result}))
+    `], {
+      cwd: ASP_SYSTEM_CMDS_DIR,
+      stdio: ['pipe', 'pipe', 'pipe']
+    });
+    
+    let output = '';
+    let errorOutput = '';
+    
+    deleteProcess.stdout.on('data', (data) => {
+      output += data.toString();
+    });
+    
+    deleteProcess.stderr.on('data', (data) => {
+      errorOutput += data.toString();
+    });
+    
+    deleteProcess.on('close', (code) => {
+      if (code === 0) {
+        try {
+          const deleteResult = JSON.parse(output.trim());
+          
+          // Delete log file
+          const logPath = path.join('/home/aspuser/app/volume/JOBLOG', `${jobId}.log`);
+          let logDeleted = false;
+          
+          try {
+            if (fs.existsSync(logPath)) {
+              fs.unlinkSync(logPath);
+              logDeleted = true;
+              console.log(`Log file deleted: ${logPath}`);
+            } else {
+              console.log(`Log file not found: ${logPath}`);
+            }
+          } catch (logError) {
+            console.error(`Error deleting log file: ${logError}`);
+          }
+          
+          if (deleteResult.success || logDeleted) {
+            res.json({
+              success: true,
+              message: `Job ${jobId} deleted successfully`,
+              details: {
+                jobinfo_deleted: deleteResult.success,
+                log_file_deleted: logDeleted,
+                log_path: logPath
+              }
+            });
+          } else {
+            res.status(404).json({
+              success: false,
+              error: 'Job not found in database and no log file',
+              jobId: jobId
+            });
+          }
+        } catch (parseError) {
+          res.status(500).json({
+            success: false,
+            error: 'Failed to parse deletion result',
+            details: parseError.message
+          });
+        }
+      } else {
+        res.status(500).json({
+          success: false,
+          error: 'Failed to delete job from database',
+          details: errorOutput
+        });
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error deleting job:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Server error',
+      message: error.message
+    });
+  }
+});
+
+/**
+ * Delete job from PostgreSQL JOBINFO table and log file
  */
 app.delete('/api/jobs/:jobId', async (req, res) => {
   const { jobId } = req.params;
   
   try {
-    // Try to delete from SQLite database
-    const sqlite3 = require('sqlite3').verbose();
-    const dbPath = '/home/aspuser/app/database/openasp_jobs.db';
-    const fs = require('fs');
+    // Delete from PostgreSQL JOBINFO table
+    const deleteProcess = spawn('python3', ['-c', `
+import sys
+sys.path.append('${ASP_SYSTEM_CMDS_DIR}/functions')
+from jobinfo_db import delete_jobinfo
+import json
+result = delete_jobinfo('${jobId}')
+print(json.dumps({"success": result}))
+    `], {
+      cwd: ASP_SYSTEM_CMDS_DIR,
+      stdio: ['pipe', 'pipe', 'pipe']
+    });
     
-    if (fs.existsSync(dbPath)) {
-      const db = new sqlite3.Database(dbPath);
+    let output = '';
+    let errorOutput = '';
+    
+    deleteProcess.stdout.on('data', (data) => {
+      output += data.toString();
+    });
+    
+    deleteProcess.stderr.on('data', (data) => {
+      errorOutput += data.toString();
+    });
+    
+    deleteProcess.on('close', async (code) => {
+      let deleteResult = { success: false };
       
-      // First delete from job_history table (foreign key constraint)
-      db.run('DELETE FROM job_history WHERE job_id = ?', [jobId], function(err) {
-        if (err) {
-          console.error('Error deleting job history:', err);
+      if (code === 0) {
+        try {
+          deleteResult = JSON.parse(output.trim());
+        } catch (parseError) {
+          console.error('Error parsing PostgreSQL delete response:', parseError);
+          console.error('Raw output:', output);
         }
-      });
+      } else {
+        console.error('PostgreSQL delete process failed with code:', code);
+        console.error('Error output:', errorOutput);
+      }
       
-      // Then delete from jobs table
-      db.run('DELETE FROM jobs WHERE job_id = ?', [jobId], function(err) {
-        if (err) {
-          console.error('Error deleting job:', err);
-          res.status(500).json({ 
-            success: false, 
-            error: 'Database error',
-            message: err.message 
-          });
-        } else {
-          const deletedRows = this.changes;
-          if (deletedRows > 0) {
-            res.json({
-              success: true,
-              message: `Job ${jobId} deleted successfully`,
-              deletedRows: deletedRows
-            });
-          } else {
-            res.status(404).json({
-              success: false,
-              error: 'Job not found',
-              message: `Job ${jobId} was not found in the database`
-            });
+      // Also try to delete log file
+      const logPath = path.join('/home/aspuser/app/volume/JOBLOG', `${jobId}.log`);
+      let logDeleted = false;
+      try {
+        await fs.unlink(logPath);
+        logDeleted = true;
+        console.log(`Log file deleted: ${logPath}`);
+      } catch (logError) {
+        if (logError.code !== 'ENOENT') {
+          console.error('Error deleting log file:', logError);
+        }
+      }
+      
+      if (deleteResult.success || logDeleted) {
+        res.json({
+          success: true,
+          message: `Job ${jobId} deleted successfully`,
+          details: {
+            jobinfo_deleted: deleteResult.success,
+            log_file_deleted: logDeleted,
+            log_path: logPath
           }
-        }
-        db.close();
-      });
-    } else {
-      res.status(500).json({ 
-        success: false, 
-        error: 'Database not found',
-        message: 'Job database does not exist'
-      });
-    }
+        });
+      } else {
+        res.status(404).json({
+          success: false,
+          error: 'Job not found in database and no log file',
+          jobId: jobId
+        });
+      }
+    });
+    
   } catch (error) {
-    console.error('Error deleting job:', error);
+    console.error('Error deleting job from PostgreSQL:', error);
     res.status(500).json({ 
       success: false, 
       error: 'Internal error',

@@ -103,6 +103,14 @@ interface DatasetLock {
   lock_time?: string;
 }
 
+interface JobInfo {
+  jobid: string;
+  jobname: string;
+  status: string;
+  user: string;
+  sbmdt: string;
+}
+
 const SystemManagerPage: React.FC = () => {
   const [systemData, setSystemData] = useState<SystemData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -116,6 +124,8 @@ const SystemManagerPage: React.FC = () => {
   const [selectedCL, setSelectedCL] = useState<{name: string, library: string, volume: string} | null>(null);
   const [isLoadingCL, setIsLoadingCL] = useState(false);
   const [selectedJobLog, setSelectedJobLog] = useState<{job: Job, log: string} | null>(null);
+  const [selectedJobInfo, setSelectedJobInfo] = useState<{jobInfo: JobInfo, logContent: string} | null>(null);
+  const [isLoadingJobInfo, setIsLoadingJobInfo] = useState(false);
   const [isSubmittingJob, setIsSubmittingJob] = useState(false);
   const [selectedDataset, setSelectedDataset] = useState<(DatasetInfo & {data?: string}) | null>(null);
   const [isLoadingDataset, setIsLoadingDataset] = useState(false);
@@ -179,6 +189,39 @@ const SystemManagerPage: React.FC = () => {
       }
     } catch (error) {
       console.error('Failed to fetch catalog data:', error);
+    }
+  };
+
+  const handleDeleteCatalog = async (resource: {name: string, type: string, library: string, volume: string, owner: string, resource: any}) => {
+    const confirmMessage = `カタログ "${resource.name}" (${resource.library}/${resource.volume}) を削除しますか？この操作は元に戻せません。`;
+    
+    if (window.confirm(confirmMessage)) {
+      try {
+        const response = await fetch('http://localhost:8000/api/catalog/delete', {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            resource_name: resource.name,
+            library: resource.library,
+            volume: resource.volume,
+            type: resource.type
+          })
+        });
+
+        if (response.ok) {
+          alert('カタログが正常に削除されました。');
+          // カタログリストを再取得
+          await fetchCatalogData();
+        } else {
+          const errorData = await response.json().catch(() => ({}));
+          alert(`カタログの削除に失敗しました: ${errorData.message || 'Unknown error'}`);
+        }
+      } catch (error) {
+        console.error('Failed to delete catalog:', error);
+        alert('カタログの削除中にエラーが発生しました。');
+      }
     }
   };
 
@@ -400,27 +443,57 @@ const SystemManagerPage: React.FC = () => {
   };
 
   const handleDeleteJob = async (jobId: string) => {
-    if (!window.confirm('このジョブを削除しますか？データベースからも完全に削除されます。')) {
+    if (!window.confirm('このジョブを削除しますか？データベースとログファイルからも完全に削除されます。')) {
       return;
     }
     
     try {
-      const response = await fetch(`${APP_CONFIG.api.baseUrl}/api/jobs/${jobId}`, {
+      // Delete from JOBINFO table and log file using new API
+      const jobinfoResponse = await fetch(`${APP_CONFIG.api.baseUrl}/api/jobinfo/${jobId}`, {
         method: 'DELETE'
       });
       
-      if (response.ok) {
+      let jobinfoDeleted = false;
+      if (jobinfoResponse.ok) {
+        const jobinfoResult = await jobinfoResponse.json();
+        jobinfoDeleted = jobinfoResult.success;
+        console.log(`JOBINFO deletion result:`, jobinfoResult);
+      }
+      
+      // Also try to delete from the original SQLite database (legacy jobs)
+      let sqliteDeleted = false;
+      try {
+        const sqliteResponse = await fetch(`${APP_CONFIG.api.baseUrl}/api/jobs/${jobId}`, {
+          method: 'DELETE'
+        });
+        
+        if (sqliteResponse.ok) {
+          const sqliteResult = await sqliteResponse.json();
+          sqliteDeleted = sqliteResult.success;
+          console.log(`SQLite deletion result:`, sqliteResult);
+        }
+      } catch (sqliteError) {
+        console.log('SQLite deletion attempt failed (expected for new jobs):', sqliteError);
+      }
+      
+      if (jobinfoDeleted || sqliteDeleted) {
         console.log(`Job ${jobId}: deleted successfully`);
         await fetchJobs(); // Refresh jobs list
-        alert('ジョブが正常に削除されました。');
+        
+        // Close JOBINFO modal if it's open for this job
+        if (selectedJobInfo && selectedJobInfo.jobInfo.jobid === jobId) {
+          setSelectedJobInfo(null);
+        }
+        
+        alert('ジョブが正常に削除されました。（データベースとログファイル）');
       } else {
-        const errorData = await response.json();
+        const errorData = jobinfoResponse.ok ? await jobinfoResponse.json() : { error: 'Unknown error' };
         console.error(`Failed to delete job ${jobId}:`, errorData);
-        alert(`ジョブの削除に失敗しました: ${errorData.error || errorData.message}`);
+        alert(`ジョブの削除に失敗しました: ${errorData.error || errorData.message || 'Unknown error'}`);
       }
     } catch (error) {
       console.error(`Error deleting job ${jobId}:`, error);
-      alert('ジョブの削除中にエラーが発生しました。');
+      alert('ジョブ削除中にエラーが発生しました。');
     }
   };
 
@@ -512,6 +585,67 @@ const SystemManagerPage: React.FC = () => {
     } catch (error) {
       console.error('Error fetching job log:', error);
       setSelectedJobLog({ job, log: 'Error fetching job log.' });
+    }
+  };
+
+  const fetchJobInfo = async (job: Job) => {
+    setIsLoadingJobInfo(true);
+    try {
+      // Fetch JOBINFO from PostgreSQL
+      const jobInfoResponse = await fetch(`${APP_CONFIG.api.baseUrl}/api/jobinfo/${job.id}`);
+      let jobInfo: JobInfo | null = null;
+      
+      if (jobInfoResponse.ok) {
+        const jobInfoData = await jobInfoResponse.json();
+        if (jobInfoData.success) {
+          jobInfo = jobInfoData.jobInfo;
+        }
+      }
+      
+      // Fetch job log content
+      const logResponse = await fetch(`${APP_CONFIG.api.baseUrl}/api/joblog/${job.id}`);
+      let logContent = '';
+      
+      if (logResponse.ok) {
+        const logData = await logResponse.json();
+        if (logData.success) {
+          logContent = logData.logContent;
+        } else {
+          logContent = 'ログファイルが見つかりません。';
+        }
+      } else {
+        logContent = 'ログファイルの読み込みに失敗しました。';
+      }
+      
+      // If no jobInfo from PostgreSQL, create from job data
+      if (!jobInfo) {
+        jobInfo = {
+          jobid: job.id,
+          jobname: job.name,
+          status: job.status,
+          user: job.user || 'system',
+          sbmdt: job.start_time || '不明'
+        };
+      }
+      
+      setSelectedJobInfo({ jobInfo, logContent });
+      
+    } catch (error) {
+      console.error('Error fetching job info:', error);
+      // Create fallback jobInfo
+      const fallbackJobInfo: JobInfo = {
+        jobid: job.id,
+        jobname: job.name,
+        status: job.status,
+        user: job.user || 'system',
+        sbmdt: job.start_time || '不明'
+      };
+      setSelectedJobInfo({ 
+        jobInfo: fallbackJobInfo, 
+        logContent: 'ジョブ情報の取得に失敗しました。' 
+      });
+    } finally {
+      setIsLoadingJobInfo(false);
     }
   };
 
@@ -1391,7 +1525,7 @@ const SystemManagerPage: React.FC = () => {
               <tr 
                 key={job.id} 
                 className="hover:bg-gray-750 cursor-pointer"
-                onDoubleClick={() => fetchJobLog(job)}
+                onDoubleClick={() => fetchJobInfo(job)}
               >
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-white">{job.id}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-white">{job.name}</td>
@@ -1624,6 +1758,9 @@ const SystemManagerPage: React.FC = () => {
                     {getCatalogSortIcon('owner')}
                   </div>
                 </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-700">
@@ -1644,6 +1781,27 @@ const SystemManagerPage: React.FC = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{resource.library}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{resource.volume}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{resource.owner}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                    <div className="flex space-x-2">
+                      <button
+                        disabled
+                        className="px-3 py-1 bg-gray-600 text-gray-400 rounded text-xs cursor-not-allowed"
+                        title="生成機能は今後対応予定"
+                      >
+                        生成
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteCatalog(resource);
+                        }}
+                        className="px-3 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 transition-colors"
+                        title="カタログを削除"
+                      >
+                        削除
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -2182,6 +2340,104 @@ const SystemManagerPage: React.FC = () => {
                 </button>
                 <button 
                   onClick={() => setShowCLViewer(false)}
+                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                >
+                  閉じる
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* JOBINFO Modal */}
+        {selectedJobInfo && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-gray-800 rounded-lg p-6 w-5/6 max-w-6xl h-5/6 border border-gray-700 flex flex-col">
+              <div className="flex justify-between items-center mb-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-white">
+                    ジョブ情報詳細
+                  </h3>
+                  <p className="text-sm text-gray-400">
+                    JOBID: {selectedJobInfo.jobInfo.jobid}
+                  </p>
+                </div>
+                <button 
+                  onClick={() => setSelectedJobInfo(null)}
+                  className="text-gray-400 hover:text-white text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+              
+              {/* JOBINFO Section */}
+              <div className="bg-gray-900 rounded-lg p-4 mb-4">
+                <h4 className="text-md font-semibold text-white mb-3">ジョブ基本情報</h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">JOBID</label>
+                    <div className="text-sm text-white font-mono bg-gray-800 p-2 rounded">
+                      {selectedJobInfo.jobInfo.jobid}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">JOBNAME</label>
+                    <div className="text-sm text-white bg-gray-800 p-2 rounded">
+                      {selectedJobInfo.jobInfo.jobname}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">STATUS</label>
+                    <div className={`text-sm font-semibold p-2 rounded ${getStatusColor(selectedJobInfo.jobInfo.status)}`}>
+                      {selectedJobInfo.jobInfo.status}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">USER</label>
+                    <div className="text-sm text-white bg-gray-800 p-2 rounded">
+                      {selectedJobInfo.jobInfo.user}
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-3">
+                  <label className="block text-xs text-gray-400 mb-1">投入日時 (SBMDT)</label>
+                  <div className="text-sm text-white bg-gray-800 p-2 rounded">
+                    {selectedJobInfo.jobInfo.sbmdt}
+                  </div>
+                </div>
+              </div>
+              
+              {/* Job Log Section */}
+              <div className="flex-1 flex flex-col min-h-0">
+                <h4 className="text-md font-semibold text-white mb-3">ジョブログ</h4>
+                <div className="flex-1 bg-gray-900 rounded-lg p-4 overflow-y-auto min-h-0" style={{minHeight: '200px', maxHeight: '400px'}}>
+                  {isLoadingJobInfo ? (
+                    <div className="flex items-center justify-center h-full min-h-[200px]">
+                      <ArrowPathIcon className="w-8 h-8 text-blue-400 animate-spin" />
+                      <span className="ml-2 text-gray-400">ジョブ情報取得中...</span>
+                    </div>
+                  ) : (
+                    <pre className="text-sm text-gray-300 font-mono whitespace-pre-wrap break-words">
+                      {selectedJobInfo.logContent}
+                    </pre>
+                  )}
+                </div>
+              </div>
+              
+              <div className="mt-4 flex justify-end space-x-2">
+                <button 
+                  onClick={() => {
+                    const job = jobs.find(j => j.id === selectedJobInfo.jobInfo.jobid);
+                    if (job) fetchJobInfo(job);
+                  }}
+                  disabled={isLoadingJobInfo}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed"
+                >
+                  <ArrowPathIcon className="w-4 h-4 inline mr-2" />
+                  更新
+                </button>
+                <button 
+                  onClick={() => setSelectedJobInfo(null)}
                   className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
                 >
                   閉じる
