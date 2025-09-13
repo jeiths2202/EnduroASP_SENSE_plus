@@ -1,11 +1,11 @@
 const { createProxyMiddleware } = require('http-proxy-middleware');
 
 module.exports = function(app) {
-  // Only proxy API routes to backend server
+  // Proxy API routes to Chat API server (includes RAG service)
   app.use(
     '/api',
     createProxyMiddleware({
-      target: 'http://localhost:8000',
+      target: 'http://localhost:3006',
       changeOrigin: true,
       secure: false,
       logLevel: 'silent'
