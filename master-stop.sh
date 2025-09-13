@@ -124,6 +124,12 @@ force_kill_by_pattern "python.*api.run" "Python API Services"
 force_kill_by_pattern "python.*api_server" "Python API Servers"
 force_kill_by_pattern "python.*aspmgr_web" "System API Servers"
 force_kill_by_pattern "python.*-c.*_job_processor_worker" "Job Processor Services"
+force_kill_by_pattern "python.*chat_api" "Chat API Services"
+
+# Chat services
+force_kill_by_pattern "ollama serve" "Ollama Server"
+force_kill_by_pattern "ollama runner" "Ollama Runner"
+force_kill_by_pattern "scripts/chat-start.sh" "Chat Service Startup Script"
 
 # Next.js DevOps services
 force_kill_by_pattern "next-server" "Next.js DevOps Server"
@@ -140,6 +146,23 @@ force_kill_by_port "3016" "OpenASP DevOps"
 force_kill_by_port "3007" "ASP Manager"
 force_kill_by_port "3008" "ASP Manager Backend"
 force_kill_by_port "8000" "API Server"
+force_kill_by_port "3006" "Chat API Server"
+force_kill_by_port "3014" "Ollama Server"
+
+# Chat Service shutdown
+echo -e "\n${YELLOW}Shutting down Chat Service...${NC}"
+if [ -f "/home/aspuser/app/ofasp-refactor/scripts/chat-stop.sh" ]; then
+    cd /home/aspuser/app/ofasp-refactor
+    ./scripts/chat-stop.sh > /dev/null 2>&1 &
+    echo -e "${GREEN}[OK] Chat Service shutdown script executed${NC}"
+else
+    echo -e "${YELLOW}[SKIP] Chat Service shutdown script not found${NC}"
+fi
+
+# Clean up chat service files
+rm -f /home/aspuser/app/ofasp-refactor/.chat_services 2>/dev/null || true
+rm -f /home/aspuser/app/ofasp-refactor/pids/ollama.pid 2>/dev/null || true
+rm -f /home/aspuser/app/ofasp-refactor/pids/chat-api.pid 2>/dev/null || true
 
 # pgAdmin 4 Web Server shutdown (Port 3009)
 echo -e "\n${YELLOW}Shutting down pgAdmin 4 web server...${NC}"
@@ -194,7 +217,7 @@ sleep 3
 echo -e "\n${YELLOW}Final port status check...${NC}"
 all_clear=true
 
-for port in 3000 3003 3004 3005 3016 3007 3008 8000 3009 3015 10050 10051; do
+for port in 3000 3003 3004 3005 3006 3014 3016 3007 3008 8000 3009 3015 10050 10051; do
     if lsof -i :$port > /dev/null 2>&1; then
         echo -e "${RED}[WARN] Port $port still in use${NC}"
         all_clear=false

@@ -1,28 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import {
-  CpuChipIcon,
-  ServerIcon,
-  CircleStackIcon,
-  ClockIcon,
   ArrowPathIcon,
-  ExclamationTriangleIcon,
-  ChartBarIcon,
   UserGroupIcon,
   DocumentTextIcon,
   Cog6ToothIcon,
   PlayIcon,
-  StopIcon,
-  PauseIcon,
   QueueListIcon,
-  CommandLineIcon,
   FolderIcon,
   ShieldCheckIcon,
   CloudIcon,
   TrashIcon,
-  ChevronUpIcon,
-  ChevronDownIcon
+  ServerIcon,
+  CircleStackIcon,
+  ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 import { APP_CONFIG } from '../config/app';
+import NetworkControlComponent from '../components/NetworkControl/NetworkControl';
+import SystemOverview from '../components/SystemOverview/SystemOverview';
+import JobManagementSection from '../components/JobManagement/JobManagementSection';
+import CatalogManagementSection from '../components/CatalogManagement/CatalogManagementSection';
+import DatasetManagementSection from '../components/DatasetManagement/DatasetManagementSection';
+import QueueManagementSection from '../components/QueueManagement/QueueManagementSection';
+import ResourceDetailModal from '../components/Modals/ResourceDetailModal';
+import JobLogModal from '../components/Modals/JobLogModal';
+import CLViewerModal from '../components/Modals/CLViewerModal';
+import { getStatusColor } from '../utils/displayHelpers';
 
 interface SystemData {
   system_info: {
@@ -111,6 +113,7 @@ interface JobInfo {
   sbmdt: string;
 }
 
+
 const SystemManagerPage: React.FC = () => {
   const [systemData, setSystemData] = useState<SystemData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -161,7 +164,6 @@ const SystemManagerPage: React.FC = () => {
     { id: 'network', label: 'Network Control', icon: <CloudIcon className="w-5 h-5" /> },
     { id: 'security', label: 'Security & Access', icon: <ShieldCheckIcon className="w-5 h-5" /> },
     { id: 'config', label: 'System Configuration', icon: <Cog6ToothIcon className="w-5 h-5" /> },
-    { id: 'terminal', label: 'Command Terminal', icon: <CommandLineIcon className="w-5 h-5" /> }
   ];
 
 
@@ -543,14 +545,6 @@ const SystemManagerPage: React.FC = () => {
     return sorted;
   };
 
-  const getSortIcon = (field: string) => {
-    if (sortField !== field) {
-      return null;
-    }
-    return sortDirection === 'asc' ? 
-      <ChevronUpIcon className="w-4 h-4 inline ml-1" /> : 
-      <ChevronDownIcon className="w-4 h-4 inline ml-1" />;
-  };
 
   // Catalog sorting functions
   const handleCatalogSort = (field: string) => {
@@ -564,14 +558,6 @@ const SystemManagerPage: React.FC = () => {
     }
   };
 
-  const getCatalogSortIcon = (field: string) => {
-    if (catalogSortField !== field) {
-      return null;
-    }
-    return catalogSortDirection === 'asc' ? 
-      <ChevronUpIcon className="w-4 h-4 inline ml-1" /> : 
-      <ChevronDownIcon className="w-4 h-4 inline ml-1" />;
-  };
 
   const fetchJobLog = async (job: Job) => {
     try {
@@ -1275,670 +1261,56 @@ const SystemManagerPage: React.FC = () => {
     );
   };
 
-  const extractProgramFromJobName = (jobName: string): string => {
-    // Extract program name from job name (e.g., JOB_CRTFILE01_123456 -> CRTFILE01)
-    const match = jobName.match(/JOB_([A-Z0-9]+)_\d+/);
-    return match ? match[1] : jobName.replace('JOB_', '').split('_')[0];
-  };
-
-  const calculateRunningTime = (startTime: string): string => {
-    if (!startTime) return '00:00:00';
-    
-    const now = new Date();
-    const start = new Date();
-    const [hours, minutes, seconds] = startTime.split(':').map(Number);
-    start.setHours(hours, minutes, seconds);
-    
-    const diff = Math.floor((now.getTime() - start.getTime()) / 1000);
-    const h = Math.floor(diff / 3600);
-    const m = Math.floor((diff % 3600) / 60);
-    const s = diff % 60;
-    
-    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'running': return 'text-green-400 bg-green-900/20';
-      case 'completed': return 'text-blue-400 bg-blue-900/20';
-      case 'failed': return 'text-red-400 bg-red-900/20';
-      case 'pending': return 'text-yellow-400 bg-yellow-900/20';
-      case 'held': return 'text-gray-400 bg-gray-900/20';
-      default: return 'text-gray-400 bg-gray-900/20';
-    }
-  };
 
   const renderOverview = () => (
-    <div className="space-y-6">
-      {/* System Status Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-400 text-sm">CPU Usage</p>
-              <p className="text-2xl font-semibold text-white">{systemData?.system_info.cpu_percent.toFixed(1)}%</p>
-            </div>
-            <CpuChipIcon className="w-8 h-8 text-blue-400" />
-          </div>
-          <div className="mt-4 bg-gray-700 rounded-full h-2">
-            <div 
-              className="bg-blue-400 h-2 rounded-full transition-all duration-300" 
-              style={{ width: `${systemData?.system_info.cpu_percent}%` }}
-            />
-          </div>
-        </div>
-
-        <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-400 text-sm">Memory</p>
-              <p className="text-2xl font-semibold text-white">{systemData?.system_info.memory_percent.toFixed(1)}%</p>
-            </div>
-            <CircleStackIcon className="w-8 h-8 text-green-400" />
-          </div>
-          <div className="mt-4 bg-gray-700 rounded-full h-2">
-            <div 
-              className="bg-green-400 h-2 rounded-full transition-all duration-300" 
-              style={{ width: `${systemData?.system_info.memory_percent}%` }}
-            />
-          </div>
-        </div>
-
-        <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-400 text-sm">Disk Usage</p>
-              <p className="text-2xl font-semibold text-white">{systemData?.system_info.disk_percent.toFixed(1)}%</p>
-            </div>
-            <ServerIcon className="w-8 h-8 text-purple-400" />
-          </div>
-          <div className="mt-4 bg-gray-700 rounded-full h-2">
-            <div 
-              className="bg-purple-400 h-2 rounded-full transition-all duration-300" 
-              style={{ width: `${systemData?.system_info.disk_percent}%` }}
-            />
-          </div>
-        </div>
-
-        <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-400 text-sm">Processes</p>
-              <p className="text-2xl font-semibold text-white">{systemData?.system_info.process_count}</p>
-            </div>
-            <ClockIcon className="w-8 h-8 text-orange-400" />
-          </div>
-          <p className="text-sm text-gray-400 mt-2">Uptime: {systemData?.system_info.uptime}</p>
-        </div>
-      </div>
-
-      {/* Alerts */}
-      {systemData?.alerts && systemData.alerts.length > 0 && (
-        <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-          <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-            <ExclamationTriangleIcon className="w-5 h-5 mr-2 text-yellow-400" />
-            System Alerts
-          </h3>
-          <div className="space-y-2">
-            {systemData.alerts.map((alert, index) => (
-              <div key={index} className={`p-3 rounded border-l-4 ${
-                alert.type === 'warning' ? 'bg-yellow-900/20 border-yellow-400' : 'bg-blue-900/20 border-blue-400'
-              }`}>
-                <p className="text-white">{alert.message}</p>
-                <p className="text-xs text-gray-400">{new Date(alert.timestamp).toLocaleTimeString()}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* System Information */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-          <h3 className="text-lg font-semibold text-white mb-4">System Information</h3>
-          <div className="space-y-3">
-            <div className="flex justify-between">
-              <span className="text-gray-400">Hostname:</span>
-              <span className="text-white">{systemData?.system_info.hostname}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-400">CPU Cores:</span>
-              <span className="text-white">{systemData?.system_info.cpu_count}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-400">Total Memory:</span>
-              <span className="text-white">{systemData?.system_info.memory_total}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-400">Total Disk:</span>
-              <span className="text-white">{systemData?.system_info.disk_total}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-400">Load Average:</span>
-              <span className="text-white">{systemData?.system_info.load_avg.map(l => l.toFixed(2)).join(', ')}</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-          <h3 className="text-lg font-semibold text-white mb-4">Top Processes</h3>
-          <div className="space-y-2">
-            {systemData?.processes.slice(0, 5).map((proc) => (
-              <div key={proc.pid} className="flex justify-between items-center py-2 border-b border-gray-700">
-                <div>
-                  <p className="text-white font-medium">{proc.name}</p>
-                  <p className="text-xs text-gray-400">PID: {proc.pid} | User: {proc.user}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-white">{proc.cpu_percent.toFixed(1)}% CPU</p>
-                  <p className="text-xs text-gray-400">{proc.memory_percent.toFixed(1)}% MEM</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
+    <SystemOverview systemData={systemData} loading={loading} />
   );
 
   const renderJobs = () => (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h3 className="text-xl font-semibold text-white">ジョブ管理</h3>
-        <div className="flex space-x-2 items-center">
-          <span className="text-sm text-gray-400">
-            総件数: {jobs.length}件
-          </span>
-          <button 
-            onClick={fetchJobs}
-            className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-          >
-            更新
-          </button>
-        </div>
-      </div>
-
-      <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-900">
-            <tr>
-              <th 
-                className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-800 transition-colors"
-                onClick={() => handleSort('id')}
-              >
-                <div className="flex items-center">
-                  ジョブID
-                  {getSortIcon('id')}
-                </div>
-              </th>
-              <th 
-                className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-800 transition-colors"
-                onClick={() => handleSort('name')}
-              >
-                <div className="flex items-center">
-                  名前
-                  {getSortIcon('name')}
-                </div>
-              </th>
-              <th 
-                className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-800 transition-colors"
-                onClick={() => handleSort('status')}
-              >
-                <div className="flex items-center">
-                  ステータス
-                  {getSortIcon('status')}
-                </div>
-              </th>
-              <th 
-                className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-800 transition-colors"
-                onClick={() => handleSort('user')}
-              >
-                <div className="flex items-center">
-                  ユーザー
-                  {getSortIcon('user')}
-                </div>
-              </th>
-              <th 
-                className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-800 transition-colors"
-                onClick={() => handleSort('start_time')}
-              >
-                <div className="flex items-center">
-                  開始時刻
-                  {getSortIcon('start_time')}
-                </div>
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">CPU時間</th>
-              <th 
-                className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-800 transition-colors"
-                onClick={() => handleSort('priority')}
-              >
-                <div className="flex items-center">
-                  優先度
-                  {getSortIcon('priority')}
-                </div>
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">アクション</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-700">
-            {getSortedJobs().map((job) => (
-              <tr 
-                key={job.id} 
-                className="hover:bg-gray-750 cursor-pointer"
-                onDoubleClick={() => fetchJobInfo(job)}
-              >
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-white">{job.id}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-white">{job.name}</td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(job.status)}`}>
-                    {job.status.toUpperCase()}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{job.user || 'system'}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{job.start_time || '-'}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{job.cpu_time || '00:00:00'}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{job.priority || 5}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                  <div className="flex space-x-2">
-                    {job.status === 'running' && (
-                      <>
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleJobAction(job.id, 'hold');
-                          }}
-                          className="text-yellow-400 hover:text-yellow-300"
-                          title="Hold"
-                        >
-                          <PauseIcon className="w-4 h-4" />
-                        </button>
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleJobAction(job.id, 'cancel');
-                          }}
-                          className="text-red-400 hover:text-red-300"
-                          title="Cancel"
-                        >
-                          <StopIcon className="w-4 h-4" />
-                        </button>
-                      </>
-                    )}
-                    {job.status === 'held' && (
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleJobAction(job.id, 'resume');
-                        }}
-                        className="text-green-400 hover:text-green-300"
-                        title="Resume"
-                      >
-                        <PlayIcon className="w-4 h-4" />
-                      </button>
-                    )}
-                    {(job.status === 'pending' || job.status === 'error' || job.status === 'completed') && (
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleJobAction(job.id, 'start');
-                        }}
-                        className="text-blue-400 hover:text-blue-300"
-                        title={job.status === 'pending' ? 'Start' : 'Restart'}
-                      >
-                        <PlayIcon className="w-4 h-4" />
-                      </button>
-                    )}
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        fetchJobLog(job);
-                      }}
-                      className="text-blue-400 hover:text-blue-300"
-                      title="View Log"
-                    >
-                      <DocumentTextIcon className="w-4 h-4" />
-                    </button>
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteJob(job.id);
-                      }}
-                      className="text-red-400 hover:text-red-300"
-                      title="Delete"
-                    >
-                      <TrashIcon className="w-4 h-4" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {jobs.length === 0 && (
-          <div className="p-8 text-center text-gray-400">
-            現在実行中のジョブはありません
-          </div>
-        )}
-      </div>
-    </div>
+    <JobManagementSection
+      jobs={jobs}
+      getSortedJobs={getSortedJobs}
+      fetchJobs={fetchJobs}
+      handleSort={handleSort}
+      handleJobAction={handleJobAction}
+      fetchJobInfo={fetchJobInfo}
+      fetchJobLog={fetchJobLog}
+      handleDeleteJob={handleDeleteJob}
+      sortField={sortField}
+      sortDirection={sortDirection}
+    />
   );
 
-  const renderCatalog = () => {
-    if (!catalogData) {
-      return (
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <ArrowPathIcon className="w-8 h-8 text-blue-400 animate-spin mx-auto mb-4" />
-            <p className="text-gray-400">Loading catalog data...</p>
-          </div>
-        </div>
-      );
-    }
-
-    const resources: Array<{name: string, type: string, library: string, volume: string, owner: string, resource: CatalogResource}> = [];
-    
-    Object.entries(catalogData).forEach(([volumeName, volume]) => {
-      if (typeof volume === 'object' && volume !== null) {
-        Object.entries(volume).forEach(([libraryName, library]) => {
-          if (typeof library === 'object' && library !== null) {
-            Object.entries(library).forEach(([resourceName, resourceData]) => {
-              if (typeof resourceData === 'object' && resourceData !== null && 'TYPE' in resourceData) {
-                const resource = resourceData as CatalogResource;
-                resources.push({
-                  name: resourceName,
-                  type: resource.TYPE,
-                  library: libraryName,
-                  volume: volumeName,
-                  owner: 'admin',
-                  resource: resource
-                });
-              }
-            });
-          }
-        });
-      }
-    });
-
-    // Sort resources based on current sort settings
-    const sortedResources = [...resources].sort((a, b) => {
-      let aValue: any;
-      let bValue: any;
-
-      switch (catalogSortField) {
-        case 'name':
-          aValue = a.name.toLowerCase();
-          bValue = b.name.toLowerCase();
-          break;
-        case 'type':
-          aValue = (a.resource.PGMTYPE || a.type).toLowerCase();
-          bValue = (b.resource.PGMTYPE || b.type).toLowerCase();
-          break;
-        case 'library':
-          aValue = a.library.toLowerCase();
-          bValue = b.library.toLowerCase();
-          break;
-        case 'volume':
-          aValue = a.volume.toLowerCase();
-          bValue = b.volume.toLowerCase();
-          break;
-        case 'owner':
-          aValue = a.owner.toLowerCase();
-          bValue = b.owner.toLowerCase();
-          break;
-        default:
-          aValue = a.name.toLowerCase();
-          bValue = b.name.toLowerCase();
-      }
-
-      if (catalogSortDirection === 'asc') {
-        return aValue > bValue ? 1 : aValue < bValue ? -1 : 0;
-      } else {
-        return aValue < bValue ? 1 : aValue > bValue ? -1 : 0;
-      }
-    });
-
-    return (
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h3 className="text-xl font-semibold text-white">カタログ管理</h3>
-          <button 
-            onClick={fetchCatalogData}
-            className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-          >
-            更新
-          </button>
-        </div>
-
-        <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-gray-900">
-              <tr>
-                <th 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-800 transition-colors"
-                  onClick={() => handleCatalogSort('name')}
-                >
-                  <div className="flex items-center">
-                    リソース名
-                    {getCatalogSortIcon('name')}
-                  </div>
-                </th>
-                <th 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-800 transition-colors"
-                  onClick={() => handleCatalogSort('type')}
-                >
-                  <div className="flex items-center">
-                    タイプ名
-                    {getCatalogSortIcon('type')}
-                  </div>
-                </th>
-                <th 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-800 transition-colors"
-                  onClick={() => handleCatalogSort('library')}
-                >
-                  <div className="flex items-center">
-                    ライブラリ名
-                    {getCatalogSortIcon('library')}
-                  </div>
-                </th>
-                <th 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-800 transition-colors"
-                  onClick={() => handleCatalogSort('volume')}
-                >
-                  <div className="flex items-center">
-                    ボリューム名
-                    {getCatalogSortIcon('volume')}
-                  </div>
-                </th>
-                <th 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-800 transition-colors"
-                  onClick={() => handleCatalogSort('owner')}
-                >
-                  <div className="flex items-center">
-                    所有者
-                    {getCatalogSortIcon('owner')}
-                  </div>
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-700">
-              {sortedResources.map((resource, index) => (
-                <tr 
-                  key={index} 
-                  className="hover:bg-gray-750 cursor-pointer"
-                  onDoubleClick={() => {
-                    if (resource.resource.PGMTYPE === 'CL') {
-                      handleCLDoubleClick(resource);
-                    } else {
-                      setSelectedResource(resource);
-                    }
-                  }}
-                >
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-white font-mono">{resource.name}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{resource.resource.PGMTYPE || resource.type}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{resource.library}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{resource.volume}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{resource.owner}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                    <div className="flex space-x-2">
-                      <button
-                        disabled
-                        className="px-3 py-1 bg-gray-600 text-gray-400 rounded text-xs cursor-not-allowed"
-                        title="生成機能は今後対応予定"
-                      >
-                        生成
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteCatalog(resource);
-                        }}
-                        className="px-3 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 transition-colors"
-                        title="カタログを削除"
-                      >
-                        削除
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    );
-  };
+  const renderCatalog = () => (
+    <CatalogManagementSection
+      catalogData={catalogData}
+      catalogSortField={catalogSortField}
+      catalogSortDirection={catalogSortDirection}
+      fetchCatalogData={fetchCatalogData}
+      handleCatalogSort={handleCatalogSort}
+      handleCLDoubleClick={handleCLDoubleClick}
+      setSelectedResource={setSelectedResource}
+      handleDeleteCatalog={handleDeleteCatalog}
+    />
+  );
 
   const renderQueues = () => (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h3 className="text-xl font-semibold text-white">Queue Management</h3>
-        <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-          Add Queue
-        </button>
-      </div>
-
-      <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-        <p className="text-gray-400 text-center">Queue management data will be available when integrated with job system.</p>
-      </div>
-    </div>
+    <QueueManagementSection />
   );
 
-  const renderDatasets = () => {
-    if (!catalogData) {
-      return (
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <ArrowPathIcon className="w-8 h-8 text-blue-400 animate-spin mx-auto mb-4" />
-            <p className="text-gray-400">Loading dataset information...</p>
-          </div>
-        </div>
-      );
-    }
+  const renderDatasets = () => (
+    <DatasetManagementSection
+      catalogData={catalogData}
+      isLoadingDataset={isLoadingDataset}
+      setActiveSection={setActiveSection}
+      viewDataset={viewDataset}
+      editDataset={editDataset}
+      deleteDataset={deleteDataset}
+    />
+  );
 
-    const datasets: DatasetInfo[] = [];
-    
-    Object.entries(catalogData).forEach(([volumeName, volume]) => {
-      if (typeof volume === 'object' && volume !== null) {
-        Object.entries(volume).forEach(([libraryName, library]) => {
-          if (typeof library === 'object' && library !== null) {
-            Object.entries(library).forEach(([resourceName, resourceData]) => {
-              if (typeof resourceData === 'object' && resourceData !== null && 'TYPE' in resourceData) {
-                const resource = resourceData as CatalogResource;
-                if (resource.TYPE === 'DATASET') {
-                  datasets.push({
-                    name: resourceName,
-                    type: resource.TYPE,
-                    library: libraryName,
-                    volume: volumeName,
-                    rectype: resource.RECTYPE || resource.RECFM,
-                    reclen: resource.RECLEN || resource.LRECL,
-                    encoding: resource.ENCODING,
-                    description: resource.DESCRIPTION || 'No description'
-                  } as DatasetInfo);
-                }
-              }
-            });
-          }
-        });
-      }
-    });
 
-    return (
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h3 className="text-xl font-semibold text-white">Dataset Management</h3>
-          <div className="flex space-x-2">
-            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-              Create Dataset
-            </button>
-            <button 
-              onClick={() => setActiveSection('catalog')}
-              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-            >
-              Catalog Browse
-            </button>
-          </div>
-        </div>
-
-        <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-gray-900">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Dataset Name</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Record Type</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Library</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Volume</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Description</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-700">
-              {datasets.map((dataset, index) => (
-                <tr key={index} className="hover:bg-gray-750">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-white font-mono">{dataset.name}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{dataset.rectype || 'N/A'}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{dataset.library}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{dataset.volume}</td>
-                  <td className="px-6 py-4 text-sm text-gray-300">{dataset.description}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <div className="flex space-x-2">
-                      <button 
-                        onClick={() => viewDataset(dataset)}
-                        className="text-blue-400 hover:text-blue-300 disabled:text-gray-500"
-                        disabled={isLoadingDataset}
-                      >
-                        表示
-                      </button>
-                      <button 
-                        onClick={() => editDataset(dataset)}
-                        className="text-green-400 hover:text-green-300"
-                      >
-                        編集
-                      </button>
-                      <button 
-                        onClick={() => deleteDataset(dataset)}
-                        className="text-red-400 hover:text-red-300"
-                      >
-                        削除
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {datasets.length === 0 && (
-            <div className="p-8 text-center text-gray-400">
-              No datasets found in catalog
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
+  const renderNetworkControl = () => <NetworkControlComponent />;
 
   const renderContent = () => {
     switch (activeSection) {
@@ -1948,6 +1320,7 @@ const SystemManagerPage: React.FC = () => {
       case 'queues': return renderQueues();
       case 'datasets': return renderDatasets();
       case 'resources': return renderDatasetMonitoring();
+      case 'network': return renderNetworkControl();
       default: 
         return (
           <div className="flex items-center justify-center h-64">
@@ -1999,80 +1372,12 @@ const SystemManagerPage: React.FC = () => {
       <div className="flex-1 p-6 overflow-auto">
         {renderContent()}
         
-        {/* Resource Detail Modal */}
-        {selectedResource && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-gray-800 rounded-lg p-6 w-96 max-w-full border border-gray-700">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-white">リソース詳細</h3>
-                <button 
-                  onClick={() => setSelectedResource(null)}
-                  className="text-gray-400 hover:text-white"
-                >
-                  ×
-                </button>
-              </div>
-              
-              <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <p className="text-gray-400 text-sm">名前:</p>
-                    <p className="text-white font-mono">{selectedResource.name}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-400 text-sm">タイプ:</p>
-                    <p className="text-white">{selectedResource.resource.TYPE}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-400 text-sm">ライブラリ:</p>
-                    <p className="text-white">{selectedResource.library}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-400 text-sm">ボリューム:</p>
-                    <p className="text-white">{selectedResource.volume}</p>
-                  </div>
-                </div>
-                
-                <div>
-                  <p className="text-gray-400 text-sm">説明:</p>
-                  <p className="text-white">{selectedResource.resource.DESCRIPTION}</p>
-                </div>
-                
-                {selectedResource.resource.VERSION && (
-                  <div>
-                    <p className="text-gray-400 text-sm">バージョン:</p>
-                    <p className="text-white">{selectedResource.resource.VERSION}</p>
-                  </div>
-                )}
-                
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <p className="text-gray-400 text-sm">作成日:</p>
-                    <p className="text-white text-xs">{new Date(selectedResource.resource.CREATED).toLocaleString('ja-JP')}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-400 text-sm">更新日:</p>
-                    <p className="text-white text-xs">{new Date(selectedResource.resource.UPDATED).toLocaleString('ja-JP')}</p>
-                  </div>
-                </div>
-                
-                {selectedResource.resource.TYPE === 'PGM' && (
-                  <div className="mt-4 pt-4 border-t border-gray-700">
-                    <button 
-                      className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed"
-                      disabled={isSubmittingJob}
-                      onClick={() => {
-                        submitJob(selectedResource.name, selectedResource.library, selectedResource.volume);
-                      }}
-                    >
-                      {isSubmittingJob ? '実行中...' : 'JOB実行 (SBMJOB)'}
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
+        <ResourceDetailModal
+          selectedResource={selectedResource}
+          isSubmittingJob={isSubmittingJob}
+          onClose={() => setSelectedResource(null)}
+          onSubmitJob={submitJob}
+        />
         
         {/* Dataset Viewer Modal */}
         {selectedDataset && (
@@ -2255,99 +1560,20 @@ const SystemManagerPage: React.FC = () => {
           </div>
         )}
         
-        {/* Job Log Modal */}
-        {selectedJobLog && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-gray-800 rounded-lg p-6 w-3/4 max-w-4xl h-3/4 border border-gray-700 flex flex-col">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-white">
-                  JOBログ: {selectedJobLog.job.name} ({selectedJobLog.job.id})
-                </h3>
-                <button 
-                  onClick={() => setSelectedJobLog(null)}
-                  className="text-gray-400 hover:text-white"
-                >
-                  ×
-                </button>
-              </div>
-              
-              <div className="flex-1 bg-gray-900 rounded p-4 overflow-auto">
-                <pre className="text-sm text-gray-300 font-mono whitespace-pre-wrap">
-                  {selectedJobLog.log}
-                </pre>
-              </div>
-              
-              <div className="mt-4 flex justify-end space-x-2">
-                <button 
-                  onClick={() => fetchJobLog(selectedJobLog.job)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  更新
-                </button>
-                <button 
-                  onClick={() => setSelectedJobLog(null)}
-                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-                >
-                  閉じる
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        <JobLogModal
+          selectedJobLog={selectedJobLog}
+          onClose={() => setSelectedJobLog(null)}
+          onRefresh={fetchJobLog}
+        />
 
-        {/* CL Viewer Modal */}
-        {showCLViewer && selectedCL && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-gray-800 rounded-lg p-6 w-3/4 max-w-4xl h-3/4 border border-gray-700 flex flex-col">
-              <div className="flex justify-between items-center mb-4">
-                <div>
-                  <h3 className="text-lg font-semibold text-white">
-                    CLプログラム: {selectedCL.name}
-                  </h3>
-                  <p className="text-sm text-gray-400">
-                    {selectedCL.volume}/{selectedCL.library}
-                  </p>
-                </div>
-                <button 
-                  onClick={() => setShowCLViewer(false)}
-                  className="text-gray-400 hover:text-white text-2xl"
-                >
-                  ×
-                </button>
-              </div>
-              
-              <div className="flex-1 bg-gray-900 rounded p-4 overflow-auto">
-                {isLoadingCL ? (
-                  <div className="flex items-center justify-center h-full">
-                    <ArrowPathIcon className="w-8 h-8 text-blue-400 animate-spin" />
-                    <span className="ml-2 text-gray-400">CLファイル読み込み中...</span>
-                  </div>
-                ) : (
-                  <pre className="text-sm text-gray-300 font-mono whitespace-pre-wrap">
-                    {clContent}
-                  </pre>
-                )}
-              </div>
-              
-              <div className="mt-4 flex justify-end space-x-2">
-                <button 
-                  onClick={executeCL}
-                  disabled={isLoadingCL}
-                  className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium disabled:bg-gray-600 disabled:cursor-not-allowed"
-                >
-                  <PlayIcon className="w-4 h-4 inline mr-2" />
-                  実行
-                </button>
-                <button 
-                  onClick={() => setShowCLViewer(false)}
-                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-                >
-                  閉じる
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        <CLViewerModal
+          showCLViewer={showCLViewer}
+          selectedCL={selectedCL}
+          clContent={clContent}
+          isLoadingCL={isLoadingCL}
+          onClose={() => setShowCLViewer(false)}
+          onExecute={executeCL}
+        />
 
         {/* JOBINFO Modal */}
         {selectedJobInfo && (

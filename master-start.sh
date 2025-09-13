@@ -30,7 +30,7 @@ cleanup_existing() {
     sleep 3
     
     # Check ports and force kill if necessary
-    for port in 3000 3003 3005 3007 8000; do
+    for port in 3000 3003 3005 3006 3007 3014 8000; do
         local pids=$(lsof -ti:$port 2>/dev/null || true)
         if [ ! -z "$pids" ]; then
             echo "  Force killing processes using port $port..."
@@ -207,7 +207,35 @@ echo -e "${YELLOW}[SKIP] System API Server - aspmgr_web.py not found, skipping.$
 SYSTEM_API_PID=""
 # fi
 
-# 8. pgAdmin 4 Web Server startup (Port 3009)
+# 8. Chat Service startup (Ollama: Port 3014, Chat API: Port 3006)
+echo -e "\n${GREEN}[CHAT] Starting Chat Service...${NC}"
+cd "$APP_ROOT/ofasp-refactor"
+if [ -f "scripts/chat-start.sh" ]; then
+    # Run chat service startup script
+    ./scripts/chat-start.sh > "$APP_ROOT/logs/chat-service.log" 2>&1 &
+    CHAT_STARTUP_PID=$!
+    
+    # Wait a bit for chat services to start
+    sleep 5
+    
+    # Check if chat services started successfully
+    if [ -f ".chat_services" ]; then
+        source .chat_services
+        echo -e "${GREEN}[OK] Chat Service started successfully${NC}"
+        echo "     - Ollama PID: $OLLAMA_PID (Port 3014)"
+        echo "     - Chat API PID: $CHAT_API_PID (Port 3006)"
+    else
+        echo -e "${YELLOW}[WARN] Chat Service startup incomplete${NC}"
+        OLLAMA_PID=""
+        CHAT_API_PID=""
+    fi
+else
+    echo -e "${RED}[NG] Chat service startup script not found: scripts/chat-start.sh${NC}"
+    OLLAMA_PID=""
+    CHAT_API_PID=""
+fi
+
+# 9. pgAdmin 4 Web Server startup (Port 3009)
 echo -e "\n${YELLOW}[PGADMIN] Starting pgAdmin 4 web server...${NC}"
 
 # Check if we're running as root for Apache service
@@ -227,7 +255,7 @@ else
     echo -e "${YELLOW}       Run 'su - root' and execute: service apache2 start${NC}"
 fi
 
-# 9. Zabbix Monitoring System startup
+# 10. Zabbix Monitoring System startup
 echo -e "\n${YELLOW}[MONITOR] Starting Zabbix monitoring system...${NC}"
 
 # Check if we're running as root for Zabbix services
@@ -280,6 +308,14 @@ else
     echo -e "${YELLOW}[SKIP] System API Server status check - service not started${NC}"
 fi
 
+# Check chat services if they were started
+if [ -n "$OLLAMA_PID" ]; then
+    check_service "Ollama Server" 3014 "$APP_ROOT/ofasp-refactor/logs/ollama.log"
+fi
+if [ -n "$CHAT_API_PID" ]; then
+    check_service "Chat API Server" 3006 "$APP_ROOT/ofasp-refactor/logs/chat-api.log"
+fi
+
 # Save process information
 echo -e "\n${YELLOW}[SAVE] Saving process information...${NC}"
 cat > "$APP_ROOT/.running_services" << EOF
@@ -291,6 +327,8 @@ MANAGER_BACKEND_PID=$MANAGER_BACKEND_PID
 API_SERVER_PID=$API_SERVER_PID
 DEVOPS_PID=$DEVOPS_PID
 SYSTEM_API_PID=$SYSTEM_API_PID
+OLLAMA_PID=$OLLAMA_PID
+CHAT_API_PID=$CHAT_API_PID
 STARTED_AT="$(date)"
 EOF
 
@@ -311,6 +349,15 @@ echo "   - OpenASP DevOps: http://localhost:3016"
 echo "   - ASP Manager: http://localhost:3007"
 echo "   - ASP Manager Backend: http://localhost:3008"
 echo "   - API Server: http://localhost:8000"
+if [ -n "$OLLAMA_PID" ] || [ -n "$CHAT_API_PID" ]; then
+    echo "   - Chat Interface: http://localhost:3005 → チャット"
+    if [ -n "$CHAT_API_PID" ]; then
+        echo "   - Chat API: http://localhost:3006"
+    fi
+    if [ -n "$OLLAMA_PID" ]; then
+        echo "   - Ollama API: http://localhost:3014"
+    fi
+fi
 echo "   - pgAdmin 4 Database Manager: http://localhost:3009/pgadmin4/ (admin@enduroax.co.jp/admin123)"
 echo "   - Zabbix Monitoring: http://localhost:3015 (Admin/zabbix)"
 echo ""
@@ -323,6 +370,11 @@ echo "   - Manager: $APP_ROOT/logs/asp-manager.log"
 echo "   - Manager Backend: $APP_ROOT/logs/asp-manager-backend.log"
 echo "   - System API: $APP_ROOT/logs/system-api.log"
 echo "   - API Server: $APP_ROOT/logs/api-server.log"
+if [ -n "$OLLAMA_PID" ] || [ -n "$CHAT_API_PID" ]; then
+    echo "   - Chat Service: $APP_ROOT/logs/chat-service.log"
+    echo "   - Ollama: $APP_ROOT/ofasp-refactor/logs/ollama.log"
+    echo "   - Chat API: $APP_ROOT/ofasp-refactor/logs/chat-api.log"
+fi
 echo "   - Zabbix Server: /var/log/zabbix/zabbix_server.log"
 echo "   - Zabbix Agent: /var/log/zabbix/zabbix_agentd.log"
 echo "   - Nginx: /var/log/nginx/access.log, /var/log/nginx/error.log"

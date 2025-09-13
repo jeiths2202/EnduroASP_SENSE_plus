@@ -231,7 +231,7 @@ function App() {
         <iframe 
           src="/login.html" 
           className="w-full h-full border-none"
-          title="OpenASP Manager Login"
+          title="EnduroASP Manager Login"
         />
       </div>
     );
