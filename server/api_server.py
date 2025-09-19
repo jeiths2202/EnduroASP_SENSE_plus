@@ -39,6 +39,16 @@ try:
 except ImportError as e:
     DBIO_AVAILABLE = False
     print(f"[API_SERVER] DBIO system not available, using JSON fallback: {e}")
+
+# Import PostgreSQL session manager for enterprise features
+try:
+    from postgresql_session_manager import PostgreSQLSessionManager
+    POSTGRESQL_SESSION_AVAILABLE = True
+    print("[API_SERVER] PostgreSQL Session Manager loaded successfully")
+except ImportError as e:
+    POSTGRESQL_SESSION_AVAILABLE = False
+    print(f"[API_SERVER] PostgreSQL Session Manager not available: {e}")
+
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit, join_room, leave_room
@@ -72,6 +82,18 @@ socketio = SocketIO(app, cors_allowed_origins=['http://localhost:3005', 'http://
 # Register layout API routes
 if LAYOUT_API_AVAILABLE:
     register_layout_routes(app)
+
+# Initialize PostgreSQL session manager for enterprise features
+postgresql_session_manager = None
+websocket_sessions = {}  # Track WebSocket sessions: {sid: {wsname, user}}
+
+if POSTGRESQL_SESSION_AVAILABLE:
+    try:
+        postgresql_session_manager = PostgreSQLSessionManager()
+        logger.info("PostgreSQL session manager initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize PostgreSQL session manager: {e}")
+        postgresql_session_manager = None
 
 # ?? ??
 VOLUME_ROOT = "/home/aspuser/app/volume"
@@ -337,6 +359,78 @@ class WorkstationSessionManager:
                 logger.info(f"Loaded {len(self.sessions)} sessions from storage")
         except Exception as e:
             logger.warning(f"Failed to load sessions: {e}")
+
+    def bulk_logout_sessions(self, workstation_names: List[str]) -> Dict[str, Any]:
+        """Bulk logout sessions by workstation names"""
+        results = {
+            'success': [],
+            'failed': [],
+            'total_processed': len(workstation_names)
+        }
+        
+        with self.lock:
+            for wsname in workstation_names:
+                try:
+                    # Check if session exists
+                    if wsname not in self.workstation_sessions:
+                        results['failed'].append({
+                            'wsname': wsname,
+                            'error': 'Session not found'
+                        })
+                        continue
+                    
+                    session_id = self.workstation_sessions[wsname]
+                    session = self.sessions.get(session_id)
+                    
+                    if not session:
+                        results['failed'].append({
+                            'wsname': wsname,
+                            'error': 'Session data not found'
+                        })
+                        continue
+                    
+                    if session.get('status') == 'OFF':
+                        results['failed'].append({
+                            'wsname': wsname,
+                            'error': 'Session already inactive'
+                        })
+                        continue
+                    
+                    # Logout the session
+                    success = self.logout_session(wsname=wsname)
+                    if success:
+                        results['success'].append(wsname)
+                        logger.info(f"Bulk logout successful for workstation: {wsname}")
+                    else:
+                        results['failed'].append({
+                            'wsname': wsname,
+                            'error': 'Logout operation failed'
+                        })
+                        
+                except Exception as e:
+                    logger.error(f"Failed to logout session {wsname}: {e}")
+                    results['failed'].append({
+                        'wsname': wsname,
+                        'error': str(e)
+                    })
+            
+            # Save changes
+            self._save_sessions()
+            logger.info(f"Bulk logout completed: {len(results['success'])} successful, {len(results['failed'])} failed")
+            
+        return results
+
+    def get_sessions_by_workstation_names(self, workstation_names: List[str]) -> List[Dict[str, Any]]:
+        """Get sessions for multiple workstation names"""
+        sessions = []
+        with self.lock:
+            for wsname in workstation_names:
+                if wsname in self.workstation_sessions:
+                    session_id = self.workstation_sessions[wsname]
+                    session = self.sessions.get(session_id)
+                    if session:
+                        sessions.append(dict(session))
+        return sessions
 
 # Initialize session manager
 workstation_session_manager = WorkstationSessionManager()
@@ -902,11 +996,16 @@ def handle_connect():
     logger.info(f"[WEBSOCKET] Client connected: {request.sid}")
     logger.info(f"[WEBSOCKET] Connection details: {client_info}")
     
+    # PostgreSQL session will be created when client registers with specific WSNAME
+    # Store connection info for now
+    websocket_sessions[request.sid] = {'wsname': None, 'user': None, 'registered': False}
+    
     # Send connection confirmation with debug info
     emit('connected', {
         'session_id': request.sid,
         'server_type': 'socketio',
         'message': 'WebSocket connection established',
+        'wsname': websocket_sessions.get(request.sid, {}).get('wsname', 'unknown'),
         'timestamp': datetime.now().isoformat()
     })
     
@@ -921,6 +1020,35 @@ def handle_disconnect():
     }
     
     logger.info(f"[WEBSOCKET] Client disconnected: {request.sid}")
+    
+    # Clean up sessions if they exist
+    if request.sid in websocket_sessions:
+        try:
+            session_info = websocket_sessions[request.sid]
+            wsname = session_info['wsname']
+            
+            # Update workstation_session_manager (used by API v1)
+            try:
+                existing_ws_session = workstation_session_manager.get_session_by_workstation(wsname)
+                if existing_ws_session:
+                    ws_session_id = existing_ws_session['session_id']
+                    workstation_session_manager.update_session(ws_session_id, {'status': 'OFF'})
+                    logger.info(f"[WEBSOCKET] Workstation session {wsname} set to inactive")
+            except Exception as e:
+                logger.error(f"[WEBSOCKET] Error updating workstation session on disconnect: {e}")
+            
+            # Update PostgreSQL session if manager is available
+            if postgresql_session_manager:
+                success = postgresql_session_manager.update_session_by_wsname(wsname, {'status': '0'})  # Set to inactive
+                if success:
+                    logger.info(f"[WEBSOCKET] PostgreSQL session {wsname} set to inactive")
+                else:
+                    logger.warning(f"[WEBSOCKET] Failed to update PostgreSQL session {wsname}")
+            
+            # Remove from tracking dictionary
+            del websocket_sessions[request.sid]
+        except Exception as e:
+            logger.error(f"[WEBSOCKET] Error updating sessions on disconnect: {e}")
     
     # Clean up interactive EDTFILE sessions
     try:
@@ -1029,6 +1157,72 @@ def handle_register_terminal(data):
     
     # Join terminal-specific room
     join_room(f'terminal_{terminal_id}')
+    
+    # Create or reactivate PostgreSQL session if manager is available
+    wsname = data.get('wsname', workstation)  # Use wsname from client data
+    logger.info(f"[TERMINAL_REG] Checking session for wsname: {wsname}")
+    logger.info(f"[TERMINAL_REG] PostgreSQL manager available: {postgresql_session_manager is not None}")
+    
+    if postgresql_session_manager and wsname:
+        try:
+            # Check if session already exists and is active
+            logger.info(f"[TERMINAL_REG] Looking up existing session for {wsname}")
+            existing_session = postgresql_session_manager.get_session_by_workstation(wsname)
+            logger.info(f"[TERMINAL_REG] Found existing session: {existing_session}")
+            
+            if existing_session:
+                status = existing_session.get('status', '0')
+                is_active = status == '1' or status == 'ON'
+                logger.info(f"[TERMINAL_REG] Session status: {status}, is_active: {is_active}")
+                
+                if is_active:
+                    logger.warning(f"[TERMINAL_REG] Session {wsname} is already active - rejecting registration")
+                    
+                    # Format last_activity for JSON serialization
+                    last_activity = existing_session.get('last_activity')
+                    if hasattr(last_activity, 'isoformat'):
+                        last_activity_str = last_activity.isoformat()
+                    else:
+                        last_activity_str = str(last_activity) if last_activity else 'unknown'
+                    
+                    emit('registration_error', {
+                        'error': f'Workstation {wsname} is already active (User: {existing_session.get("username", "unknown")}, Last activity: {last_activity_str})',
+                        'session_id': session_id,
+                        'existing_session': {
+                            'wsname': wsname,
+                            'username': existing_session.get('username'),
+                            'last_activity': last_activity_str
+                        }
+                    })
+                    return
+                else:
+                    # Reactivate existing session
+                    success = postgresql_session_manager.update_session_status(wsname, '1')
+                    logger.info(f"[TERMINAL_REG] Reactivated PostgreSQL session: {wsname}")
+            else:
+                # Create new session
+                success = postgresql_session_manager.create_session(
+                    wsname=wsname,
+                    user_id=user,
+                    terminal_id=terminal_id,
+                    display_mode='web',
+                    encoding='utf8'
+                )
+                logger.info(f"[TERMINAL_REG] Created new PostgreSQL session: {wsname} for user {user}")
+            
+            if success:
+                # Update WebSocket session tracker
+                websocket_sessions[session_id] = {
+                    'wsname': wsname, 
+                    'user': user, 
+                    'registered': True
+                }
+                logger.info(f"[TERMINAL_REG] PostgreSQL session ready: {wsname}")
+            else:
+                logger.error(f"[TERMINAL_REG] Failed to create/update PostgreSQL session: {wsname}")
+                
+        except Exception as e:
+            logger.error(f"[TERMINAL_REG] PostgreSQL session error: {e}")
     
     logger.info(f"[TERMINAL_REG] Terminal {terminal_id} successfully registered and joined room terminal_{terminal_id}")
     
@@ -1145,6 +1339,64 @@ def handle_hub_register(data):
         
         # Update terminal mapping
         terminal_to_session[terminal_id] = session_id
+        
+        # Create or update session in both managers
+        # First, update workstation_session_manager (used by API v1 endpoints)
+        if wsname:
+            try:
+                existing_ws_session = workstation_session_manager.get_session_by_workstation(wsname)
+                if existing_ws_session:
+                    # Update existing session to active
+                    ws_session_id = existing_ws_session['session_id']
+                    workstation_session_manager.update_session(ws_session_id, {'status': 'ON'})
+                    logger.info(f"[HUB_REGISTER] Reactivated workstation session for {wsname}")
+                else:
+                    # Create new workstation session
+                    ws_session_id = workstation_session_manager.create_session(
+                        wsname=wsname,
+                        user_id=user,
+                        terminal_id=terminal_id,
+                        display_mode='web',
+                        encoding='utf8'
+                    )
+                    logger.info(f"[HUB_REGISTER] Created workstation session: {ws_session_id}")
+            except Exception as e:
+                logger.error(f"[HUB_REGISTER] Workstation session error: {e}")
+        
+        # Then, update PostgreSQL session manager if available
+        if postgresql_session_manager and wsname:
+            try:
+                # Check if session exists
+                existing_session = postgresql_session_manager.get_session_by_workstation(wsname)
+                
+                if existing_session:
+                    # Update existing session to active
+                    success = postgresql_session_manager.update_session_by_wsname(wsname, {'status': '1'})
+                    logger.info(f"[HUB_REGISTER] Reactivated PostgreSQL session for {wsname}: {success}")
+                else:
+                    # Create new PostgreSQL session
+                    success = postgresql_session_manager.create_session(
+                        wsname=wsname,
+                        user_id=user,
+                        terminal_id=terminal_id,
+                        display_mode='web',
+                        encoding='utf8'
+                    )
+                    logger.info(f"[HUB_REGISTER] Created PostgreSQL session for {wsname}: {success}")
+                
+                # Track WebSocket session
+                if success:
+                    websocket_sessions[session_id] = {
+                        'wsname': wsname,
+                        'user': user,
+                        'terminal_id': terminal_id,
+                        'connected_at': datetime.now().isoformat()
+                    }
+                    logger.info(f"[HUB_REGISTER] WebSocket session tracked for {wsname}")
+                    
+            except Exception as e:
+                logger.error(f"[HUB_REGISTER] PostgreSQL session error: {e}")
+                # Continue with registration even if PostgreSQL fails
         
         logger.info(f"[HUB_REGISTER] React client registered successfully: {terminal_id}")
         
@@ -1780,6 +2032,78 @@ def workstation_logout():
         logger.error(f"Workstation logout error: {e}")
         return jsonify({'error': f'Logout failed: {str(e)}'}), 500
 
+@app.route('/api/v1/sessions/bulk-disconnect', methods=['POST'])
+def bulk_disconnect_workstations():
+    """Bulk disconnect workstation sessions"""
+    try:
+        data = request.get_json()
+        
+        if not data or 'workstations' not in data:
+            return jsonify({'error': 'Workstations list required'}), 400
+        
+        workstation_names = data.get('workstations', [])
+        
+        if not isinstance(workstation_names, list) or not workstation_names:
+            return jsonify({'error': 'Workstations must be a non-empty list'}), 400
+        
+        # Validate workstation names
+        for wsname in workstation_names:
+            if not isinstance(wsname, str) or not wsname.strip():
+                return jsonify({'error': f'Invalid workstation name: {wsname}'}), 400
+        
+        logger.info(f"[BULK_DISCONNECT] Starting bulk disconnect for {len(workstation_names)} workstations")
+        
+        # Get session information before disconnecting for WebSocket cleanup
+        sessions_to_disconnect = []
+        if postgresql_session_manager:
+            sessions_to_disconnect.extend(
+                postgresql_session_manager.get_sessions_by_workstation_names(workstation_names)
+            )
+        else:
+            sessions_to_disconnect.extend(
+                workstation_session_manager.get_sessions_by_workstation_names(workstation_names)
+            )
+        
+        # Force disconnect WebSocket connections for these workstations
+        disconnected_websockets = force_disconnect_websockets_by_workstations(workstation_names)
+        
+        # Logout sessions in PostgreSQL (if available)
+        postgresql_results = {'success': [], 'failed': []}
+        if postgresql_session_manager:
+            postgresql_results = postgresql_session_manager.bulk_logout_sessions(workstation_names)
+            logger.info(f"[BULK_DISCONNECT] PostgreSQL: {len(postgresql_results['success'])} successful, {len(postgresql_results['failed'])} failed")
+        
+        # Logout sessions in workstation manager (for backward compatibility)
+        workstation_results = workstation_session_manager.bulk_logout_sessions(workstation_names)
+        logger.info(f"[BULK_DISCONNECT] Workstation manager: {len(workstation_results['success'])} successful, {len(workstation_results['failed'])} failed")
+        
+        # Combine results (PostgreSQL takes precedence for status)
+        final_results = {
+            'success': postgresql_results['success'] if postgresql_session_manager else workstation_results['success'],
+            'failed': postgresql_results['failed'] if postgresql_session_manager else workstation_results['failed'],
+            'total_processed': len(workstation_names),
+            'websockets_disconnected': disconnected_websockets
+        }
+        
+        # Log the bulk disconnect operation
+        add_log('INFO', 'BULK_DISCONNECT', 'Bulk workstation disconnect completed', {
+            'workstations': workstation_names,
+            'successful': final_results['success'],
+            'failed': [f['wsname'] for f in final_results['failed']],
+            'websockets_disconnected': disconnected_websockets
+        })
+        
+        return jsonify(final_results)
+        
+    except Exception as e:
+        logger.error(f"Bulk disconnect error: {e}")
+        return jsonify({
+            'error': f'Bulk disconnect failed: {str(e)}',
+            'success': [],
+            'failed': [{'wsname': ws, 'error': str(e)} for ws in data.get('workstations', [])] if data else [],
+            'total_processed': len(data.get('workstations', [])) if data else 0
+        }), 500
+
 @app.route('/api/workstation/sessions', methods=['GET'])
 def get_workstation_sessions():
     """Get all workstation sessions"""
@@ -2205,6 +2529,124 @@ def auto_migrate_workstation_sessions():
         logger.error(f"Auto-migration error: {e}")
         return jsonify({'error': f'Auto-migration failed: {str(e)}'}), 500
 
+# WORKSTATION MANAGEMENT API ENDPOINTS
+
+@app.route('/api/workstations', methods=['GET'])
+def list_workstations():
+    """List all workstations with their status"""
+    try:
+        sessions = workstation_session_manager.list_all_sessions()
+        
+        # Transform sessions into workstation format
+        workstations = []
+        workstation_dict = {}
+        
+        # Group sessions by workstation name
+        for session in sessions:
+            wsname = session.get('wsname', 'UNKNOWN')
+            if wsname not in workstation_dict:
+                workstation_dict[wsname] = {
+                    'wsname': wsname,
+                    'status': 'OFF',
+                    'connected': False,
+                    'created_at': session.get('created_at', ''),
+                    'updated_at': session.get('updated_at', '')
+                }
+            
+            # Update with latest session info
+            if session.get('status') == 'ON':
+                workstation_dict[wsname]['status'] = 'ON'
+            if session.get('socket_id'):
+                workstation_dict[wsname]['connected'] = True
+                
+            # Keep most recent timestamps
+            if session.get('updated_at') > workstation_dict[wsname]['updated_at']:
+                workstation_dict[wsname]['updated_at'] = session.get('updated_at', '')
+        
+        workstations = list(workstation_dict.values())
+        
+        return jsonify({
+            'success': True,
+            'workstations': workstations,
+            'count': len(workstations)
+        })
+        
+    except Exception as e:
+        logger.error(f"List workstations error: {e}")
+        return jsonify({'error': f'Failed to list workstations: {str(e)}'}), 500
+
+@app.route('/api/workstations', methods=['POST'])
+def register_workstation():
+    """Register a new workstation"""
+    try:
+        data = request.get_json()
+        wsname = data.get('wsname')
+        status = data.get('status', 'OFF')
+        
+        if not wsname:
+            return jsonify({'error': 'Workstation name is required'}), 400
+            
+        # Create a new session for this workstation
+        session_id = workstation_session_manager.create_session(
+            user_id='SYSTEM',
+            terminal_id='admin',
+            wsname=wsname
+        )
+        
+        # Set the initial status
+        if session_id:
+            session_data = workstation_session_manager.get_session(session_id)
+            if session_data:
+                session_data['status'] = status
+                workstation_session_manager.update_session(session_id, session_data)
+        
+        return jsonify({
+            'success': True,
+            'message': f'Workstation {wsname} registered successfully',
+            'wsname': wsname,
+            'status': status,
+            'session_id': session_id
+        })
+        
+    except Exception as e:
+        logger.error(f"Register workstation error: {e}")
+        return jsonify({'error': f'Failed to register workstation: {str(e)}'}), 500
+
+@app.route('/api/workstations/<wsname>', methods=['PUT'])
+def update_workstation_status(wsname):
+    """Update workstation status"""
+    try:
+        data = request.get_json()
+        new_status = data.get('status')
+        
+        if not new_status or new_status not in ['ON', 'OFF']:
+            return jsonify({'error': 'Valid status (ON/OFF) is required'}), 400
+        
+        # Find all sessions for this workstation and update them
+        sessions = workstation_session_manager.list_all_sessions()
+        updated_sessions = 0
+        
+        for session in sessions:
+            if session.get('wsname') == wsname:
+                session_id = session.get('session_id')
+                if session_id:
+                    session['status'] = new_status
+                    session['updated_at'] = datetime.now().isoformat()
+                    workstation_session_manager.update_session(session_id, session)
+                    updated_sessions += 1
+        
+        return jsonify({
+            'success': True,
+            'message': f'Workstation {wsname} status updated to {new_status}',
+            'wsname': wsname,
+            'status': new_status,
+            'updated_sessions': updated_sessions
+        })
+        
+    except Exception as e:
+        logger.error(f"Update workstation status error: {e}")
+        return jsonify({'error': f'Failed to update workstation status: {str(e)}'}), 500
+
 @app.route('/api/execute', methods=['POST'])
 def execute_program():
     """???? ??"""
@@ -2537,6 +2979,450 @@ def get_smed_content_from_volume(volume, library, mapname):
     except Exception as e:
         logger.error(f"볼륨 SMED파일 내용 취득 에러: {e}")
         return jsonify({'error': str(e)}), 500
+
+# ============================================================================
+# ENTERPRISE TERMINAL SESSION API v1.0 - STANDARD REST ENDPOINTS
+# ============================================================================
+
+def format_session_for_api(session_data):
+    """Format session data for API response in standard format"""
+    if not session_data:
+        return None
+        
+    # Convert to standard API format
+    formatted_session = {
+        'wsname': session_data.get('wsname', ''),
+        'username': session_data.get('user_id', ''),
+        'conn_time': session_data.get('login_time', '').replace('T', '-').replace('Z', '').split('.')[0] if session_data.get('login_time') else '',
+        'status': '1' if session_data.get('status') == 'ON' else '0'
+    }
+    
+    # Format conn_time to yyyy/mm/dd-hh:mm:ss if needed
+    if formatted_session['conn_time']:
+        try:
+            dt = datetime.fromisoformat(session_data.get('login_time', '').replace('Z', '+00:00'))
+            formatted_session['conn_time'] = dt.strftime('%Y/%m/%d-%H:%M:%S')
+        except:
+            pass
+    
+    return formatted_session
+
+@app.route('/api/v1/sessions_old', methods=['GET'])  # Renamed to avoid conflict with PostgreSQL version
+def get_sessions_v1_old():
+    """List all terminal sessions - Standard REST API v1.0"""
+    try:
+        # Get query parameters
+        status_filter = request.args.get('status')  # '0' or '1'
+        username_filter = request.args.get('username')
+        
+        # Get all sessions from appropriate session manager
+        all_sessions = []
+        
+        # First try PostgreSQL session manager if available
+        if postgresql_session_manager:
+            try:
+                all_sessions = postgresql_session_manager.list_all_sessions()
+                logger.info(f"Using PostgreSQL session manager for /api/v1/sessions")
+            except Exception as pg_err:
+                logger.error(f"PostgreSQL session manager failed: {pg_err}, falling back to workstation manager")
+                all_sessions = workstation_session_manager.list_all_sessions()
+        else:
+            # Fallback to workstation session manager
+            all_sessions = workstation_session_manager.list_all_sessions()
+            logger.info(f"Using workstation session manager for /api/v1/sessions")
+        
+        # Format sessions for API response
+        formatted_sessions = []
+        for session in all_sessions:
+            # Check if session is from PostgreSQL (has different format)
+            if 'wsname' in session and session.get('wsname'):
+                # PostgreSQL format - use directly
+                formatted_session = {
+                    'wsname': session.get('wsname', ''),
+                    'username': session.get('username', ''),
+                    'conn_time': session.get('conn_time', ''),
+                    'status': str(session.get('status', '0'))  # Ensure status is string
+                }
+            else:
+                # Workstation manager format - use existing formatter
+                formatted_session = format_session_for_api(session)
+            
+            if formatted_session:
+                # Apply filters
+                if status_filter and formatted_session['status'] != status_filter:
+                    continue
+                if username_filter and formatted_session['username'] != username_filter:
+                    continue
+                formatted_sessions.append(formatted_session)
+        
+        logger.info(f"API v1: Listed {len(formatted_sessions)} sessions (filtered from {len(all_sessions)})")
+        return jsonify(formatted_sessions), 200
+        
+    except Exception as e:
+        logger.error(f"API v1 sessions list error: {e}")
+        return jsonify({
+            'error': 'internal_server_error',
+            'message': f'Failed to retrieve sessions: {str(e)}'
+        }), 500
+
+@app.route('/api/v1/sessions', methods=['POST'])
+def create_session_v1():
+    """Create new terminal session - Standard REST API v1.0"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                'error': 'invalid_request',
+                'message': 'JSON body required'
+            }), 400
+        
+        wsname = data.get('wsname', '').strip().upper()
+        username = data.get('username', '').strip()
+        
+        # Validate required fields
+        if not wsname or not username:
+            return jsonify({
+                'error': 'validation_error',
+                'message': 'wsname and username are required'
+            }), 400
+        
+        # Validate wsname format (max 8 chars, alphanumeric)
+        if len(wsname) > 8 or not wsname.isalnum():
+            return jsonify({
+                'error': 'validation_error',
+                'message': 'wsname must be alphanumeric and max 8 characters'
+            }), 400
+        
+        # Check if session already exists
+        existing_session = workstation_session_manager.get_session_by_workstation(wsname)
+        if existing_session:
+            return jsonify({
+                'error': 'conflict',
+                'message': f'Session with wsname {wsname} already exists'
+            }), 409
+        
+        # Create new session
+        session_id = workstation_session_manager.create_session(
+            wsname=wsname,
+            user_id=username,
+            terminal_id=wsname,
+            display_mode='legacy',
+            encoding='sjis'
+        )
+        
+        # Get created session for response
+        created_session = workstation_session_manager.get_session(session_id)
+        formatted_session = format_session_for_api(created_session)
+        
+        logger.info(f"API v1: Created session {wsname} for user {username}")
+        return jsonify(formatted_session), 201
+        
+    except Exception as e:
+        logger.error(f"API v1 session creation error: {e}")
+        return jsonify({
+            'error': 'internal_server_error',
+            'message': f'Failed to create session: {str(e)}'
+        }), 500
+
+@app.route('/api/v1/sessions/<wsname>', methods=['GET'])
+def get_session_v1(wsname):
+    """Get specific terminal session - Standard REST API v1.0"""
+    try:
+        wsname = wsname.strip().upper()
+        
+        # Get session by workstation name
+        session = workstation_session_manager.get_session_by_workstation(wsname)
+        if not session:
+            return jsonify({
+                'error': 'not_found',
+                'message': f'Session with wsname {wsname} not found'
+            }), 404
+        
+        formatted_session = format_session_for_api(session)
+        logger.info(f"API v1: Retrieved session {wsname}")
+        return jsonify(formatted_session), 200
+        
+    except Exception as e:
+        logger.error(f"API v1 session retrieval error: {e}")
+        return jsonify({
+            'error': 'internal_server_error',
+            'message': f'Failed to retrieve session: {str(e)}'
+        }), 500
+
+@app.route('/api/v1/sessions/<wsname>', methods=['PATCH'])
+def update_session_v1(wsname):
+    """Update session status - Standard REST API v1.0"""
+    try:
+        wsname = wsname.strip().upper()
+        data = request.get_json()
+        
+        if not data or 'status' not in data:
+            return jsonify({
+                'error': 'validation_error',
+                'message': 'status field is required'
+            }), 400
+        
+        new_status = data.get('status')
+        if new_status not in ['0', '1']:
+            return jsonify({
+                'error': 'validation_error',
+                'message': 'status must be "0" (logoff) or "1" (logon)'
+            }), 400
+        
+        # Get existing session
+        session = workstation_session_manager.get_session_by_workstation(wsname)
+        if not session:
+            return jsonify({
+                'error': 'not_found',
+                'message': f'Session with wsname {wsname} not found'
+            }), 404
+        
+        # Update session status
+        session_id = session['session_id']
+        updated_status = 'ON' if new_status == '1' else 'OFF'
+        
+        success = workstation_session_manager.update_session(session_id, {
+            'status': updated_status
+        })
+        
+        if not success:
+            return jsonify({
+                'error': 'internal_server_error',
+                'message': 'Failed to update session status'
+            }), 500
+        
+        # Get updated session for response
+        updated_session = workstation_session_manager.get_session(session_id)
+        formatted_session = format_session_for_api(updated_session)
+        
+        logger.info(f"API v1: Updated session {wsname} status to {new_status}")
+        return jsonify(formatted_session), 200
+        
+    except Exception as e:
+        logger.error(f"API v1 session update error: {e}")
+        return jsonify({
+            'error': 'internal_server_error',
+            'message': f'Failed to update session: {str(e)}'
+        }), 500
+
+@app.route('/api/v1/sessions/<wsname>', methods=['DELETE'])
+def delete_session_v1(wsname):
+    """Delete terminal session - Standard REST API v1.0"""
+    try:
+        wsname = wsname.strip().upper()
+        
+        # Check if session exists
+        session = workstation_session_manager.get_session_by_workstation(wsname)
+        if not session:
+            return jsonify({
+                'error': 'not_found',
+                'message': f'Session with wsname {wsname} not found'
+            }), 404
+        
+        # Delete session
+        success = workstation_session_manager.logout_session(wsname=wsname)
+        if not success:
+            return jsonify({
+                'error': 'internal_server_error',
+                'message': 'Failed to delete session'
+            }), 500
+        
+        logger.info(f"API v1: Deleted session {wsname}")
+        return '', 204
+        
+    except Exception as e:
+        logger.error(f"API v1 session deletion error: {e}")
+        return jsonify({
+            'error': 'internal_server_error',
+            'message': f'Failed to delete session: {str(e)}'
+        }), 500
+
+@app.route('/api/v1/sessions/<wsname>/logon', methods=['POST'])
+def logon_session_v1(wsname):
+    """Logon to session - Standard REST API v1.0"""
+    try:
+        wsname = wsname.strip().upper()
+        data = request.get_json()
+        
+        if not data or 'username' not in data:
+            return jsonify({
+                'error': 'validation_error',
+                'message': 'username field is required'
+            }), 400
+        
+        username = data.get('username', '').strip()
+        if not username:
+            return jsonify({
+                'error': 'validation_error',
+                'message': 'username cannot be empty'
+            }), 400
+        
+        # Check if session exists, create if not
+        session = workstation_session_manager.get_session_by_workstation(wsname)
+        
+        if not session:
+            # Create new session
+            session_id = workstation_session_manager.create_session(
+                wsname=wsname,
+                user_id=username,
+                terminal_id=wsname,
+                display_mode='legacy',
+                encoding='sjis'
+            )
+            session = workstation_session_manager.get_session(session_id)
+        else:
+            # Update existing session to logon status
+            session_id = session['session_id']
+            workstation_session_manager.update_session(session_id, {
+                'status': 'ON',
+                'user_id': username  # Update username if needed
+            })
+            session = workstation_session_manager.get_session(session_id)
+        
+        formatted_session = format_session_for_api(session)
+        logger.info(f"API v1: Logon successful for {wsname} (user: {username})")
+        return jsonify(formatted_session), 200
+        
+    except Exception as e:
+        logger.error(f"API v1 session logon error: {e}")
+        return jsonify({
+            'error': 'internal_server_error',
+            'message': f'Failed to logon session: {str(e)}'
+        }), 500
+
+@app.route('/api/v1/sessions/<wsname>/logoff', methods=['POST'])
+def logoff_session_v1(wsname):
+    """Logoff from session - Standard REST API v1.0"""
+    try:
+        wsname = wsname.strip().upper()
+        
+        # Check if session exists
+        session = workstation_session_manager.get_session_by_workstation(wsname)
+        if not session:
+            return jsonify({
+                'error': 'not_found',
+                'message': f'Session with wsname {wsname} not found'
+            }), 404
+        
+        # Update session to logoff status
+        session_id = session['session_id']
+        success = workstation_session_manager.update_session(session_id, {
+            'status': 'OFF'
+        })
+        
+        if not success:
+            return jsonify({
+                'error': 'internal_server_error',
+                'message': 'Failed to logoff session'
+            }), 500
+        
+        # Get updated session for response
+        updated_session = workstation_session_manager.get_session(session_id)
+        formatted_session = format_session_for_api(updated_session)
+        
+        logger.info(f"API v1: Logoff successful for {wsname}")
+        return jsonify(formatted_session), 200
+        
+    except Exception as e:
+        logger.error(f"API v1 session logoff error: {e}")
+        return jsonify({
+            'error': 'internal_server_error',
+            'message': f'Failed to logoff session: {str(e)}'
+        }), 500
+
+@app.route('/api/v1/sessions/bulk-disconnect', methods=['POST'])
+def bulk_disconnect_sessions_v1():
+    """Bulk disconnect multiple workstation sessions - Standard REST API v1.0"""
+    try:
+        data = request.get_json()
+        if not data or 'workstations' not in data:
+            return jsonify({
+                'error': 'bad_request',
+                'message': 'Missing workstations array in request body'
+            }), 400
+            
+        workstations = data['workstations']
+        if not isinstance(workstations, list):
+            return jsonify({
+                'error': 'bad_request',
+                'message': 'workstations must be an array'
+            }), 400
+        
+        success_list = []
+        failed_list = []
+        
+        for wsname in workstations:
+            try:
+                wsname = str(wsname).strip().upper()
+                
+                # Check if session exists
+                session = workstation_session_manager.get_session_by_workstation(wsname)
+                if not session:
+                    failed_list.append({
+                        'wsname': wsname,
+                        'error': 'Session not found'
+                    })
+                    continue
+                
+                # Update session to logoff status (workstation session manager)
+                session_id = session['session_id']
+                ws_success = workstation_session_manager.update_session(session_id, {
+                    'status': 'OFF'
+                })
+                
+                # Update PostgreSQL session if available
+                if POSTGRESQL_SESSION_AVAILABLE:
+                    try:
+                        postgresql_session_manager.set_session_status(wsname, '0')  # 0 = OFF
+                    except Exception as e:
+                        logger.warning(f"Failed to update PostgreSQL session for {wsname}: {e}")
+                
+                # Force disconnect WebSocket if exists
+                try:
+                    # Find and disconnect WebSocket session
+                    for sid, ws_session in websocket_sessions.items():
+                        if ws_session.get('wsname') == wsname:
+                            socketio.disconnect(sid)
+                            logger.info(f"[BULK_DISCONNECT] Force disconnected WebSocket for {wsname}")
+                            break
+                except Exception as e:
+                    logger.warning(f"Failed to disconnect WebSocket for {wsname}: {e}")
+                
+                if ws_success:
+                    success_list.append(wsname)
+                    logger.info(f"[BULK_DISCONNECT] Successfully disconnected {wsname}")
+                else:
+                    failed_list.append({
+                        'wsname': wsname,
+                        'error': 'Failed to update session status'
+                    })
+                    
+            except Exception as e:
+                failed_list.append({
+                    'wsname': wsname,
+                    'error': str(e)
+                })
+                logger.error(f"[BULK_DISCONNECT] Error disconnecting {wsname}: {e}")
+        
+        response = {
+            'success': success_list,
+            'failed': failed_list,
+            'total_processed': len(workstations),
+            'success_count': len(success_list),
+            'failed_count': len(failed_list)
+        }
+        
+        logger.info(f"[BULK_DISCONNECT] Processed {len(workstations)} workstations: {len(success_list)} success, {len(failed_list)} failed")
+        return jsonify(response), 200
+        
+    except Exception as e:
+        logger.error(f"API v1 bulk disconnect error: {e}")
+        return jsonify({
+            'error': 'internal_server_error',
+            'message': f'Failed to bulk disconnect sessions: {str(e)}'
+        }), 500
+
+# ============================================================================
 
 @app.route('/api/system/info', methods=['GET'])
 def get_system_info():
@@ -4397,6 +5283,74 @@ def execute_with_aspcli(command, user):
             'error': error_msg
         }
 
+def force_disconnect_websockets_by_workstations(workstation_names: List[str]) -> List[str]:
+    """Force disconnect WebSocket sessions for specified workstations"""
+    disconnected = []
+    
+    try:
+        # Find WebSocket sessions to disconnect
+        sessions_to_disconnect = []
+        
+        # Check websocket_sessions (maps session_id to session info)
+        for session_id, session_info in websocket_sessions.items():
+            wsname = session_info.get('wsname')
+            if wsname in workstation_names:
+                sessions_to_disconnect.append({
+                    'session_id': session_id,
+                    'wsname': wsname,
+                    'type': 'websocket'
+                })
+        
+        # Check active_terminals (maps session_id to terminal info)
+        for session_id, terminal_info in active_terminals.items():
+            workstation = terminal_info.get('workstation')
+            if workstation in workstation_names:
+                # Check if we haven't already added this session
+                if not any(s['session_id'] == session_id for s in sessions_to_disconnect):
+                    sessions_to_disconnect.append({
+                        'session_id': session_id,
+                        'wsname': workstation,
+                        'type': 'terminal'
+                    })
+        
+        # Force disconnect the WebSocket sessions
+        for session_info in sessions_to_disconnect:
+            try:
+                session_id = session_info['session_id']
+                wsname = session_info['wsname']
+                
+                logger.info(f"[FORCE_DISCONNECT] Disconnecting WebSocket session {session_id} for workstation {wsname}")
+                
+                # Use socketio.disconnect to forcefully disconnect the client
+                socketio.disconnect(session_id)
+                
+                # Clean up session tracking
+                if session_id in websocket_sessions:
+                    del websocket_sessions[session_id]
+                
+                if session_id in active_terminals:
+                    terminal_info = active_terminals[session_id]
+                    terminal_id = terminal_info.get('terminal_id')
+                    
+                    # Clean up terminal mappings
+                    if terminal_id and terminal_id in terminal_to_session:
+                        del terminal_to_session[terminal_id]
+                    
+                    del active_terminals[session_id]
+                
+                disconnected.append(wsname)
+                logger.info(f"[FORCE_DISCONNECT] Successfully disconnected {wsname}")
+                
+            except Exception as e:
+                logger.error(f"[FORCE_DISCONNECT] Failed to disconnect session {session_info['session_id']}: {e}")
+        
+        logger.info(f"[FORCE_DISCONNECT] Disconnected {len(disconnected)} WebSocket sessions")
+        
+    except Exception as e:
+        logger.error(f"[FORCE_DISCONNECT] Error during bulk WebSocket disconnect: {e}")
+    
+    return disconnected
+
 def add_log(level, source, message, details=None):
     """Add log entry"""
     log_entry = {
@@ -5579,6 +6533,268 @@ if __name__ == '__main__':
     
     logger.info("?? OpenASP SMED API Server ready!")
     logger.info("?? WebSocket support enabled for real-time terminal communication")
+
+# ============================================================
+# Enterprise Terminal Session Management API v1.0
+# PostgreSQL-based REST API endpoints for admin dashboard
+# ============================================================
+
+def format_session_for_api(session_data):
+    """Format PostgreSQL session data for API response."""
+    return {
+        'wsname': session_data.get('wsname'),
+        'username': session_data.get('username'),
+        'conn_time': session_data.get('conn_time'),
+        'status': session_data.get('status'),
+        'last_activity': session_data.get('last_activity'),
+        'client_ip': session_data.get('client_ip'),
+        'program_name': session_data.get('program_name'),
+        'session_type': session_data.get('session_type'),
+        'created_at': session_data.get('created_at')
+    }
+
+@app.route('/api/v1/sessions', methods=['GET'])
+def api_v1_get_sessions():
+    """Get all terminal sessions with optional filtering."""
+    if not postgresql_session_manager:
+        return jsonify({'error': 'PostgreSQL session manager not available'}), 503
+    
+    try:
+        # Get query parameters for filtering
+        status = request.args.get('status')  # active, inactive, all
+        username = request.args.get('username')
+        limit = request.args.get('limit', type=int)
+        
+        sessions = postgresql_session_manager.list_all_sessions()
+        
+        # Apply filters
+        if status and status != 'all':
+            sessions = [s for s in sessions if s.get('status') == ('A' if status == 'active' else 'I')]
+        
+        if username:
+            sessions = [s for s in sessions if s.get('username') == username]
+        
+        if limit:
+            sessions = sessions[:limit]
+        
+        # Format sessions for API response
+        formatted_sessions = [format_session_for_api(session) for session in sessions]
+        
+        logger.info(f"API v1: Retrieved {len(formatted_sessions)} sessions from PostgreSQL")
+        return jsonify({
+            'sessions': formatted_sessions,
+            'total_count': len(formatted_sessions),
+            'timestamp': datetime.now().isoformat()
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"API v1 sessions list error: {e}")
+        return jsonify({'error': 'Failed to retrieve sessions', 'details': str(e)}), 500
+
+@app.route('/api/v1/sessions/<wsname>', methods=['GET'])
+def api_v1_get_session(wsname):
+    """Get specific terminal session by workstation name."""
+    if not postgresql_session_manager:
+        return jsonify({'error': 'PostgreSQL session manager not available'}), 503
+    
+    try:
+        session = postgresql_session_manager.get_session_by_workstation(wsname)
+        if not session:
+            return jsonify({'error': f'Session {wsname} not found'}), 404
+        
+        formatted_session = format_session_for_api(session)
+        logger.info(f"API v1: Retrieved session {wsname} from PostgreSQL")
+        return jsonify(formatted_session), 200
+        
+    except Exception as e:
+        logger.error(f"API v1 session retrieval error: {e}")
+        return jsonify({'error': 'Failed to retrieve session', 'details': str(e)}), 500
+
+@app.route('/api/v1/sessions', methods=['POST'])
+def api_v1_create_session():
+    """Create a new terminal session."""
+    if not postgresql_session_manager:
+        return jsonify({'error': 'PostgreSQL session manager not available'}), 503
+    
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+        
+        required_fields = ['wsname', 'username']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({'error': f'Missing required field: {field}'}), 400
+        
+        # Create session with provided data
+        session_data = {
+            'wsname': data['wsname'],
+            'username': data['username'],
+            'client_ip': data.get('client_ip', request.remote_addr),
+            'program_name': data.get('program_name', ''),
+            'session_type': data.get('session_type', 'WEB'),
+            'status': data.get('status', 'A')
+        }
+        
+        success = postgresql_session_manager.create_session(
+            session_data['wsname'],
+            session_data['username'],
+            session_data['client_ip'],
+            session_data['program_name'],
+            session_data['session_type']
+        )
+        
+        if success:
+            # Retrieve the created session
+            created_session = postgresql_session_manager.get_session_by_workstation(data['wsname'])
+            formatted_session = format_session_for_api(created_session)
+            
+            logger.info(f"API v1: Created session {data['wsname']} in PostgreSQL")
+            return jsonify(formatted_session), 201
+        else:
+            return jsonify({'error': 'Failed to create session'}), 500
+            
+    except Exception as e:
+        logger.error(f"API v1 session creation error: {e}")
+        return jsonify({'error': 'Failed to create session', 'details': str(e)}), 500
+
+@app.route('/api/v1/sessions/<wsname>', methods=['PATCH'])
+def api_v1_update_session(wsname):
+    """Update terminal session status or metadata."""
+    if not postgresql_session_manager:
+        return jsonify({'error': 'PostgreSQL session manager not available'}), 503
+    
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+        
+        # Check if session exists
+        existing_session = postgresql_session_manager.get_session_by_workstation(wsname)
+        if not existing_session:
+            return jsonify({'error': f'Session {wsname} not found'}), 404
+        
+        # Update session (currently supports status updates)
+        if 'status' in data:
+            success = postgresql_session_manager.update_session_status(wsname, data['status'])
+            if not success:
+                return jsonify({'error': 'Failed to update session'}), 500
+        
+        # Retrieve updated session
+        updated_session = postgresql_session_manager.get_session_by_workstation(wsname)
+        formatted_session = format_session_for_api(updated_session)
+        
+        logger.info(f"API v1: Updated session {wsname} in PostgreSQL")
+        return jsonify(formatted_session), 200
+        
+    except Exception as e:
+        logger.error(f"API v1 session update error: {e}")
+        return jsonify({'error': 'Failed to update session', 'details': str(e)}), 500
+
+@app.route('/api/v1/sessions/<wsname>', methods=['DELETE'])
+def api_v1_delete_session(wsname):
+    """Delete a terminal session."""
+    if not postgresql_session_manager:
+        return jsonify({'error': 'PostgreSQL session manager not available'}), 503
+    
+    try:
+        # Check if session exists
+        existing_session = postgresql_session_manager.get_session_by_workstation(wsname)
+        if not existing_session:
+            return jsonify({'error': f'Session {wsname} not found'}), 404
+        
+        success = postgresql_session_manager.cleanup_session(wsname)
+        if success:
+            logger.info(f"API v1: Deleted session {wsname} from PostgreSQL")
+            return jsonify({'message': f'Session {wsname} deleted successfully'}), 200
+        else:
+            return jsonify({'error': 'Failed to delete session'}), 500
+            
+    except Exception as e:
+        logger.error(f"API v1 session deletion error: {e}")
+        return jsonify({'error': 'Failed to delete session', 'details': str(e)}), 500
+
+@app.route('/api/v1/sessions/stats', methods=['GET'])
+def api_v1_get_session_stats():
+    """Get session statistics for admin dashboard."""
+    if not postgresql_session_manager:
+        return jsonify({'error': 'PostgreSQL session manager not available'}), 503
+    
+    try:
+        stats = postgresql_session_manager.get_session_statistics()
+        logger.info("API v1: Retrieved session statistics from PostgreSQL")
+        return jsonify(stats), 200
+        
+    except Exception as e:
+        logger.error(f"API v1 session stats error: {e}")
+        return jsonify({'error': 'Failed to retrieve statistics', 'details': str(e)}), 500
+
+@app.route('/api/v1/sessions/cleanup', methods=['POST'])
+def api_v1_cleanup_inactive_sessions():
+    """Clean up inactive sessions older than specified minutes."""
+    if not postgresql_session_manager:
+        return jsonify({'error': 'PostgreSQL session manager not available'}), 503
+    
+    try:
+        data = request.get_json() or {}
+        minutes = data.get('minutes', 30)  # Default: cleanup sessions older than 30 minutes
+        
+        cleaned_count = postgresql_session_manager.cleanup_inactive_sessions(minutes)
+        
+        logger.info(f"API v1: Cleaned up {cleaned_count} inactive sessions from PostgreSQL")
+        return jsonify({
+            'message': f'Cleaned up {cleaned_count} inactive sessions',
+            'cleaned_count': cleaned_count,
+            'criteria': f'older than {minutes} minutes'
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"API v1 session cleanup error: {e}")
+        return jsonify({'error': 'Failed to cleanup sessions', 'details': str(e)}), 500
+
+@app.route('/api/v1/sessions/validate/<wsname>', methods=['GET'])
+def api_v1_validate_session(wsname):
+    """Check if a workstation name is available for new session."""
+    if not postgresql_session_manager:
+        return jsonify({'error': 'PostgreSQL session manager not available'}), 503
+    
+    try:
+        # Check if session exists and is active
+        existing_session = postgresql_session_manager.get_session_by_workstation(wsname)
+        
+        if existing_session:
+            # Check if session is active (status '1' or 'ON')
+            status = existing_session.get('status', '0')
+            is_active = status == '1' or status == 'ON'
+            
+            if is_active:
+                logger.info(f"API v1: Workstation {wsname} validation failed - already active")
+                return jsonify({
+                    'available': False,
+                    'error': f'Workstation {wsname} is already active',
+                    'existing_session': {
+                        'wsname': existing_session.get('wsname'),
+                        'username': existing_session.get('username'),
+                        'last_activity': existing_session.get('last_activity'),
+                        'status': existing_session.get('status')
+                    }
+                }), 409  # Conflict
+            else:
+                logger.info(f"API v1: Workstation {wsname} is available (inactive session exists)")
+                return jsonify({
+                    'available': True,
+                    'message': f'Workstation {wsname} is available (will reactivate existing session)'
+                }), 200
+        else:
+            logger.info(f"API v1: Workstation {wsname} is available (new session)")
+            return jsonify({
+                'available': True,
+                'message': f'Workstation {wsname} is available for new session'
+            }), 200
+            
+    except Exception as e:
+        logger.error(f"API v1 session validation error: {e}")
+        return jsonify({'error': 'Failed to validate session', 'details': str(e)}), 500
 
 if __name__ == "__main__":
     # ?? ?? - Use socketio.run for WebSocket support

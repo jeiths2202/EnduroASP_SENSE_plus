@@ -1,8 +1,28 @@
 import React, { useState, useEffect } from 'react';
 
+interface Session {
+  wsname: string;
+  username: string;
+  conn_time: string;
+  status: string;
+  client_ip?: string;
+  program_name?: string;
+  session_type?: string;
+  last_activity?: string;
+  created_at?: string;
+}
+
+interface SessionStats {
+  total_sessions: number;
+  active_sessions: number;
+  inactive_sessions: number;
+  unique_users: number;
+  sessions_by_user: Array<{ username: string; count: number }>;
+}
+
 const NetworkControlComponent: React.FC = () => {
-  const [sessions, setSessions] = useState<any[]>([]);
-  const [sessionStats, setSessionStats] = useState<any>({
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [sessionStats, setSessionStats] = useState<SessionStats>({
     total_sessions: 0,
     active_sessions: 0,
     inactive_sessions: 0,
@@ -28,7 +48,8 @@ const NetworkControlComponent: React.FC = () => {
       });
       if (response.ok) {
         const data = await response.json();
-        const sessionsData = Array.isArray(data) ? data : [];
+        // Handle both array and object response formats
+        const sessionsData: Session[] = Array.isArray(data) ? data : (data.sessions || []);
         setSessions(sessionsData);
         
         const activeSessionNames = new Set(
