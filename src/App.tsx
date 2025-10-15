@@ -19,10 +19,9 @@ import ToolsPage from './pages/ToolsPage';
 import DocumentationPage from './pages/DocumentationPage';
 import SourceConversionPage from './pages/SourceConversionPage';
 import DatasetConversionPage from './pages/DatasetConversionPage';
+import ChatPage from './pages/ChatPage';
 import AspCliWebTerminal from './components/AspCliWebTerminal';
 import WorkstationAuthWrapper from './components/WorkstationAuthWrapper';
-import ASPMapEditor from './components/ASPMapEditor';
-import MapLink from './components/MapLink';
 import MarkdownRenderer from './components/MarkdownRenderer';
 import { MenuItem, Tab, Theme } from './types';
 import { I18nContext, createI18nContextValue } from './hooks/useI18n';
@@ -151,20 +150,6 @@ function App() {
           </div>
         );
         break;
-      case 'asp-map-editor':
-        content = (
-          <div className="h-full">
-            <ASPMapEditor isDarkMode={theme.mode === 'dark'} />
-          </div>
-        );
-        break;
-      case 'asp-map-link':
-        content = (
-          <div className="h-full">
-            <MapLink isDarkMode={theme.mode === 'dark'} />
-          </div>
-        );
-        break;
       case 'tools':
         content = <ToolsPage isDarkMode={theme.mode === 'dark'} />;
         break;
@@ -176,6 +161,9 @@ function App() {
         break;
       case 'dataset-conversion':
         content = <DatasetConversionPage isDarkMode={theme.mode === 'dark'} />;
+        break;
+      case 'chat':
+        content = <ChatPage isDarkMode={theme.mode === 'dark'} />;
         break;
       default:
         content = (
@@ -280,8 +268,6 @@ function App() {
 
   const getMenuItems = (t: (key: string) => string): MenuItem[] => [
     { id: 'dashboard', label: t('common.dashboard'), icon: <HomeIcon /> },
-    { id: 'cobol-ax', label: t('navigation.cobolAX'), icon: <CodeBracketIcon /> },
-    { id: 'cl-ax', label: t('navigation.clAX'), icon: <CommandLineIcon /> },
     { 
       id: 'code-conversion', 
       label: 'コード変換', 
@@ -297,11 +283,11 @@ function App() {
       icon: <CogIcon />,
       subItems: [
         { id: 'ai-transform-main', label: 'AI変換処理', icon: <CogIcon /> },
-        { id: 'asp-webui', label: 'ASP System Command', icon: <CommandLineIcon /> },
-        { id: 'asp-map-editor', label: 'ASP MapEditor', icon: <DocumentTextIcon /> },
-        { id: 'asp-map-link', label: 'MapLink', icon: <DocumentTextIcon /> }
+        { id: 'asp-webui', label: 'System Command', icon: <CommandLineIcon /> },
       ]
     },
+    { id: 'cobol-ax', label: t('navigation.cobolAX'), icon: <CodeBracketIcon /> },
+    { id: 'cl-ax', label: t('navigation.clAX'), icon: <CommandLineIcon /> },
     { id: 'tools', label: 'Tools', icon: <WrenchScrewdriverIcon /> },
     { id: 'docs', label: t('common.documentation'), icon: <BookOpenIcon /> },
     { id: 'chat', label: t('common.chat'), icon: <ChatBubbleLeftRightIcon /> },

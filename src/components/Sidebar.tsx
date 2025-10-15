@@ -73,11 +73,11 @@ const Sidebar: React.FC<SidebarProps> = ({
       <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200 dark:border-gray-800">
         <div className="flex items-center">
           <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
-            <span className="text-white font-bold text-lg">O</span>
+            <span className="text-white font-bold text-lg">E</span>
           </div>
           {effectiveExpanded && (
             <span className="ml-3 text-lg font-semibold text-gray-900 dark:text-white animate-fade-in">
-              OpenASP AX
+              EnduroAX SENSE+
             </span>
           )}
         </div>
@@ -263,7 +263,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               {currentUser.userId}
             </div>
             <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-              OpenASP AX
+              EnduroAX SENSE+
             </div>
             <button
               onClick={handleLogout}
