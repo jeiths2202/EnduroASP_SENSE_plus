@@ -41,6 +41,12 @@ monitoring-tools/
 models/
 *.gguf
 
+# Temporary and test directories
+aaaa/
+backup/
+backups/
+ofasp-devops/
+
 # Cache directories
 .cache/
 */.cache/
