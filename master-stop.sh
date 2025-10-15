@@ -117,13 +117,16 @@ force_kill_by_pattern "react-scripts" "React Development Servers"
 # Node.js related processes
 force_kill_by_pattern "webpack-dev-server" "Webpack Dev Servers"
 force_kill_by_pattern "fork-ts-checker" "TypeScript Checkers"
+force_kill_by_pattern "node.*fileApi" "ASP Manager Backend API"
 
 # Python services
 force_kill_by_pattern "flask.*3003" "Python Flask Services"
 force_kill_by_pattern "python.*api.run" "Python API Services"
 force_kill_by_pattern "python.*api_server" "Python API Servers"
 force_kill_by_pattern "python.*aspmgr_web" "System API Servers"
-force_kill_by_pattern "python.*-c.*_job_processor_worker" "Job Processor Services"
+force_kill_by_pattern "python.*_job_processor_worker" "Job Processor Worker"
+force_kill_by_pattern "python.*JOB_PROCESSOR" "Job Processor Background"
+force_kill_by_pattern "python.*sbmjob" "SBMJOB Services"
 force_kill_by_pattern "python.*chat_api" "Chat API Services"
 
 # Chat services
@@ -167,12 +170,19 @@ rm -f /home/aspuser/app/ofasp-refactor/pids/chat-api.pid 2>/dev/null || true
 # pgAdmin 4 Web Server shutdown (Port 3009)
 echo -e "\n${YELLOW}Shutting down pgAdmin 4 web server...${NC}"
 
-# Check if we're running as root for Apache service
+# Check if we're running as root
 if [ "$EUID" -eq 0 ]; then
     service apache2 stop 2>/dev/null && echo -e "${GREEN}[OK] pgAdmin 4 Web Server stopped${NC}" || echo -e "${YELLOW}[SKIP] pgAdmin 4 Web Server stop failed or not running${NC}"
 else
-    echo -e "${YELLOW}[SKIP] pgAdmin 4 - root privileges required${NC}"
-    echo -e "${YELLOW}       Run 'su - root' and execute: service apache2 stop${NC}"
+    # Try to stop with su using root.pass if available
+    APP_ROOT="/home/aspuser/app"
+    if [ -f "$APP_ROOT/root.pass" ]; then
+        ROOT_PASS=$(cat "$APP_ROOT/root.pass" | head -n1)
+        echo "$ROOT_PASS" | su -c "service apache2 stop" root 2>/dev/null && echo -e "${GREEN}[OK] pgAdmin 4 Web Server stopped${NC}" || echo -e "${YELLOW}[SKIP] pgAdmin 4 Web Server stop failed or not running${NC}"
+    else
+        echo -e "${YELLOW}[SKIP] pgAdmin 4 - root privileges required${NC}"
+        echo -e "${YELLOW}       Run 'su - root' and execute: service apache2 stop${NC}"
+    fi
 fi
 
 # Force kill pgAdmin related processes and port
@@ -181,19 +191,29 @@ force_kill_by_port "3009" "pgAdmin 4 Web Interface"
 # Zabbix Monitoring System shutdown
 echo -e "\n${YELLOW}Shutting down Zabbix monitoring system...${NC}"
 
-# Check if we're running as root for Zabbix services
+# Check if we're running as root
 if [ "$EUID" -eq 0 ]; then
     service zabbix-server stop 2>/dev/null && echo -e "${GREEN}[OK] Zabbix Server stopped${NC}" || echo -e "${YELLOW}[SKIP] Zabbix Server stop failed or not running${NC}"
     service zabbix-agent stop 2>/dev/null && echo -e "${GREEN}[OK] Zabbix Agent stopped${NC}" || echo -e "${YELLOW}[SKIP] Zabbix Agent stop failed or not running${NC}"
     service nginx stop 2>/dev/null && echo -e "${GREEN}[OK] Nginx stopped${NC}" || echo -e "${YELLOW}[SKIP] Nginx stop failed or not running${NC}"
     service php8.2-fpm stop 2>/dev/null && echo -e "${GREEN}[OK] PHP-FPM stopped${NC}" || echo -e "${YELLOW}[SKIP] PHP-FPM stop failed or not running${NC}"
 else
-    echo -e "${YELLOW}[SKIP] Zabbix monitoring system - root privileges required${NC}"
-    echo -e "${YELLOW}       Run 'su - root' and execute individual service commands:${NC}"
-    echo -e "${YELLOW}       - service zabbix-server stop${NC}"
-    echo -e "${YELLOW}       - service zabbix-agent stop${NC}"
-    echo -e "${YELLOW}       - service nginx stop${NC}"
-    echo -e "${YELLOW}       - service php8.2-fpm stop${NC}"
+    # Try to stop with su using root.pass if available
+    APP_ROOT="/home/aspuser/app"
+    if [ -f "$APP_ROOT/root.pass" ]; then
+        ROOT_PASS=$(cat "$APP_ROOT/root.pass" | head -n1)
+        echo "$ROOT_PASS" | su -c "service zabbix-server stop" root 2>/dev/null && echo -e "${GREEN}[OK] Zabbix Server stopped${NC}" || echo -e "${YELLOW}[SKIP] Zabbix Server stop failed or not running${NC}"
+        echo "$ROOT_PASS" | su -c "service zabbix-agent stop" root 2>/dev/null && echo -e "${GREEN}[OK] Zabbix Agent stopped${NC}" || echo -e "${YELLOW}[SKIP] Zabbix Agent stop failed or not running${NC}"
+        echo "$ROOT_PASS" | su -c "service nginx stop" root 2>/dev/null && echo -e "${GREEN}[OK] Nginx stopped${NC}" || echo -e "${YELLOW}[SKIP] Nginx stop failed or not running${NC}"
+        echo "$ROOT_PASS" | su -c "service php8.2-fpm stop" root 2>/dev/null && echo -e "${GREEN}[OK] PHP-FPM stopped${NC}" || echo -e "${YELLOW}[SKIP] PHP-FPM stop failed or not running${NC}"
+    else
+        echo -e "${YELLOW}[SKIP] Zabbix monitoring system - root privileges required${NC}"
+        echo -e "${YELLOW}       Run 'su - root' and execute individual service commands:${NC}"
+        echo -e "${YELLOW}       - service zabbix-server stop${NC}"
+        echo -e "${YELLOW}       - service zabbix-agent stop${NC}"
+        echo -e "${YELLOW}       - service nginx stop${NC}"
+        echo -e "${YELLOW}       - service php8.2-fpm stop${NC}"
+    fi
 fi
 
 # Force kill Zabbix related processes and ports

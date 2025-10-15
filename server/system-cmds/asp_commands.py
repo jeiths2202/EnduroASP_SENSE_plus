@@ -208,70 +208,24 @@ def update_catalog_info(volume, library, object_name, object_type="DATASET", **k
                 success = dbio_manager.update_catalog_info(
                     volume, library, object_name, object_type, **kwargs
                 )
-                dbio_manager.close()
+                # Don't close dbio_manager - it manages its own connection pool
                 
             if success:
                 return  # Success, maintain backward compatibility (no return value)
+            else:
+                print(f"[ERROR] DBIO backend update failed")
+                return False
                 
         except Exception as e:
-            print(f"[WARNING] DBIO backend failed, falling back to JSON: {e}")
-            # Fall through to JSON fallback
+            print(f"[ERROR] DBIO backend failed: {e}")
+            print(f"[DEBUG] Exception type: {type(e)}")
+            import traceback
+            print(f"[DEBUG] Traceback: {traceback.format_exc()}")
+            return False
     
-    # JSON fallback (original implementation)
-    try:
-        catalog = _get_catalog_info_json_direct()
-        
-        # Ensure volume exists
-        if volume not in catalog:
-            catalog[volume] = {}
-        
-        # Ensure library exists in volume
-        if library not in catalog[volume]:
-            catalog[volume][library] = {}
-        
-        # Ensure object exists in library
-        if object_name not in catalog[volume][library]:
-            catalog[volume][library][object_name] = {}
-        
-        # Set object type
-        catalog[volume][library][object_name]["TYPE"] = object_type
-        
-        # Add timestamp information
-        current_time = datetime.now().isoformat() + "Z"
-        if "CREATED" not in catalog[volume][library][object_name]:
-            catalog[volume][library][object_name]["CREATED"] = current_time
-        catalog[volume][library][object_name]["UPDATED"] = current_time
-        
-        # Handle different object types with appropriate attributes
-        if object_type == "DATASET":
-            # Set dataset-specific defaults
-            catalog[volume][library][object_name]["RECTYPE"] = kwargs.get("RECTYPE", "FB")
-            catalog[volume][library][object_name]["RECLEN"] = kwargs.get("RECLEN", 80)
-            catalog[volume][library][object_name]["ENCODING"] = kwargs.get("ENCODING", "utf-8")
-        elif object_type == "PGM":
-            # Set program-specific defaults
-            catalog[volume][library][object_name]["PGMTYPE"] = kwargs.get("PGMTYPE", "COBOL")
-            catalog[volume][library][object_name]["VERSION"] = kwargs.get("VERSION", "1.0")
-        elif object_type == "MAP":
-            # Set map-specific defaults
-            catalog[volume][library][object_name]["MAPTYPE"] = kwargs.get("MAPTYPE", "SMED")
-            catalog[volume][library][object_name]["ROWS"] = kwargs.get("ROWS", 24)
-            catalog[volume][library][object_name]["COLS"] = kwargs.get("COLS", 80)
-        elif object_type == "JOB":
-            # Set job-specific defaults
-            catalog[volume][library][object_name]["JOBTYPE"] = kwargs.get("JOBTYPE", "BATCH")
-            catalog[volume][library][object_name]["SCHEDULE"] = kwargs.get("SCHEDULE", "MANUAL")
-        
-        # Update additional attributes
-        for key, value in kwargs.items():
-            catalog[volume][library][object_name][key] = value
-        
-        # Save to JSON file
-        with open(CATALOG_FILE, 'w', encoding='utf-8') as f:
-            json.dump(catalog, f, indent=2, ensure_ascii=False)
-            
-    except Exception as e:
-        print(f"[WARNING] catalog.json update failed: {e}")
+    # DBIO가 사용 불가능한 경우에만 JSON 사용
+    print(f"[ERROR] DBIO not available, PostgreSQL catalog registration failed")
+    return False
 
 
 def _get_catalog_info_json_direct():

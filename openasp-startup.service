@@ -1,0 +1,16 @@
+[Unit]
+Description=OpenASP AX Development Environment
+After=network.target postgresql.service
+
+[Service]
+Type=forking
+User=aspuser
+WorkingDirectory=/home/aspuser/app
+ExecStart=/home/aspuser/app/master-start.sh
+ExecStop=/home/aspuser/app/master-stop.sh
+RemainAfterExit=yes
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

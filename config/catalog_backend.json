@@ -1,0 +1,44 @@
+{
+  "active_backend": "postgresql",
+  "migration_mode": false,
+  "failover_enabled": true,
+  "backends": {
+    "json_file": {
+      "backend": "json_file",
+      "json_file": {
+        "file_path": "/home/aspuser/app/config/catalog.json",
+        "backup_path": "/home/aspuser/app/config/catalog.json.backup"
+      },
+      "cache": {
+        "enabled": false
+      }
+    },
+    "postgresql": {
+      "backend": "postgresql",
+      "postgresql": {
+        "host": "localhost",
+        "port": 5432,
+        "database": "ofasp",
+        "user": "aspuser",
+        "password": "aspuser123",
+        "pool_size": 20,
+        "max_overflow": 10
+      },
+      "cache": {
+        "enabled": true,
+        "type": "memory",
+        "max_size": 1000,
+        "default_ttl": 300
+      }
+    },
+    "hybrid": {
+      "mode": "hybrid",
+      "read_backend": "json_file",
+      "write_backends": [
+        "json_file",
+        "postgresql"
+      ],
+      "failover_enabled": true
+    }
+  }
+}

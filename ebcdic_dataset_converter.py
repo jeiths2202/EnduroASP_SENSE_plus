@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-OpenASP EBCDIC Dataset Converter
-Converts EBCDIC datasets to ASCII according to catalog.json specifications
+OpenASP EBCDIC Dataset Converter with PostgreSQL Catalog Support
+Converts EBCDIC datasets to ASCII and registers in PostgreSQL catalog
 """
 
 import os
@@ -26,15 +26,44 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Import PostgreSQL catalog functions
+sys.path.append('/home/aspuser/app/config')
+sys.path.append('/home/aspuser/app/server/system-cmds')
+try:
+    from catalog_backend_config import (
+        get_catalog_backend_config, 
+        get_active_dbio_manager,
+        create_hybrid_manager
+    )
+    from asp_commands import (
+        get_catalog_info,
+        update_catalog_info
+    )
+    POSTGRESQL_AVAILABLE = True
+except ImportError as e:
+    logger.warning(f"PostgreSQL catalog support not available: {e}")
+    POSTGRESQL_AVAILABLE = False
+
 class CatalogManager:
-    """Catalog.json management for OpenASP system"""
+    """Catalog management for OpenASP system using PostgreSQL"""
     
     def __init__(self, catalog_path: str = "/home/aspuser/app/config/catalog.json"):
         self.catalog_path = catalog_path
-        self.catalog_data = self._load_catalog()
+        self.use_postgresql = POSTGRESQL_AVAILABLE
+        
+        if self.use_postgresql:
+            try:
+                self.dbio_manager = get_active_dbio_manager()
+                logger.info("Using PostgreSQL for catalog management")
+            except Exception as e:
+                logger.warning(f"Failed to initialize PostgreSQL, falling back to JSON: {e}")
+                self.use_postgresql = False
+                self.catalog_data = self._load_catalog()
+        else:
+            self.catalog_data = self._load_catalog()
     
     def _load_catalog(self) -> Dict:
-        """Load catalog.json"""
+        """Load catalog.json for fallback"""
         try:
             with open(self.catalog_path, 'r', encoding='utf-8') as f:
                 return json.load(f)
@@ -43,35 +72,39 @@ class CatalogManager:
             return {}
     
     def save_catalog(self) -> bool:
-        """Save catalog.json"""
-        try:
-            with open(self.catalog_path, 'w', encoding='utf-8') as f:
-                json.dump(self.catalog_data, f, indent=2, ensure_ascii=False)
-            logger.info(f"Catalog saved: {self.catalog_path}")
+        """Save catalog - no-op for PostgreSQL mode"""
+        if self.use_postgresql:
+            # PostgreSQL saves are immediate, no need to save
             return True
-        except Exception as e:
-            logger.error(f"Failed to save catalog: {e}")
-            return False
+        else:
+            try:
+                with open(self.catalog_path, 'w', encoding='utf-8') as f:
+                    json.dump(self.catalog_data, f, indent=2, ensure_ascii=False)
+                logger.info(f"Catalog saved: {self.catalog_path}")
+                return True
+            except Exception as e:
+                logger.error(f"Failed to save catalog: {e}")
+                return False
     
     def get_layout_info(self, layout_name: str) -> Optional[Dict]:
         """Get layout information from catalog"""
-        try:
-            return self.catalog_data["DISK01"]["LAYOUT"].get(layout_name)
-        except KeyError:
-            logger.error(f"Layout {layout_name} not found in catalog")
-            return None
+        if self.use_postgresql:
+            try:
+                catalog_info = get_catalog_info()
+                return catalog_info.get("DISK01", {}).get("LAYOUT", {}).get(layout_name)
+            except Exception as e:
+                logger.error(f"Failed to get layout from PostgreSQL: {e}")
+                return None
+        else:
+            try:
+                return self.catalog_data["DISK01"]["LAYOUT"].get(layout_name)
+            except KeyError:
+                logger.error(f"Layout {layout_name} not found in catalog")
+                return None
     
     def register_converted_dataset(self, dataset_name: str, conversion_info: Dict, volume: str = "DISK01", library: str = "TESTLIB") -> bool:
-        """Register converted dataset in catalog with specified volume and library"""
+        """Register converted dataset in PostgreSQL catalog"""
         try:
-            # Ensure volume exists
-            if volume not in self.catalog_data:
-                self.catalog_data[volume] = {}
-            
-            # Ensure library exists in volume
-            if library not in self.catalog_data[volume]:
-                self.catalog_data[volume][library] = {}
-            
             # Create dataset entry - use japanese_encoding if available, otherwise target_encoding
             japanese_encoding = conversion_info.get("japanese_encoding", "")
             if japanese_encoding:
@@ -85,18 +118,60 @@ class CatalogManager:
             else:
                 catalog_encoding = conversion_info.get("target_encoding", "ascii")
             
-            self.catalog_data[volume][library][dataset_name] = {
-                "TYPE": "DATASET",
-                "RECTYPE": "FB",
-                "RECLEN": conversion_info.get("record_length", 80),
-                "ENCODING": catalog_encoding,
-                "DESCRIPTION": f"Converted from EBCDIC ({conversion_info.get('source_encoding', 'JAK')})",
-                "UPDATED": datetime.now().isoformat() + 'Z',
-                "CONVERSION": conversion_info
-            }
-            
-            logger.info(f"Dataset registered: {volume}.{library}.{dataset_name}")
-            return self.save_catalog()
+            if not self.use_postgresql:
+                logger.error(f"PostgreSQL not available, cannot register dataset")
+                return False
+                
+            # PostgreSQL 직접 등록 - update_catalog_info 대신 직접 구현
+            try:
+                dbio = get_active_dbio_manager()
+                conn = dbio.backend._get_connection()
+                cursor = conn.cursor()
+                
+                # 직접 INSERT/UPDATE 쿼리 실행
+                cursor.execute('''
+                    INSERT INTO catalog_objects (volume, library, object_name, object_type, 
+                                               pgmtype, maptype, jobtype, copybooktype, 
+                                               encoding, reclen, rectype, layoutdata, 
+                                               created, updated)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (volume, library, object_name) 
+                    DO UPDATE SET 
+                        object_type = EXCLUDED.object_type,
+                        encoding = EXCLUDED.encoding,
+                        reclen = EXCLUDED.reclen,
+                        rectype = EXCLUDED.rectype,
+                        layoutdata = EXCLUDED.layoutdata,
+                        updated = EXCLUDED.updated
+                ''', (
+                    volume,
+                    library, 
+                    dataset_name,
+                    "DATASET",
+                    None,  # pgmtype
+                    None,  # maptype
+                    None,  # jobtype
+                    None,  # copybooktype
+                    catalog_encoding,
+                    conversion_info.get("record_length", 80),
+                    "FB",
+                    json.dumps(conversion_info),
+                    datetime.now(),
+                    datetime.now()
+                ))
+                
+                conn.commit()
+                dbio.backend._put_connection(conn)
+                
+                logger.info(f"Dataset registered in PostgreSQL: {volume}.{library}.{dataset_name}")
+                return True
+                
+            except Exception as e:
+                logger.error(f"PostgreSQL direct registration failed: {e}")
+                import traceback
+                logger.error(f"Traceback: {traceback.format_exc()}")
+                return False
+                
         except Exception as e:
             logger.error(f"Failed to register dataset: {e}")
             return False
@@ -978,11 +1053,14 @@ def main():
     """Main function for command line usage"""
     import argparse
     
-    parser = argparse.ArgumentParser(description='OpenASP EBCDIC Dataset Converter')
+    parser = argparse.ArgumentParser(
+        description='OpenASP EBCDIC Dataset Converter with PostgreSQL Support',
+        epilog='Note: Use --catalog-name to register the converted dataset in the catalog. Arguments can be provided in any order.'
+    )
     parser.add_argument('input_file', help='Input EBCDIC file path')
     parser.add_argument('output_file', help='Output ASCII file path')
     parser.add_argument('layout_file', help='COBOL layout file path')
-    parser.add_argument('--dataset-name', help='Dataset name for catalog registration')
+    parser.add_argument('--catalog-name', help='Dataset name for catalog registration (required for cataloging)', required=False)
     parser.add_argument('--format', choices=['json', 'flat'], default='json', 
                        help='Output format (default: json)')
     
@@ -1025,12 +1103,18 @@ def main():
     if args.schema:
         print(f"Using JSON Schema: {args.schema}")
     
+    # Check if PostgreSQL support is available
+    if POSTGRESQL_AVAILABLE:
+        print("Using PostgreSQL catalog backend")
+    else:
+        print("Using JSON catalog backend (PostgreSQL not available)")
+    
     converter = OpenASPDatasetConverter()
     success = converter.convert_dataset(
         args.input_file, 
         args.output_file, 
         args.layout_file, 
-        args.dataset_name, 
+        args.catalog_name, 
         args.format,
         sosi_config,
         args.volume,
@@ -1040,8 +1124,8 @@ def main():
     
     if success:
         print(f"\nConversion completed successfully: {args.output_file}")
-        if args.dataset_name:
-            print(f"Dataset registered in catalog: {args.dataset_name}")
+        if args.catalog_name:
+            print(f"Dataset registered in catalog: {args.catalog_name}")
         sys.exit(0)
     else:
         print("\nConversion failed")

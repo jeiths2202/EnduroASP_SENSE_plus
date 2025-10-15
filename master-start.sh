@@ -238,7 +238,7 @@ fi
 # 9. pgAdmin 4 Web Server startup (Port 3009)
 echo -e "\n${YELLOW}[PGADMIN] Starting pgAdmin 4 web server...${NC}"
 
-# Check if we're running as root for Apache service
+# Check if we're running as root
 if [ "$EUID" -eq 0 ]; then
     service apache2 start 2>/dev/null && echo -e "${GREEN}[OK] pgAdmin 4 Web Server started - http://localhost:3009/pgadmin4/${NC}" || echo -e "${RED}[NG] pgAdmin 4 Web Server start failed${NC}"
     
@@ -251,14 +251,29 @@ if [ "$EUID" -eq 0 ]; then
         echo -e "${RED}[NG] pgAdmin 4 Web Interface not accessible${NC}"
     fi
 else
-    echo -e "${YELLOW}[SKIP] pgAdmin 4 - root privileges required${NC}"
-    echo -e "${YELLOW}       Run 'su - root' and execute: service apache2 start${NC}"
+    # Try to start with su using root.pass if available
+    if [ -f "$APP_ROOT/root.pass" ]; then
+        ROOT_PASS=$(cat "$APP_ROOT/root.pass" | head -n1)
+        echo "$ROOT_PASS" | su -c "service apache2 start" root 2>/dev/null && echo -e "${GREEN}[OK] pgAdmin 4 Web Server started - http://localhost:3009/pgadmin4/${NC}" || echo -e "${RED}[NG] pgAdmin 4 Web Server start failed${NC}"
+        
+        # Test pgAdmin web interface
+        sleep 3
+        if curl -s http://localhost:3009/pgadmin4/ >/dev/null 2>&1; then
+            echo -e "${GREEN}[OK] pgAdmin 4 Web Interface accessible - http://localhost:3009/pgadmin4/${NC}"
+            echo -e "${GREEN}     Login: admin@enduroax.co.jp / admin123${NC}"
+        else
+            echo -e "${RED}[NG] pgAdmin 4 Web Interface not accessible${NC}"
+        fi
+    else
+        echo -e "${YELLOW}[SKIP] pgAdmin 4 - root privileges required${NC}"
+        echo -e "${YELLOW}       Run 'su - root' and execute: service apache2 start${NC}"
+    fi
 fi
 
 # 10. Zabbix Monitoring System startup
 echo -e "\n${YELLOW}[MONITOR] Starting Zabbix monitoring system...${NC}"
 
-# Check if we're running as root for Zabbix services
+# Check if we're running as root
 if [ "$EUID" -eq 0 ]; then
     # Start PostgreSQL if not running
     service postgresql start 2>/dev/null || echo -e "${YELLOW}[SKIP] PostgreSQL already running or start failed${NC}"
@@ -277,12 +292,34 @@ if [ "$EUID" -eq 0 ]; then
         echo -e "${RED}[NG] Zabbix Web Interface not accessible${NC}"
     fi
 else
-    echo -e "${YELLOW}[SKIP] Zabbix monitoring system - root privileges required${NC}"
-    echo -e "${YELLOW}       Run 'su - root' and execute individual service commands:${NC}"
-    echo -e "${YELLOW}       - service zabbix-server start${NC}"
-    echo -e "${YELLOW}       - service zabbix-agent start${NC}"
-    echo -e "${YELLOW}       - service nginx start${NC}"
-    echo -e "${YELLOW}       - service php8.2-fpm start${NC}"
+    # Try to start with su using root.pass if available
+    if [ -f "$APP_ROOT/root.pass" ]; then
+        ROOT_PASS=$(cat "$APP_ROOT/root.pass" | head -n1)
+        
+        # Start PostgreSQL if not running
+        echo "$ROOT_PASS" | su -c "service postgresql start" root 2>/dev/null || echo -e "${YELLOW}[SKIP] PostgreSQL already running or start failed${NC}"
+        
+        # Start Zabbix services
+        echo "$ROOT_PASS" | su -c "service zabbix-server start" root 2>/dev/null && echo -e "${GREEN}[OK] Zabbix Server started${NC}" || echo -e "${RED}[NG] Zabbix Server start failed${NC}"
+        echo "$ROOT_PASS" | su -c "service zabbix-agent start" root 2>/dev/null && echo -e "${GREEN}[OK] Zabbix Agent started${NC}" || echo -e "${RED}[NG] Zabbix Agent start failed${NC}"
+        echo "$ROOT_PASS" | su -c "service nginx start" root 2>/dev/null && echo -e "${GREEN}[OK] Nginx started${NC}" || echo -e "${RED}[NG] Nginx start failed${NC}"
+        echo "$ROOT_PASS" | su -c "service php8.2-fpm start" root 2>/dev/null && echo -e "${GREEN}[OK] PHP-FPM started${NC}" || echo -e "${RED}[NG] PHP-FPM start failed${NC}"
+        
+        # Test Zabbix web interface
+        sleep 5
+        if curl -s http://localhost:3015 >/dev/null 2>&1; then
+            echo -e "${GREEN}[OK] Zabbix Web Interface - http://localhost:3015${NC}"
+        else
+            echo -e "${RED}[NG] Zabbix Web Interface not accessible${NC}"
+        fi
+    else
+        echo -e "${YELLOW}[SKIP] Zabbix monitoring system - root privileges required${NC}"
+        echo -e "${YELLOW}       Run 'su - root' and execute individual service commands:${NC}"
+        echo -e "${YELLOW}       - service zabbix-server start${NC}"
+        echo -e "${YELLOW}       - service zabbix-agent start${NC}"
+        echo -e "${YELLOW}       - service nginx start${NC}"
+        echo -e "${YELLOW}       - service php8.2-fpm start${NC}"
+    fi
 fi
 
 # Wait for service startup

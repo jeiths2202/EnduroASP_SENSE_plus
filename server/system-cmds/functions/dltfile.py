@@ -13,7 +13,7 @@ from datetime import datetime
 
 # Import from parent module
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from asp_commands import VOLUME_ROOT, get_catalog_info, set_pgmec, CATALOG_FILE
+from asp_commands import VOLUME_ROOT, get_catalog_info, set_pgmec, CATALOG_FILE, delete_catalog_object
 
 def DLTFILE(command: str) -> bool:
     """
@@ -75,21 +75,24 @@ def DLTFILE(command: str) -> bool:
             set_pgmec(999)
             return False
         
-        # Validate file exists
-        if not os.path.exists(file_path):
-            print(f"[ERROR] Dataset '{file_name}' does not exist in library '{file_lib}'.")
-            set_pgmec(999)
-            return False
+        # Check if file exists (warning only, not error)
+        file_exists = os.path.exists(file_path)
+        if not file_exists:
+            print(f"[WARNING] Dataset '{file_name}' does not exist physically in library '{file_lib}' - will delete from catalog only")
+        elif not os.path.isfile(file_path):
+            print(f"[WARNING] '{file_name}' is not a file - will delete from catalog only")
+            file_exists = False
         
-        # Check if file is actually a file (not a directory)
-        if not os.path.isfile(file_path):
-            print(f"[ERROR] '{file_name}' is not a file.")
-            set_pgmec(999)
-            return False
-        
-        # Get file information before deletion for logging
-        file_size = os.path.getsize(file_path)
-        modified_time = datetime.fromtimestamp(os.path.getmtime(file_path)).strftime('%Y-%m-%d %H:%M:%S')
+        # Get file information before deletion for logging (if file exists)
+        file_size = 0
+        modified_time = "Unknown"
+        if file_exists:
+            try:
+                file_size = os.path.getsize(file_path)
+                modified_time = datetime.fromtimestamp(os.path.getmtime(file_path)).strftime('%Y-%m-%d %H:%M:%S')
+            except Exception as e:
+                print(f"[WARNING] Could not get file information: {e}")
+                file_exists = False
         
         # Get catalog information
         catalog = get_catalog_info()
@@ -99,43 +102,35 @@ def DLTFILE(command: str) -> bool:
             catalog_entry = catalog[volume][file_lib][file_name].copy()
         
         try:
-            # Remove the physical file
-            os.remove(file_path)
-            print(f"[INFO] Dataset '{file_name}' in library '{file_lib}' has been deleted: {file_path}")
-            print(f"[INFO] File size: {file_size} bytes, Last modified: {modified_time}")
-            
-            # Remove from catalog
-            if catalog_entry:
-                del catalog[volume][file_lib][file_name]
-                
-                # Clean up empty structures
-                if not catalog[volume][file_lib]:
-                    del catalog[volume][file_lib]
-                    print(f"[INFO] Empty library '{file_lib}' removed from catalog")
-                
-                if not catalog[volume]:
-                    del catalog[volume]
-                    print(f"[INFO] Empty volume '{volume}' removed from catalog")
-                
-                # Save updated catalog
-                try:
-                    with open(CATALOG_FILE, 'w', encoding='utf-8') as f:
-                        json.dump(catalog, f, indent=2, ensure_ascii=False)
-                    print(f"[INFO] Dataset '{file_name}' removed from catalog.json")
-                    
-                    # Log removed catalog entry details
-                    if catalog_entry.get('TYPE') == 'DATASET':
-                        print(f"[INFO] Removed dataset metadata:")
-                        print(f"       TYPE: {catalog_entry.get('TYPE', 'Unknown')}")
-                        print(f"       RECTYPE: {catalog_entry.get('RECTYPE', 'Unknown')}")
-                        print(f"       RECLEN: {catalog_entry.get('RECLEN', 'Unknown')}")
-                        print(f"       ENCODING: {catalog_entry.get('ENCODING', 'Unknown')}")
-                        
-                except Exception as e:
-                    print(f"[WARNING] Failed to update catalog.json: {e}")
-                    # Don't fail the operation since the file was successfully deleted
+            # Remove the physical file (if it exists)
+            if file_exists:
+                os.remove(file_path)
+                print(f"[INFO] Dataset '{file_name}' in library '{file_lib}' has been deleted: {file_path}")
+                print(f"[INFO] File size: {file_size} bytes, Last modified: {modified_time}")
             else:
-                print(f"[WARNING] Dataset '{file_name}' was not registered in catalog.json")
+                print(f"[INFO] Physical file does not exist, proceeding with catalog deletion only")
+            
+            # PostgreSQL DBIOシステムからカタログを削除
+            try:
+                catalog_deleted = delete_catalog_object(volume, file_lib, file_name)
+                if catalog_deleted:
+                    print(f"[INFO] Dataset '{file_name}' removed from PostgreSQL catalog")
+                    
+                    # 削除されたカタログエントリの詳細をログ出力
+                    if catalog_entry:
+                        if catalog_entry.get('TYPE') == 'DATASET':
+                            print(f"[INFO] Removed dataset metadata:")
+                            print(f"       TYPE: {catalog_entry.get('TYPE', 'Unknown')}")
+                            print(f"       RECTYPE: {catalog_entry.get('RECTYPE', 'Unknown')}")
+                            print(f"       RECLEN: {catalog_entry.get('RECLEN', 'Unknown')}")
+                            print(f"       ENCODING: {catalog_entry.get('ENCODING', 'Unknown')}")
+                else:
+                    print(f"[WARNING] Failed to remove dataset '{file_name}' from catalog (物理削除は成功)")
+            except Exception as e:
+                print(f"[WARNING] Catalog delete failed: {e} (物理削除は成功)")
+                
+            if not catalog_entry:
+                print(f"[WARNING] Dataset '{file_name}' was not registered in catalog")
             
             return True
             

@@ -1,4 +1,5 @@
 node_modules
+*/node_modules/
 
 # Backup files
 *.tar
@@ -6,7 +7,10 @@ node_modules
 *.gz
 *.zip
 *.bak
+*.backup
+*backup*
 *-backup-*
+*.BAK
 
 # Compiled files
 *.so
@@ -15,6 +19,7 @@ __pycache__/
 
 # Log files
 *.log
+logs/
 
 # Temporary files
 *.tmp
@@ -22,9 +27,29 @@ __pycache__/
 
 # Database files
 *.db
+pg_data/
 
 # PID files
 *.pid
+pids/
 
 # Runtime files
 .running_services
+
+# Large binary files and directories
+monitoring-tools/
+models/
+*.gguf
+
+# Cache directories
+.cache/
+*/.cache/
+
+# Build directories
+build/
+dist/
+.next/
+
+# Test and coverage files
+coverage/
+*.cover

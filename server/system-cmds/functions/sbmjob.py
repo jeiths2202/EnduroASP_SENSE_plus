@@ -36,6 +36,9 @@ from .job_database import (
     get_active_jobs, db_update_job_pid
 )
 
+# Import PostgreSQL JOBINFO database module
+from .jobinfo_db import insert_jobinfo, update_jobinfo_status
+
 class JobInfo:
     """Job information class for SBMJOB"""
     
@@ -57,7 +60,7 @@ class JobInfo:
         self.start_time = None
         self.end_time = None
         self.return_code = None
-        self.log_file = os.path.join(JOB_LOG_DIR, f"{job_id}_{job_name}.log")
+        self.log_file = os.path.join(JOB_LOG_DIR, f"{job_id}.log")
 
 def SBMJOB(command: str) -> bool:
     """
@@ -205,8 +208,8 @@ def SBMJOB(command: str) -> bool:
             hold=hold
         )
         
-        # Set log file path
-        log_file = os.path.join(JOB_LOG_DIR, f"{job_id}_{job_name}.log")
+        # Set log file path (using only JOBID as filename)
+        log_file = os.path.join(JOB_LOG_DIR, f"{job_id}.log")
         job_info.log_file = log_file
         
         # Add to job tracking in memory
@@ -214,6 +217,9 @@ def SBMJOB(command: str) -> bool:
         
         # Add to database
         db_add_job(job_info)
+        
+        # Insert job information into PostgreSQL JOBINFO table
+        insert_jobinfo(job_id, job_name, job_info.status, "aspuser")
         
         if hold:
             job_info.status = "HELD"
@@ -329,6 +335,9 @@ def _execute_job(job_info: JobInfo):
         # Update database
         db_update_job_status(job_info.job_id, "RUNNING", start_time=job_info.start_time)
         
+        # Update PostgreSQL JOBINFO table
+        update_jobinfo_status(job_info.job_id, "RUNNING")
+        
         _write_job_log(job_info, "JOB_STARTED", f"Job {job_info.job_name} started execution")
         
         print(f"[INFO] Executing job {job_info.job_id}: {job_info.job_name}")
@@ -350,6 +359,7 @@ def _execute_job(job_info: JobInfo):
         
         print(f"[DEBUG] Program type: {pgm_type}")
         print(f"[DEBUG] Program info: {program_info}")
+        _write_job_log(job_info, "JOB_INFO", f"Program type: {pgm_type}, Program info: {program_info}")
         
         # Execute based on program type
         success = False
@@ -387,12 +397,16 @@ def _execute_job(job_info: JobInfo):
             if config.is_debug_enabled():
                 print(f"[DEBUG] Updating job {job_info.job_id} status to COMPLETED")
             db_update_job_status(job_info.job_id, "COMPLETED", end_time=job_info.end_time)
+            # Update PostgreSQL JOBINFO table
+            update_jobinfo_status(job_info.job_id, "COMPLETED")
             _write_job_log(job_info, "JOB_COMPLETED", f"Job {job_info.job_name} completed successfully")
         else:
             job_info.status = "ERROR"
             if config.is_debug_enabled():
                 print(f"[DEBUG] Updating job {job_info.job_id} status to ERROR")
             db_update_job_status(job_info.job_id, "ERROR", end_time=job_info.end_time)
+            # Update PostgreSQL JOBINFO table
+            update_jobinfo_status(job_info.job_id, "ERROR")
             _write_job_log(job_info, "JOB_ERROR", f"Job {job_info.job_name} failed")
         
         duration = (job_info.end_time - job_info.start_time).total_seconds()
@@ -406,6 +420,8 @@ def _execute_job(job_info: JobInfo):
         job_info.status = "ERROR"
         job_info.end_time = datetime.now()
         db_update_job_status(job_info.job_id, "ERROR", end_time=job_info.end_time)
+        # Update PostgreSQL JOBINFO table
+        update_jobinfo_status(job_info.job_id, "ERROR")
         _write_job_log(job_info, "JOB_ERROR", f"Job execution error: {e}")
         print(f"[ERROR] Job {job_info.job_id} execution failed: {e}")
 
@@ -508,13 +524,57 @@ def _execute_cl_job(job_info: JobInfo, program_info: Dict[str, Any]) -> bool:
         sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         from cl_executor import execute_cl_script
         
-        program_path = os.path.join(VOLUME_ROOT, job_info.volume, job_info.library)
-        cl_file = program_info.get('SOURCEFILE', f"{job_info.program}.cl")
-        cl_path = os.path.join(program_path, cl_file)
+        # Debug: Log all input parameters
+        _write_job_log(job_info, "JOB_DEBUG", f"_execute_cl_job called with:")
+        _write_job_log(job_info, "JOB_DEBUG", f"  job_info.volume: {job_info.volume}")
+        _write_job_log(job_info, "JOB_DEBUG", f"  job_info.library: {job_info.library}")
+        _write_job_log(job_info, "JOB_DEBUG", f"  job_info.program: {job_info.program}")
+        _write_job_log(job_info, "JOB_DEBUG", f"  program_info: {program_info}")
+        _write_job_log(job_info, "JOB_DEBUG", f"  VOLUME_ROOT: {VOLUME_ROOT}")
         
+        program_path = os.path.join(VOLUME_ROOT, job_info.volume, job_info.library)
+        _write_job_log(job_info, "JOB_DEBUG", f"  program_path: {program_path}")
+        
+        # Check if program_path exists
+        if os.path.exists(program_path):
+            _write_job_log(job_info, "JOB_DEBUG", f"  program_path exists")
+            # List files in directory
+            try:
+                files = os.listdir(program_path)
+                _write_job_log(job_info, "JOB_DEBUG", f"  Files in directory: {files[:10]}")  # Show first 10 files
+            except Exception as e:
+                _write_job_log(job_info, "JOB_DEBUG", f"  Error listing directory: {e}")
+        else:
+            _write_job_log(job_info, "JOB_DEBUG", f"  program_path does NOT exist")
+        
+        # Try to find CL file - first without extension, then with .cl extension
+        cl_file = program_info.get('SOURCEFILE', job_info.program)
+        _write_job_log(job_info, "JOB_DEBUG", f"  cl_file from program_info: {cl_file}")
+        
+        cl_path = os.path.join(program_path, cl_file)
+        _write_job_log(job_info, "JOB_INFO", f"Looking for CL file: {cl_path}")
+        
+        # Debug: Check file existence with absolute path
+        _write_job_log(job_info, "JOB_DEBUG", f"  Checking os.path.exists('{cl_path}'): {os.path.exists(cl_path)}")
+        
+        # If file doesn't exist without extension, try with .cl extension
         if not os.path.exists(cl_path):
-            _write_job_log(job_info, "JOB_ERROR", f"CL file not found: {cl_path}")
-            return False
+            cl_file_with_ext = f"{job_info.program}.cl"
+            cl_path_with_ext = os.path.join(program_path, cl_file_with_ext)
+            _write_job_log(job_info, "JOB_DEBUG", f"  cl_file_with_ext: {cl_file_with_ext}")
+            _write_job_log(job_info, "JOB_INFO", f"File not found, trying with extension: {cl_path_with_ext}")
+            _write_job_log(job_info, "JOB_DEBUG", f"  Checking os.path.exists('{cl_path_with_ext}'): {os.path.exists(cl_path_with_ext)}")
+            
+            if os.path.exists(cl_path_with_ext):
+                _write_job_log(job_info, "JOB_DEBUG", f"  Found file with extension, using: {cl_path_with_ext}")
+                cl_file = cl_file_with_ext
+                cl_path = cl_path_with_ext
+            else:
+                _write_job_log(job_info, "JOB_DEBUG", f"  Neither file exists")
+                _write_job_log(job_info, "JOB_ERROR", f"CL file not found: {cl_path} or {cl_path_with_ext}")
+                return False
+        else:
+            _write_job_log(job_info, "JOB_DEBUG", f"  File found without extension: {cl_path}")
         
         _write_job_log(job_info, "JOB_INFO", f"Executing CL program: {cl_file}")
         

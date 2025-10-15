@@ -13,7 +13,7 @@ from datetime import datetime
 
 # Import from parent module
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from asp_commands import VOLUME_ROOT, set_pgmec
+from asp_commands import VOLUME_ROOT, set_pgmec, delete_catalog_library
 
 def DLTLIB(command: str) -> bool:
     """
@@ -65,44 +65,57 @@ def DLTLIB(command: str) -> bool:
             set_pgmec(999)
             return False
         
-        # Check if library exists
+        # Check if library exists (warning only, not error)
+        lib_exists = os.path.exists(lib_path) and os.path.isdir(lib_path)
         if not os.path.exists(lib_path):
-            print(f"[ERROR] Library '{lib}' does not exist in volume '{volume}'.")
+            print(f"[WARNING] Library '{lib}' does not exist physically in volume '{volume}' - will delete from catalog only")
             print(f"[INFO] Library path: {lib_path}")
-            set_pgmec(999)
-            return False
+            lib_exists = False
+        elif not os.path.isdir(lib_path):
+            print(f"[WARNING] '{lib}' is not a library directory - will delete from catalog only")
+            lib_exists = False
         
-        # Check if it's actually a directory
-        if not os.path.isdir(lib_path):
-            print(f"[ERROR] '{lib}' is not a library directory.")
-            set_pgmec(999)
-            return False
+        # Get library information before deletion (if library exists)
+        file_count = 0
+        dir_size = 0
         
-        # Get library information before deletion
+        if lib_exists:
+            try:
+                # Count files and calculate size
+                for root, dirs, files in os.walk(lib_path):
+                    file_count += len(files)
+                    for file in files:
+                        file_path = os.path.join(root, file)
+                        try:
+                            dir_size += os.path.getsize(file_path)
+                        except (OSError, IOError):
+                            pass  # Skip files that can't be accessed
+                
+                print(f"[INFO] Library '{lib}' contains {file_count} files, total size: {dir_size:,} bytes")
+                
+            except Exception as e:
+                print(f"[DEBUG] Could not calculate library statistics: {e}")
+        else:
+            print(f"[INFO] Physical library does not exist - no files to count")
+        
+        # Delete the library directory (if it exists)
         try:
-            file_count = 0
-            dir_size = 0
+            if lib_exists:
+                shutil.rmtree(lib_path)
+                print(f"[INFO] Library '{lib}' in volume '{volume}' has been deleted.")
+                print(f"[INFO] Library path: {lib_path}")
+            else:
+                print(f"[INFO] Physical library does not exist, proceeding with catalog deletion only")
             
-            # Count files and calculate size
-            for root, dirs, files in os.walk(lib_path):
-                file_count += len(files)
-                for file in files:
-                    file_path = os.path.join(root, file)
-                    try:
-                        dir_size += os.path.getsize(file_path)
-                    except (OSError, IOError):
-                        pass  # Skip files that can't be accessed
-            
-            print(f"[INFO] Library '{lib}' contains {file_count} files, total size: {dir_size:,} bytes")
-            
-        except Exception as e:
-            print(f"[DEBUG] Could not calculate library statistics: {e}")
-        
-        # Delete the library directory
-        try:
-            shutil.rmtree(lib_path)
-            print(f"[INFO] Library '{lib}' in volume '{volume}' has been deleted.")
-            print(f"[INFO] Library path: {lib_path}")
+            # PostgreSQL DBIOシステムからカタログを削除
+            try:
+                catalog_deleted = delete_catalog_library(volume, lib)
+                if catalog_deleted:
+                    print(f"[INFO] Library '{lib}' removed from PostgreSQL catalog")
+                else:
+                    print(f"[WARNING] Failed to remove library '{lib}' from catalog")
+            except Exception as e:
+                print(f"[WARNING] Catalog delete failed: {e}")
             
             return True
             
