@@ -1,42 +1,7 @@
-# 🚀 OpenASP AX - 레거시 마이그레이션 플랫폼
-
-## ⚠️ **모든 AI CODING AGENT 필수 준수사항**
-
-### 🔥 **절대 금지 원칙 - NEVER HARDCODE**
-```
-❌ 절대 금지: "데모용", "임시로", "일단", "테스트용" 등의 핑계로 하드코딩
-❌ 절대 금지: 실제 파일 시스템 대신 목업(mock) 데이터 사용
-❌ 절대 금지: 에러 발생 시 우회 처리 (반드시 근본 원인 해결)
-❌ 절대 금지: 사용자 요구 파일 수와 다른 임의의 파일 수 처리
-
-✅ 필수 원칙: 모든 데이터는 실제 시스템에서 동적으로 로드
-✅ 필수 원칙: 사용자가 요구한 정확한 파일 수 처리 (1개도 빠짐없이)
-✅ 필수 원칙: 실제 파일 시스템과 화면 표시 완전 일치
-✅ 필수 원칙: 에러는 반드시 해결, 절대 우회 금지
-```
-
-### 📊 **실제 사례: 하드코딩으로 인한 심각한 문제**
-- **문제 상황**: AI Transform 페이지에서 실제 1,022개 파일 중 14개만 하드코딩으로 표시
-- **파급 효과**: 98.6% 기능 누락, 실제 업무 사용 불가능
-- **근본 원인**: "데모용이니까 하드코딩해도 된다"는 잘못된 사고방식
-- **교훈**: 이 프로젝트는 실제 레거시 마이그레이션용 업무 도구임
-
-### 🛡️ **재발방지 검증 체계**
-1. **파일 수 검증**: `find` 명령어 결과와 화면 표시 반드시 일치
-2. **내용 검증**: 실제 파일 내용과 화면 표시 내용 완전 일치
-3. **성능 검증**: 1,000+ 파일도 정상 처리 확인
-4. **에러 해결**: 500 에러 등 모든 에러는 근본 해결
-
-### 🔧 **올바른 구현 방법**
-- **백엔드 API**: Python Flask에 실제 파일 스캐닝 엔드포인트 구현
-- **대용량 처리**: 스트리밍, 페이지네이션으로 1,000+ 파일 처리
-- **실시간 연동**: 실제 파일 시스템 변경사항 즉시 반영
-- **완전한 기능**: 사용자 요구사항 100% 구현
-
----
+# 🚀 EnrudoAX SENSE+ - 레거시 마이그레이션 플랫폼
 
 ## 개요
-OpenASP AX는 레거시 ASP(Advanced System Products) 시스템을 현대적인 오픈소스 기술로 마이그레이션하는 **실제 업무용** 통합 플랫폼입니다.
+EnrudoAX SENSE+는 레거시 ASP(Advanced System Products) 시스템을 현대적인 오픈소스 기술로 마이그레이션하는 **실제 업무용** 통합 플랫폼입니다.
 
 ## 🏗️ 프로젝트 구성
 
@@ -128,7 +93,7 @@ OpenASP AX는 레거시 ASP(Advanced System Products) 시스템을 현대적인 
 ### 10. [Zabbix 모니터링 시스템] (포트 3015)
 - **웹 인터페이스**: http://localhost:3015
 - **로그인**: Admin / zabbix
-- **목적**: OpenASP AX 전체 시스템 모니터링 및 알림
+- **목적**: EnrudoAX SENSE+ 전체 시스템 모니터링 및 알림
 
 #### 📊 모니터링 대상
 - **API Server** (포트 8000): HTTP 응답, 프로세스 상태
@@ -273,7 +238,7 @@ check_abend.py     - ABEND CEE3204S 감지 및 자동 수정 트리거
 ## 🔄 ABEND 자동 감지 및 수정 시스템
 
 ### 🎯 통합 테스트 시나리오
-OpenASP AX 시스템은 **ABEND 발생 → Zabbix 감지 → DevOps CI/CD 자동 수정 → 정상화** 의 완전 자동화된 장애 대응 시스템을 구현합니다.
+EnrudoAX SENSE+ 시스템은 **ABEND 발생 → Zabbix 감지 → DevOps CI/CD 자동 수정 → 정상화** 의 완전 자동화된 장애 대응 시스템을 구현합니다.
 
 ### 📋 ABEND 자동 대응 프로세스
 
@@ -285,7 +250,7 @@ OpenASP AX 시스템은 **ABEND 발생 → Zabbix 감지 → DevOps CI/CD 자동
 #### 2️⃣ **Zabbix 실시간 감지**
 - **감지 스크립트**: `check_abend.py` (60초 주기)
 - **Zabbix 파라미터**: `openasp.abend.check`, `openasp.abend.count`
-- **알림**: Zabbix UI의 "OpenASP AX" 호스트에서 ABEND 알림 표시
+- **알림**: Zabbix UI의 "EnrudoAX SENSE+" 호스트에서 ABEND 알림 표시
 
 #### 3️⃣ **CI/CD 자동 수정 파이프라인**
 - **워크플로우**: ABEND Auto-Fix Pipeline (4단계)
@@ -603,87 +568,6 @@ with open('script.sh', 'w', encoding='shift_jis') as f:
 └── master-stop.sh         # 전체 종료 스크립트
 ```
 
-## 📋 개발 규칙 및 가이드라인
-
-### 🚨 **최우선 원칙: 하드코딩 절대 금지**
-```
-이 프로젝트는 실제 레거시 시스템을 처리하는 업무용 도구입니다.
-"데모용", "임시", "테스트" 등의 핑계로 하드코딩하는 것은 절대 금지됩니다.
-
-모든 데이터는 실제 파일 시스템에서 동적으로 로드해야 합니다.
-사용자가 요구한 파일 수와 화면 표시가 1개라도 다르면 안됩니다.
-에러가 발생하면 우회하지 말고 반드시 근본 원인을 해결하세요.
-```
-
-### 코딩 표준
-- **하드코딩 금지**: 모든 데이터는 실제 시스템에서 동적 로드 **[최우선]**
-- **언어별 규칙**: [CODING_RULES.md](./ofasp-refactor/CODING_RULES.md) 참조
-- **문자 인코딩**: 시스템 스크립트는 SHIFT_JIS, 소스 코드는 UTF-8
-- **주석 언어**: 모든 소스 코드 내 주석은 영어로 작성
-- **이모지 금지**: 모든 소스 코드 및 시스템 파일에서 이모지 사용 금지
-
-### 파일 생성 시 주의사항
-1. **Shell 스크립트 (.sh)**
-   - UTF-8로 작성 후 SHIFT_JIS로 변환
-   - 이모지 사용 금지, ASCII 대체 문자 사용 (`[START]`, `[OK]`, `[NG]`)
-   - 모든 주석은 영어로 작성
-   - 메시지 출력도 영어 권장 (국제화 고려)
-
-2. **Python 스크립트 (.py)**
-   - UTF-8 인코딩 유지
-   - 파일 상단에 `# -*- coding: utf-8 -*-` 선언
-   - 모든 주석과 docstring은 영어로 작성
-   - 이모지 사용 금지
-   - SJIS 변환이 필요한 출력은 런타임에 처리
-
-3. **JavaScript/TypeScript (.js/.ts/.tsx)**
-   - UTF-8 인코딩 사용
-   - 모든 주석은 영어로 작성
-   - 이모지 사용 금지 (UI 텍스트 제외)
-   - JSDoc 주석도 영어로 작성
-
-4. **설정 파일**
-   - JSON: UTF-8 인코딩, 주석 불가하지만 키명은 영어
-   - 시스템 설정: SHIFT_JIS 고려
-   - YAML/XML: UTF-8 인코딩, 주석은 영어
-
-### 국제화 지원
-- **로케일 지원**: ja_JP.sjis, en_US.UTF-8
-- **메시지 표시**: 환경에 따른 인코딩 자동 감지
-- **폰트 지원**: 일본어 표시 가능한 터미널 폰트 사용
-
-## 🤝 기여 방법
-
-### 🔥 **작업 전 필수 체크리스트**
-- [ ] README.md의 "하드코딩 절대 금지" 원칙 숙지
-- [ ] 실제 파일 시스템과 연동하여 구현할 계획 수립
-- [ ] 사용자 요구 파일 수와 구현 예정 파일 수 일치 확인
-- [ ] 에러 발생 시 근본 해결 방안 준비
-
-### 작업 프로세스
-1. **필수 체크리스트 완료**
-2. 이슈 생성
-3. 기능 브랜치 생성
-4. **실제 데이터 연동 구현** (하드코딩 절대 금지)
-5. 변경사항 커밋 (인코딩 규칙 준수)
-6. **파일 수 일치 검증**
-7. 풀 리퀘스트 생성
-8. 코드 리뷰 및 머지
-
-## 📝 라이선스
-
-이 프로젝트는 내부 사용을 위해 개발되었습니다.
-
-## 🔖 빠른 참조
-
-### 인코딩 변환 스크립트
-```bash
-# SJIS 변환용 Python 스크립트 실행
-python3 /tmp/convert_to_sjis.py
-
-# 수동 변환
-iconv -f UTF-8 -t SHIFT_JIS input.sh > output.sh
-```
 
 ### 주요 명령어
 ```bash
@@ -710,117 +594,3 @@ tail -f logs/asp-manager.log
 tail -f logs/api-server.log
 tail -f ofasp-refactor/logs/chat-api.log
 tail -f ofasp-refactor/logs/ollama.log
-```
-
-### 문제 해결
-- **문자 깨짐**: LANG=ja_JP.sjis 환경에서 SHIFT_JIS 인코딩 확인
-- **포트 충돌**: `./master-stop.sh` 실행 후 `netstat -an | grep 300` 확인
-
-## 📋 프로그램 등록 및 catalog.json 관리
-
-### 🔧 **프로그램 등록 필수 조건**
-```
-⚠️ 중요: OpenASP에서 모든 프로그램은 실행 전에 catalog.json에 등록되어야 합니다.
-등록되지 않은 프로그램은 CALL 명령어로 실행할 수 없습니다.
-```
-
-### 📝 catalog.json 프로그램 등록 형식
-
-#### Java 프로그램 등록
-```json
-{
-  "DISK01": {
-    "TESTLIB": {
-      "CUINP001": {
-        "TYPE": "PGM",
-        "PGMTYPE": "JAVA",
-        "PGMNAME": "CUINP001",
-        "CLASSFILE": "CUINP001.class",
-        "DESCRIPTION": "Customer data input program for FB format SAM files",
-        "VERSION": "1.0",
-        "CREATED": "2025-07-24T17:04:00.000000Z",
-        "UPDATED": "2025-07-24T17:04:00.000000Z"
-      }
-    }
-  }
-}
-```
-
-#### COBOL 프로그램 등록
-```json
-{
-  "PAYROLL01": {
-    "TYPE": "PGM",
-    "PGMTYPE": "COBOL",
-    "PGMNAME": "PAYROLL01",
-    "SOURCEFILE": "PAYROLL01.cbl",
-    "EXECUTABLE": "PAYROLL01",
-    "DESCRIPTION": "Monthly payroll calculation",
-    "VERSION": "2.1",
-    "CREATED": "2025-07-21T10:00:00Z",
-    "UPDATED": "2025-07-21T10:00:00Z"
-  }
-}
-```
-
-#### Shell 프로그램 등록
-```json
-{
-  "test_shell": {
-    "TYPE": "PGM",
-    "PGMTYPE": "SHELL",
-    "PGMNAME": "test_shell.sh",
-    "SHELLFILE": "test_shell.sh",
-    "DESCRIPTION": "Test shell program",
-    "VERSION": "1.0",
-    "CREATED": "2025-07-21T09:46:17.516107Z",
-    "UPDATED": "2025-07-21T09:46:17.516107Z"
-  }
-}
-```
-
-### 🎯 **프로그램 등록 시 필수 필드**
-- `TYPE`: 반드시 "PGM"
-- `PGMTYPE`: "JAVA", "COBOL", "SHELL" 중 하나
-- `PGMNAME`: 실제 프로그램명
-- `DESCRIPTION`: 프로그램 설명
-- `VERSION`: 버전 정보
-- `CREATED`, `UPDATED`: ISO 형식 타임스탬프
-
-### 🚀 **프로그램 등록 후 실행 방법**
-```bash
-# CL 명령어로 프로그램 실행
-CALL PGM-CUINP001.TESTLIB,PARA='001,ABC',VOL-DISK01
-
-# ASP 명령어로 직접 실행  
-CALL PGM-CUINP001.TESTLIB,PARA-(001,ABC),VOL-DISK01
-```
-
-### 📋 **관련 파일 위치**
-- **catalog.json**: `/home/aspuser/app/asp-manager/public/config/catalog.json`
-- **프로그램 파일**: `/home/aspuser/app/volume/DISK01/TESTLIB/`
-- **CL Parser**: `/home/aspuser/app/server/system-cmds/cl_parser.py`
-- **CL Executor**: `/home/aspuser/app/server/system-cmds/cl_executor.py`
-- **서비스 미시작**: 로그 파일에서 에러 메시지 확인
-
----
-
-## 🔖 **모든 AI AGENT 기억해야 할 핵심 원칙**
-
-```
-이 프로젝트는 장난감이 아닙니다.
-실제 레거시 시스템을 마이그레이션하는 업무용 도구입니다.
-
-절대로 하드코딩하지 마세요.
-절대로 "데모용"이라는 핑계를 대지 마세요.
-절대로 사용자 요구사항을 임의로 축소하지 마세요.
-절대로 에러를 우회하지 말고 반드시 해결하세요.
-
-실제 파일 시스템의 모든 파일을 정확히 처리하세요.
-1개 파일이라도 빠뜨리면 안됩니다.
-```
-
-**개발**: Claude Code Assistant와 함께  
-**최종 업데이트**: 2025-07-23  
-**핵심 원칙**: 하드코딩 절대 금지, 실제 데이터만 사용  
-**인코딩**: SHIFT_JIS (시스템 스크립트), UTF-8 (소스 코드)
